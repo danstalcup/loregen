@@ -69,7 +69,8 @@ namespace LoreGen.WorldGen
             //Generate continent regions
             world.GenerateWorldBlock();            
             //world.GenerateOceansAndContinents();
-            world.NewGenerateOceansAndContinents();
+            world.NewGenerateContinents();
+            world.NewGenerateOceans(world.Continents.Count);
 
             return world;
         }        
@@ -90,7 +91,7 @@ namespace LoreGen.WorldGen
             WorldBlock.InitializeChildBlocks();
         }
 
-        private int[] GenerateOuterOceans()
+       /* private int[] GenerateOuterOceans()
         {
             double OuterOceanPercentage = Rnd.Normal(Rules.CoastlineBorderMean, Rules.CoastlineBorderStdDev);
             if (OuterOceanPercentage < Rules.CoastlineBorderMin) OuterOceanPercentage = Rules.CoastlineBorderMin;
@@ -108,107 +109,9 @@ namespace LoreGen.WorldGen
             Ocean EastOcean = new Ocean(this, new WorldBlockRectangle { X = WorldBlock.Width - OuterOceanBlocksX, Y = OuterOceanBlocksY, Width = OuterOceanBlocksX, Height = WorldBlock.Height - 2 * OuterOceanBlocksY });
 
             return new int[]{OuterOceanBlocksX, OuterOceanBlocksY};
-        }
-
-        private void GenerateOceansAndContinents()
-        {
-            //Generate oceans
-            int[] OuterOceanBlocks = GenerateOuterOceans();
-
-            //Generate first continent
-            List<WorldBlockRectangle> ContinentBlocks = new List<WorldBlockRectangle>();
-            WorldBlockRectangle FirstContinent = new WorldBlockRectangle { ParentBlock = WorldBlock, Height = WorldBlock.Height - (2 * OuterOceanBlocks[1]), Width = WorldBlock.Width - (2 * OuterOceanBlocks[0]), X = OuterOceanBlocks[0], Y = OuterOceanBlocks[1] };
-            ContinentBlocks.Add(FirstContinent);
-
-            //Figure out number of continents
-            int numContinents = Rnd.Unweighted(WorldRules.ContinentsMin, WorldRules.ContinentsMax);            
-
-            for (int c = 1; c < numContinents; c++)
-            {
-                WorldBlockRectangle largestContinent = ContinentBlocks.OrderByDescending(wbr => wbr.Area()).First();
-                if (largestContinent.Width > largestContinent.Height)
-                {
-                    double InnerOceanPercentage = Rnd.Normal(Rules.CoastlineBorderMean, Rules.CoastlineBorderStdDev);
-                    int InnerOceanWidth = ((int)(InnerOceanPercentage * largestContinent.Width));
-                    if (InnerOceanWidth == 0) InnerOceanWidth = 1;
-                    int divider = (int)Rnd.Unweighted(Rules.SplitBlockMinimumPercentage * largestContinent.Width, (1.0 - Rules.SplitBlockMinimumPercentage) * largestContinent.Width);
-                    if (divider == 0 || divider == largestContinent.Width) break;
-
-                    
-                    /*WorldBlockRectangle newContinent = new WorldBlockRectangle { Height = largestContinent.Height, Width = divider, ParentBlock = largestContinent.ParentBlock, X = largestContinent.X, Y = largestContinent.Y };
-                    largestContinent.Width -= divider;
-                    largestContinent.X += divider;*/
-                     
-                     WorldBlockRectangle newContinent = new WorldBlockRectangle { Height = largestContinent.Height, Width = divider - InnerOceanWidth, ParentBlock = largestContinent.ParentBlock, X = largestContinent.X, Y = largestContinent.Y };
-                     largestContinent.Width -= (divider + InnerOceanWidth);
-                     largestContinent.X += (divider + InnerOceanWidth);
-
-                    ContinentBlocks.Add(newContinent);
-
-                    Ocean ocean = new Ocean(this, new WorldBlockRectangle { X = newContinent.X + newContinent.Width, Y = newContinent.Y, Width = 2 * InnerOceanWidth, Height = newContinent.Height });
-                }
-                else
-                {
-                    double InnerOceanPercentage = Rnd.Normal(Rules.CoastlineBorderMean, Rules.CoastlineBorderStdDev);
-                    int InnerOceanHeight = ((int)(InnerOceanPercentage * largestContinent.Height));
-                    if (InnerOceanHeight == 0) InnerOceanHeight = 1;
-                    int divider = (int)Rnd.Unweighted(Rules.SplitBlockMinimumPercentage * largestContinent.Height, (1.0 - Rules.SplitBlockMinimumPercentage) * largestContinent.Height);
-                    if (divider == 0 || divider == largestContinent.Height) break;
-
-                    /*WorldBlockRectangle newContinent = new WorldBlockRectangle { Width = largestContinent.Width, Height = divider, ParentBlock = largestContinent.ParentBlock, Y = largestContinent.Y, X = largestContinent.X };
-                    largestContinent.Height -= (divider);
-                    largestContinent.Y += (divider);*/
-
-                    WorldBlockRectangle newContinent = new WorldBlockRectangle { Width = largestContinent.Width, Height = divider - InnerOceanHeight, ParentBlock = largestContinent.ParentBlock, Y = largestContinent.Y, X = largestContinent.X };
-                    largestContinent.Height -= (divider + InnerOceanHeight);
-                    largestContinent.Y += (divider + InnerOceanHeight);
-                    
-                    ContinentBlocks.Add(newContinent);
-
-                    Ocean ocean = new Ocean(this, new WorldBlockRectangle { Y = newContinent.Y + newContinent.Height, X = newContinent.X, Height = 2 * InnerOceanHeight, Width = newContinent.Width });
-                }
-                
-
-            }
-
-            //figure out global number of regions -- number is estimated
-            int numRegions = (int)Rnd.Normal(WorldRules.RegionsMean, WorldRules.RegionsStdDev);
-            numRegions = Math.Min(numRegions, WorldRules.RegionsMax);
-            numRegions = Math.Max(numRegions, WorldRules.RegionsMin);
-            int totalArea = (from cb in ContinentBlocks select cb.Area()).Sum();
-
-            //generate actual continents from blocks
-            foreach(WorldBlockRectangle ContinentBlock in ContinentBlocks)
-            {
-                foreach (WorldBlock wb in ContinentBlock.Blocks())
-                {
-                    if (ContinentBlock.OnEdge(wb))
-                    {
-                        wb.Status.WaterStatus = WorldBlockWaterStatus.Coastline;
-                    }
-                    else
-                    {
-                        wb.Status.WaterStatus = WorldBlockWaterStatus.Land;
-                    }
-                }
-                int regionCount = (int)(((double)(ContinentBlock.Area())) / ((double)(totalArea)) * numRegions);
-                //all continents must have at least one region
-                if (regionCount == 0)
-                {
-                    regionCount = 1;
-                }
-
-                Continent.GenerateContinent(this, ContinentBlock, regionCount);
-                }
-            //TEST
-            //WorldBlock testBlock = Continents[0].ContinentBlock.BlocksAsList().Where(b => b.Status.WaterStatus == WorldBlockWaterStatus.Coastline).First();
-            
-               
-           // .ApplyToBlock(testBlock, 10);
-            
-        }                
-
-        private void NewGenerateOceansAndContinents()
+        }*/
+  
+        private void NewGenerateContinents()
         {
             //Figure out number of continents
             int numContinents = Rnd.Unweighted(WorldRules.ContinentsMin, WorldRules.ContinentsMax);
@@ -289,6 +192,64 @@ namespace LoreGen.WorldGen
                 continent.InitializeContinent(regionCount);
             }
 
+        }
+
+        private void NewGenerateOceans(int NumOceans)
+        {
+            List<WorldBlock> WaterBlocks = WorldBlock.ChildBlocksAsList().Where(wb => wb.Status.WaterStatus == WorldBlockWaterStatus.Water).ToList();
+            double TotalWaterSize = WaterBlocks.Count;
+            while(WaterBlocks.Count > 0)
+            {
+                //Find contiguous water range
+                WorldBlock FirstBlock = ListR<WorldBlock>.RandomFromList(WaterBlocks, Rnd);
+                HashSet<WorldBlock> ContiguousWaterBlocksHashSet = new HashSet<WorldBlock>();
+                ExpandContiguousWaterArea(ContiguousWaterBlocksHashSet,FirstBlock,WaterBlocks);
+                List<WorldBlock> ContiguousWaterBlocks = ContiguousWaterBlocksHashSet.ToList();                
+
+                //Figure out number of oceans for this contiguous range
+                double CurrentWaterSize = ContiguousWaterBlocks.Count;
+                double CurrentWaterPercent = CurrentWaterSize / TotalWaterSize;
+                int CurrentOceans = (int)(Math.Round(NumOceans * CurrentWaterPercent,MidpointRounding.AwayFromZero));
+                if (CurrentOceans > ContiguousWaterBlocks.Count) CurrentOceans = ContiguousWaterBlocks.Count;
+
+                //Create Ocean Starting Points
+                Ocean[] Oceans = new Ocean[CurrentOceans];
+                List<WorldBlock> RemainingBlocks = ContiguousWaterBlocks.ToList();
+                for(int i=0; i<CurrentOceans; i++)
+                {
+                    WorldBlock StartingBlock = ListR<WorldBlock>.RandomFromList(RemainingBlocks,Rnd);
+                    WorldBlockArea OceanArea = new WorldBlockArea(new List<WorldBlock> { StartingBlock }, null);
+                    Oceans[i] = new Ocean(this, OceanArea);
+                    RemainingBlocks.Remove(StartingBlock);
+                }
+                
+                //Expand Oceans
+                while(RemainingBlocks.Count > 0)
+                {
+                    WorldBlock nextBlock = ListR<WorldBlock>.RandomFromList(RemainingBlocks.Where(b => b.SurroundingBlocksAsList().Any(sb => sb.Status.Ocean != null)).ToList(), Rnd);
+                    Ocean newOcean = ListR<WorldBlock>.RandomFromList(nextBlock.SurroundingBlocksAsList().Where(sb => sb.Status.Ocean != null).ToList(), Rnd).Status.Ocean;
+                    newOcean.AddBlock(nextBlock);
+                    RemainingBlocks.Remove(nextBlock);
+                }
+            }
+        }
+
+        private void ExpandContiguousWaterArea(HashSet<WorldBlock> Contiguous, WorldBlock LatestBlock, List<WorldBlock> RemainingWorldBlocks)
+        {
+            if(LatestBlock == null || LatestBlock.Status.WaterStatus != WorldBlockWaterStatus.Water || Contiguous.Contains(LatestBlock))
+            {
+                return;
+            }
+            else
+            {
+                Contiguous.Add(LatestBlock);
+                RemainingWorldBlocks.Remove(LatestBlock);
+                List<WorldBlock> NeighboringBlocks = LatestBlock.SurroundingBlocksAsList();
+                foreach(WorldBlock Neighbor in NeighboringBlocks)
+                {
+                    ExpandContiguousWaterArea(Contiguous, Neighbor,RemainingWorldBlocks);
+                }
+            }
         }
 
         private Rnd Rnd

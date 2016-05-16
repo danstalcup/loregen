@@ -34,9 +34,7 @@ namespace LoreGen.WorldGen
         /// <summary>
         /// The seas in this continent.
         /// </summary>
-        public List<Sea> Seas;
-
-        public WorldEntityDisplayInfo DisplayInfo;
+        public List<Sea> Seas;        
 
         private SimEngine SimEngine
         {
@@ -131,7 +129,7 @@ namespace LoreGen.WorldGen
 
         public void AddBlock(WorldBlock WorldBlock)
         {
-            ContinentArea.BlocksList.Add(WorldBlock);
+            ContinentArea.Add(WorldBlock);
             WorldBlock.Status.Continent = this;
         }
 
@@ -494,29 +492,29 @@ namespace LoreGen.WorldGen
    
 
     public class Ocean : WorldEntity
-    {        
-        public WorldBlockRectangle OceanBlock;
-        public World World;
+    {                
+        public WorldBlockArea OceanArea;        
         
-
-        public Ocean(World World, WorldBlockRectangle OceanBlock)
+        public Ocean(World World, WorldBlockArea OceanArea)
         {
             this.World = World;
-            this.OceanBlock = OceanBlock;
-            this.OceanBlock.ParentBlock = World.WorldBlock;
-            OceanBlock.Entity = this;
+            this.OceanArea = OceanArea;
+            this.OceanArea.ParentBlock = World.WorldBlock;
+            OceanArea.Entity = this;
 
-            foreach (WorldBlock block in OceanBlock.Blocks())
+            foreach(WorldBlock block in OceanArea.Blocks())
             {
                 block.Status.Ocean = this;
-                block.Status.WaterStatus = WorldBlockWaterStatus.Water;
             }
-            
-            World.Oceans.Add(this);
             WorldEntityType = WorldGen.WorldEntityType.Ocean;
+            World.Oceans.Add(this);
             Name = World.SimEngine.Language.GetRandomLanguage().GetName();
-        }
-        
+        }                
 
+        public void AddBlock(WorldBlock Block)
+        {
+            OceanArea.Add(Block);
+            Block.Status.Ocean = this;
+        }
     }
 }

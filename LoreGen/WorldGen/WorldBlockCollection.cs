@@ -278,6 +278,10 @@ namespace LoreGen.WorldGen
             }
             return edge;
         }
+        public void Add(WorldBlock WorldBlock)
+        {
+            BlocksList.Add(WorldBlock);            
+        }
         public List<List<WorldBlock>> ContiguousAreas()
         {            
             List<HashSet<WorldBlock>> ContiguousAreas = new List<HashSet<WorldBlock>>();
@@ -294,7 +298,7 @@ namespace LoreGen.WorldGen
 
             return ContiguousAreas.Select(ca => ca.ToList()).ToList();
         }
-
+        
         private void FindContiguousArea(HashSet<WorldBlock> contiguousArea, WorldBlock start, List<WorldBlock> uncountedBlocks)
         {
             if(contiguousArea.Contains(start)) return;
