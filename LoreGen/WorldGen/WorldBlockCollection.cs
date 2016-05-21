@@ -298,6 +298,34 @@ namespace LoreGen.WorldGen
 
             return ContiguousAreas.Select(ca => ca.ToList()).ToList();
         }
+        public WorldBlock[,] BlocksAsGrid()
+        {
+            if(BlocksList.Count == 0) return new WorldBlock[0,0];
+            List<WorldBlock> NonStandardParentBlocks = BlocksList.Where(wb => wb.ParentBlock != BlocksList[0].ParentBlock).Select(wb => wb.ParentBlock).ToList();
+            if (NonStandardParentBlocks.Count() > 0) return new WorldBlock[0, 0]; // Need to implement for multiple parent blocks
+
+            List<WorldBlock> NonWaterBlockList = BlocksList.Where(bl => bl.Status.WaterStatus != WorldBlockWaterStatus.Water).ToList();
+
+            int minX = NonWaterBlockList.Min(wb => wb.X);
+            int maxX = NonWaterBlockList.Max(wb => wb.X);
+            int minY = NonWaterBlockList.Min(wb => wb.Y);
+            int maxY = NonWaterBlockList.Max(wb => wb.Y);
+
+            int numX = maxX - minX + 1;
+            int numY = maxY - minY + 1;
+
+            WorldBlock[,] Grid = new WorldBlock[numX, numY];
+            for(int i=0; i<numX; i++)
+            {
+                for(int j=0; j<numY; j++)
+                {
+                    Grid[i, j] = ParentBlock.ChildBlocks[i + minX, j + minY];
+                }
+            }
+
+            return Grid;
+
+        }
         
         private void FindContiguousArea(HashSet<WorldBlock> contiguousArea, WorldBlock start, List<WorldBlock> uncountedBlocks)
         {
