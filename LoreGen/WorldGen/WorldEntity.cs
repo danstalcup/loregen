@@ -19,9 +19,13 @@ namespace LoreGen.WorldGen
         /// Name of this entity.
         /// </summary>
         public string Name;
-
+        /// <summary>
+        /// Collection of display information related to this entity
+        /// </summary>
         public WorldDisplay.WorldEntityDisplayInfo DisplayInfo;
-
+        /// <summary>
+        /// The world that this entity is in
+        /// </summary>
         public World World;
     }
 

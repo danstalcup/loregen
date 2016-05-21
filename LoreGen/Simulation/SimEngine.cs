@@ -34,14 +34,20 @@ namespace LoreGen.Simulation
         /// </summary>
         public SimEngineLanguageTasks Language;
 
+        /// <summary>
+        /// Access to configuration, read from "loregen.config"
+        /// </summary>
         public SimEngineConfiguration Configuration;
 
+        /// <summary>
+        /// Current version
+        /// </summary>
         public const string Version = "0.1";
 
         /// <summary>
         /// Creates and returns a SimEngine, including loading all data and generating World
         /// </summary>
-        /// <returns>an initialized SimEngine</returns>
+        /// <returns>an initialized SimEngine, default configuration, with a generated world</returns>
         public static SimEngine QuickStart()
         {            
             SimEngine simEngine = new SimEngine();
@@ -49,6 +55,10 @@ namespace LoreGen.Simulation
             return simEngine;
         }
 
+        /// <summary>
+        /// Initializes the SimEngine and loads configuration data
+        /// </summary>
+        /// <param name="ConfigFilepath">filepath of configuration file</param>
         public SimEngine(string ConfigFilepath="loregen.config")
         {
             Configuration = new SimEngineConfiguration(ConfigFilepath);
@@ -67,6 +77,9 @@ namespace LoreGen.Simulation
             Language = new SimEngineLanguageTasks(this);            
         }
 
+        /// <summary>
+        /// Generates a world using the current configuration
+        /// </summary>
         public void GenerateWorld()
         {
             World = World.GenerateWorld(this);
@@ -108,13 +121,40 @@ namespace LoreGen.Simulation
 
     public class SimEngineConfiguration
     {
+        /// <summary>
+        /// True if the configuration file has been read without error, false otherwise
+        /// </summary>
         public bool ConfigFileSuccessfullyRead;
+
+        /// <summary>
+        /// Folder from which the simulation reads data files
+        /// </summary>
         public string DataFolder;
+
+        /// <summary>
+        /// Current version, as defined in the configuration file
+        /// </summary>
         public string Version;
+
+        /// <summary>
+        /// True if the simulation is using a preset seed for randomization
+        /// </summary>
         public bool UsePresetSeed;
+
+        /// <summary>
+        /// Seed used by the randomizer (if UsePresetSeed == true)
+        /// </summary>
         public int PresetSeed;
+
+        /// <summary>
+        /// File path of the configuration file
+        /// </summary>
         public string ConfigFilepath;
 
+        /// <summary>
+        /// Create the configuration object and set the path of the config file. (This does not actually load and read the configuration file.)
+        /// </summary>
+        /// <param name="ConfigFilepath">path of the config file</param>
         public SimEngineConfiguration(string ConfigFilepath)
         {
             ConfigFileSuccessfullyRead = false;
@@ -125,6 +165,10 @@ namespace LoreGen.Simulation
             this.ConfigFilepath = ConfigFilepath;
         }
 
+
+        /// <summary>
+        /// Loads and processes the configuration file
+        /// </summary>
         public void Configure()
         {            
             try

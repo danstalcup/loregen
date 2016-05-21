@@ -16,13 +16,16 @@ namespace LoreGen.Simulation
     /// </summary>
     public class SimData
     {
-
+        /// <summary>
+        /// The simulation engine that is using this data processor
+        /// </summary>
         public SimEngine SimEngine;
 
         /// <summary>
         /// Collection of Letter-Sounds, processed from "LetterSounds.txt" in the RawData folder
-        /// </summary>
+        /// </summary>       
         public List<LetterSound> LetterSounds;
+
         /// <summary>
         /// Collection of Phonetic Inventories, processed from "PhoneticInventories.csv"
         /// </summary>
@@ -37,24 +40,46 @@ namespace LoreGen.Simulation
         /// Collection of world generation rules, processed from "WorldRules.csv"
         /// </summary>
         public WorldRules WorldRules;
+
         /// <summary>
-        /// Collection of edge patterns
+        /// Collection of edge patterns, processed from "EdgePatterns.csv"
         /// </summary>
         public List<EdgePattern> EdgePatterns;
 
+        /// <summary>
+        /// Collection of climate types, processed from "ClimateTypes.csv"
+        /// </summary>
         public List<ClimateType> ClimateTypes;
 
+        /// <summary>
+        /// Collection of climates, processed from "Climates.csv"
+        /// </summary>
         public List<Climate> Climates;
 
+        /// <summary>
+        /// Collection of biomes, processed from "Biomes.txt"
+        /// </summary>
         public List<Biome> Biomes;
 
+        /// <summary>
+        /// Collection of terrain types, processed from "TerrainTypes.csv"
+        /// </summary>
         public List<TerrainType> TerrainTypes;
 
+        /// <summary>
+        /// Collection of terrains, processed from "Terrains.csv"
+        /// </summary>
         public List<Terrain> Terrains;
 
+        /// <summary>
+        /// Collection of terrain generation rules, processed form "TerrainRules.csv"
+        /// </summary>
         public TerrainRules TerrainRules;
         
-
+        /// <summary>
+        /// Initialize the data processor
+        /// </summary>
+        /// <param name="SimEngine">The engine using this data processor</param>
         public SimData(SimEngine SimEngine)
         {
             this.SimEngine = SimEngine;
@@ -62,7 +87,7 @@ namespace LoreGen.Simulation
         }
 
         /// <summary>
-        /// Folder to read data in from. "RawData" by default.
+        /// Folder to read data in from. "Default" by default.
         /// </summary>
         public string DataFolder = "Default";
 
@@ -87,7 +112,7 @@ namespace LoreGen.Simulation
 
 
         /// <summary>
-        /// Loads in letter/sound data from "LetterSounds.txt" in the RawData folder.        
+        /// Loads in letter/sound data from "LetterSounds.txt" in the data folder.        
         /// </summary>
         public void InitializeLetterSounds()
         {
@@ -114,7 +139,7 @@ namespace LoreGen.Simulation
         }
 
         /// <summary>
-        /// Loads in letter/sound data from "PhoneticInventories.csv." Letter-Sounds must be initialized.
+        /// Loads in letter/sound data from "PhoneticInventories.csv." Letter-Sounds must be loaded.
         /// </summary>
         public void InitializePhoneticInventories()
         {
@@ -243,6 +268,9 @@ namespace LoreGen.Simulation
             WorldRules.ContinentCoastErosionMax = worldInfo[26];
         }
 
+        /// <summary>
+        /// Loads in edge patterns from EdgePatterns.csv
+        /// </summary>
         public void InitializeEdgePatterns()
         {
             EdgePatterns = new List<EdgePattern>();
@@ -306,6 +334,9 @@ namespace LoreGen.Simulation
             }
         }
 
+        /// <summary>
+        /// Loads in climate types from ClimateTypes.csv
+        /// </summary>
         private void InitializeClimateTypes()
         {
             ClimateTypes = new List<ClimateType>();
@@ -320,6 +351,9 @@ namespace LoreGen.Simulation
 
         }
 
+        /// <summary>
+        /// Loads in climates from "Climates.csv". ClimateTypes must be loaded.
+        /// </summary>
         private void InitializeClimates()
         {
             Climates = new List<Climate>();
@@ -335,6 +369,9 @@ namespace LoreGen.Simulation
             }
         }
 
+        /// <summary>
+        /// Loads in biomes from "Biomes.txt"
+        /// </summary>
         private void InitializeBiomes()
         {
             Biomes = new List<Biome>();
@@ -347,6 +384,9 @@ namespace LoreGen.Simulation
             }
         }
 
+        /// <summary>
+        /// Loads in terrain types from "TerrainTypes.csv."
+        /// </summary>
         private void InitializeTerrainTypes()
         {
             TerrainTypes = new List<TerrainType>();
@@ -359,6 +399,9 @@ namespace LoreGen.Simulation
             }
         }
 
+        /// <summary>
+        /// Loads in terrains from "Terrains.csv." Terrain types and climates must be loaded.
+        /// </summary>
         private void InitializeTerrains()
         {
             Terrains = new List<Terrain>();
@@ -375,6 +418,9 @@ namespace LoreGen.Simulation
 
         }
 
+        /// <summary>
+        /// Loads biome terrain generation patterns from "BiomePatterns.csv." Biomes, climates, and terrain types must be loaded.
+        /// </summary>
         private void InitializeBiomePatterns()
         {
             string[] biomePatternLines = File.ReadAllLines(DataFolder + "/BiomePatterns.csv");
@@ -399,6 +445,9 @@ namespace LoreGen.Simulation
             }
         }
 
+        /// <summary>
+        /// Loads terrain rules from TerrainRules.csv. 
+        /// </summary>
         private void InitializeTerrainRules()
         {
             TerrainRules = new TerrainRules();
