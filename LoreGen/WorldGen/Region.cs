@@ -119,6 +119,15 @@ namespace LoreGen.WorldGen
             reg.DisplayInfo = WorldEntityDisplayInfo.GenerateWithRandomColor(reg);
 
             return reg;
+        } 
+       
+        public List<Region> NeighboringRegions()
+        {
+            List<WorldBlock> allNeighboringBlocksWithRegions = RegionArea.Blocks().Where(wb => wb.Status.WaterStatus != WorldBlockWaterStatus.Water).SelectMany(block => block.SurroundingBlocksAsList()).Where(wb => wb.Status.Region != null).ToList();
+            List<WorldBlock> blocksWithSubBlocks = allNeighboringBlocksWithRegions.Where(wb => wb.ChildBlocks != null).ToList();
+            allNeighboringBlocksWithRegions.RemoveAll(wb => blocksWithSubBlocks.Contains(wb));
+            allNeighboringBlocksWithRegions.AddRange(blocksWithSubBlocks.SelectMany(wb => wb.ChildBlocksAsList().Where(cb => cb.Status.WaterStatus != WorldBlockWaterStatus.Water)));
+            return allNeighboringBlocksWithRegions.Select(block => block.Status.Region).Distinct().Where(r => r != this).ToList();
         }
 
         private void SelectBiome()

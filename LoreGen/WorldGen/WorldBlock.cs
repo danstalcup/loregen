@@ -218,6 +218,14 @@ namespace LoreGen.WorldGen
                     }
                 }
             }
+            /*
+            if (SurroundingBlocksAsList().Any(wb => wb.Status.WaterStatus != WorldBlockWaterStatus.Water))
+            {
+                foreach (WorldBlock wb in ChildBlocksAsList().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Water))
+                {
+                    WorldTasks.FixCoastlineForWaterBlock(wb);
+                }
+            }*/
         }
 
         /// <summary>
@@ -257,6 +265,10 @@ namespace LoreGen.WorldGen
                 return null;
             }
             WorldBlock b = ParentBlock.North();
+            if (b == null)
+            {
+                return null;
+            }
             if (b == null) 
             {
                 return null;
@@ -294,6 +306,10 @@ namespace LoreGen.WorldGen
                 return null;
             }
             WorldBlock b = ParentBlock.South();
+            if (b == null)
+            {
+                return null;
+            }
             if (b.ChildBlocks == null)
             {
                 if (!ForceChildBlockCreation)
@@ -327,6 +343,10 @@ namespace LoreGen.WorldGen
                 return null;
             }
             WorldBlock b = ParentBlock.West();
+            if (b == null)
+            {
+                return null;
+            }
             if (b.ChildBlocks == null)
             {
                 if (!ForceChildBlockCreation)
@@ -360,6 +380,10 @@ namespace LoreGen.WorldGen
                 return null;
             }
             WorldBlock b = ParentBlock.East();
+            if(b == null)
+            {
+                return null;
+            }
             if (b.ChildBlocks == null)
             {
                 if (!ForceChildBlockCreation)
@@ -418,14 +442,29 @@ namespace LoreGen.WorldGen
         {
             return AsRectangle(((double)OutputRectangle.Width) / ((double)SimEngine.World.WorldBlock.TrueWidth), ((double)OutputRectangle.Height) / ((double)SimEngine.World.WorldBlock.TrueHeight));
         }
+
+        public Rectangle AsRectangle(double widthScalar, double heightScalar, Rectangle InputRectangle)
+        {                     
+            Point rectangleStartingPoint = ProjectPoint(new Point(TrueX, TrueY),InputRectangle,widthScalar,heightScalar);
+            Point rectangleEndingPoint = ProjectPoint(new Point(TrueX+TrueWidth, TrueY+TrueHeight),InputRectangle,widthScalar,heightScalar);
+            Size size = new Size(rectangleEndingPoint.X-rectangleStartingPoint.X, rectangleEndingPoint.Y-rectangleStartingPoint.Y);
+            return new Rectangle(rectangleStartingPoint, size);
+        }
+
+        private Point ProjectPoint(Point Point, Rectangle StartingRectangle, double widthScalar, double heightScalar)
+        {            
+            int X = (int)((Point.X - StartingRectangle.X) * widthScalar);
+            int Y = (int)((Point.Y - StartingRectangle.Y) * heightScalar);
+            return new Point(X, Y);
+        }
         
-        public WorldBlock ChildBlockAtPoint(Point Point, Rectangle WorldBlockRectangle)
+        public WorldBlock ChildBlockAtPoint(Point Point, Rectangle DisplayRectangle)
         {
             int x = Point.X;
             int y = Point.Y;
 
-            double xDivisor = ((double)(WorldBlockRectangle.Width)) / (double)Width;
-            double yDivisor = ((double)(WorldBlockRectangle.Height)) / (double)Height;
+            double xDivisor = ((double)(DisplayRectangle.Width)) / (double)Width;
+            double yDivisor = ((double)(DisplayRectangle.Height)) / (double)Height;
 
             int outputX = (int)(x / xDivisor);
             int outputY = (int)(y / yDivisor);

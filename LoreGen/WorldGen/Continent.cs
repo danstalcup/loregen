@@ -118,13 +118,18 @@ namespace LoreGen.WorldGen
             //generate seas
             GenerateSeas();
             
-            NewErodeCoasts();
-            NewNewGenerateRegions(NumRegions);
+            NewErodeCoasts();            
             foreach (WorldBlock wb in ContinentArea.Blocks().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline))
             {
                 WorldTasks.ApplyCoastlineToBlock(wb, 10);
+                //ErodeCoastlineBlock(wb);
+            }
+            foreach (WorldBlock wb in ContinentArea.Blocks().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline))
+            {
+                //WorldTasks.ApplyCoastlineToBlock(wb, 10);
                 ErodeCoastlineBlock(wb);
-            }        
+            }
+            NewNewGenerateRegions(NumRegions);
         }
 
         public void AddBlock(WorldBlock WorldBlock)
@@ -475,8 +480,8 @@ namespace LoreGen.WorldGen
 
             while(AllContinentBlocks.Where(cb => cb.Status.Region == null).Count() > 0)
             {
-                WorldBlock NextBlock = ListR<WorldBlock>.RandomFromList(AllContinentBlocks.Where(cb => cb.Status.Region == null && cb.SurroundingBlocksAsList().Where(sb => sb.Status.Region != null).Count() > 0).ToList(),Rnd);
-                Region NextRegion = ListR<Region>.RandomFromList(NextBlock.SurroundingBlocksAsList().Where(sb => sb.Status.Region != null).Select(sb => sb.Status.Region).ToList(), Rnd);
+                WorldBlock NextBlock = ListR<WorldBlock>.RandomFromList(AllContinentBlocks.Where(cb => cb.Status.Region == null && cb.SurroundingBlocksAsList().Where(sb => sb.Status.Region != null && sb.Status.Continent == this).Count() > 0).ToList(),Rnd);
+                Region NextRegion = ListR<Region>.RandomFromList(NextBlock.SurroundingBlocksAsList().Where(sb => sb.Status.Region != null && sb.Status.Continent == this).Select(sb => sb.Status.Region).ToList(), Rnd);
                 NextRegion.AddBlock(NextBlock);
             }
 

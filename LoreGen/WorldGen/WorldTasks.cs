@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
 
 using LoreGen.Randomizer;
 
@@ -102,10 +103,18 @@ namespace LoreGen.WorldGen
                     if (fit.Pattern[i, j] == EdgeStatus.On)
                         Block.ChildBlocks[i, j].Status.WaterStatus = WorldBlockWaterStatus.Land;
                     else if (fit.Pattern[i, j] == EdgeStatus.Off)
+                    {                        
                         Block.ChildBlocks[i, j].Status.WaterStatus = WorldBlockWaterStatus.Water;
+                        //FixCoastlineForWaterBlock(Block.ChildBlocks[i, j]);
+                    }
                     else if (fit.Pattern[i, j] == EdgeStatus.Edge)
                         Block.ChildBlocks[i, j].Status.WaterStatus = WorldBlockWaterStatus.Coastline;
                 }
+            }
+            List<WorldBlock> WaterBlocks = Block.ChildBlocksAsList().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Water).ToList();
+            foreach(WorldBlock block in WaterBlocks)
+            {
+                FixCoastlineForWaterBlock(block);
             }
 
         }
@@ -165,6 +174,20 @@ namespace LoreGen.WorldGen
                 }
             }
             return NewCoastlineBlocks;
+        }
+
+        public static WorldBlock GetBlockAtPoint(WorldBlock[,] Grid, Point Point, Rectangle DisplayRectangle)
+        {
+            int x = Point.X;
+            int y = Point.Y;
+
+            double xDivisor = ((double)(DisplayRectangle.Width)) / (double)(Grid.GetUpperBound(0)+1);
+            double yDivisor = ((double)(DisplayRectangle.Height)) / (double)(Grid.GetUpperBound(1) + 1);
+
+            int outputX = (int)(x / xDivisor);
+            int outputY = (int)(y / yDivisor);
+
+            return Grid[outputX, outputY];
         }
     }
 }
