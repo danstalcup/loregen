@@ -1,9 +1,26 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoreGen", "LoreGen\LoreGen.csproj", "{85324863-9171-4651-A442-C71A129F42BC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{BF5340E4-FAC2-43D2-9F1A-0AADBC8A1C24}"
+	ProjectSection(SolutionItems) = preProject
+		Data\BiomePatterns.csv = Data\BiomePatterns.csv
+		Data\Biomes.txt = Data\Biomes.txt
+		Data\Climates.csv = Data\Climates.csv
+		Data\ClimateTypes.csv = Data\ClimateTypes.csv
+		Data\EdgePatterns.csv = Data\EdgePatterns.csv
+		Data\LanguageRules.csv = Data\LanguageRules.csv
+		Data\LetterSounds.txt = Data\LetterSounds.txt
+		Data\PhoneticInventories.csv = Data\PhoneticInventories.csv
+		Data\README.txt = Data\README.txt
+		Data\TerrainRules.csv = Data\TerrainRules.csv
+		Data\Terrains.csv = Data\Terrains.csv
+		Data\TerrainTypes.csv = Data\TerrainTypes.csv
+		Data\WorldRules.csv = Data\WorldRules.csv
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

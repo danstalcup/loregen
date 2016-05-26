@@ -1,0 +1,187 @@
+1,1,1,Glacial Ice
+2,1,2,Icy Hills
+3,1,3,Icy Cliffs
+4,1,4,Icy Peaks
+5,1,5,Iceberg
+6,2,1,Frosty Flats
+7,2,2,Frosty Hills
+8,2,3,Frosty Cliffs
+9,2,4,Frosty Peaks
+10,2,5,Frosty Marsh
+11,2,6,Frosty Pond
+12,2,7,Frosty Thickets
+13,2,8,Frosty Woodland
+14,2,9,Frosty Forest
+15,2,10,Frosty Wooded Slopes
+16,3,1,Permafrost
+17,3,2,Permafrost Hills
+18,3,3,Permafrost Cliffs
+19,3,4,Permafrost Peaks
+20,4,1,Snowy Flats
+21,4,2,Snowy Hills
+22,4,3,Snowy Cliffs
+23,4,4,Snowy Peaks
+24,4,5,Snowy Marsh
+25,4,6,Snowy Pond
+26,4,7,Snowy Thickets
+27,4,8,Snowy Woodland
+28,4,10,Snowy Wooded Slopes
+29,5,1,Grassy Plains
+30,5,2,Grassy Hills
+31,5,3,Grassy Cliffs
+32,5,4,Grassy Peaks
+33,5,5,Grassy Marsh
+34,5,6,Grassy Pond
+35,5,7,Grassy Thickets
+36,5,8,Grassy Woodland
+37,5,9,Grassy Forest
+38,5,10,Grassy Wooded Slopes
+39,6,1,Meadow
+40,6,2,Meadow Hills
+41,6,5,Swamp
+42,6,6,Meadow Pond
+43,6,7,Meadow Thickets
+44,6,8,Wildwood
+45,6,9,Dense Widlwood
+46,6,10,Meadow Wooded Slopes
+47,7,1,Wasting Flats
+48,7,2,Wasting Hills
+49,7,3,Wasting Cliffs
+50,7,4,Wasting Peaks
+51,7,5,Wasting Marsh
+52,7,6,Wasting Pond
+53,7,7,Wasting Thickets
+54,7,8,Wasting Woodland
+55,7,9,Wasting Forest
+56,7,10,Wasting Wooded Slopes
+57,8,1,Dusty Flats
+58,8,2,Dusty Hills
+59,8,3,Dusty Cliffs
+60,8,5,Quagmire
+61,8,6,Dusty Pond
+62,8,7,Dusty Thickets
+63,8,8,Dusty Woodland
+64,8,9,Dusty Forest
+65,8,10,Dusty Wooded Slopes
+66,9,1,Pasture
+67,9,2,Pasture Hills
+68,9,5,Fen
+69,9,6,Pasture Pond
+70,9,7,Pasture Thickets
+71,9,8,Backwoods
+72,9,9,Dense Backwoods
+73,9,10,Pasture Wooded Slopes
+74,10,1,Prairie
+75,10,2,Prairie Hills
+76,10,4,Prairie Peaks
+77,10,5,Prairie Marsh
+78,10,6,Prairie Pond
+79,10,7,Prairie Thickets
+80,10,8,Timbers
+81,10,9,Dense Timbers
+82,10,10,Prairie Wooded Slopes
+83,11,1,Lush Plains
+84,11,2,Lush Hills
+85,11,3,Lush Cliffs
+86,11,5,Bog
+87,11,6,Lush Pond
+88,11,7,Lush Thickets
+89,11,8,Lush Woodland
+90,11,9,Rainforest
+91,11,10,Lush Wooded Slopes
+92,12,1,Tropical Fields
+93,12,5,Everglade
+94,12,6,Tropical Pond
+95,12,7,Tropical Thickets
+96,12,8,Tropical Woodland
+97,12,9,Jungle
+98,13,1,Raw Flats
+99,13,2,Raw Hills
+100,13,3,Raw Cliffs
+101,13,4,Raw Peaks
+102,14,1,Dying Flats
+103,14,2,Dying Hills
+104,14,3,Dying Cliffs
+105,14,4,Dying Peaks
+106,14,5,Morass
+107,14,7,Dying Thickets
+108,15,1,Wasting Flats
+109,15,2,Barren Hills
+110,15,3,Barren Cliffs
+111,15,4,Barren Peaks
+112,16,1,Clay Wastelands
+113,16,2,Clay Hills
+114,16,3,Clay Cliffs
+115,16,4,Clay Peaks
+116,17,1,Fallow Flats
+117,17,2,Fallow Hills
+118,17,3,Fallow Cliffs
+119,17,4,Fallow Peaks
+120,17,7,Fallow Thickets
+121,18,1,Desolate Flats
+122,18,2,Desolate Hills
+123,18,3,Desolate Cliffs
+124,18,4,Desolate Peaks
+125,19,1,Parched Flats
+126,19,2,Parched Hills
+127,19,3,Parched Cliffs
+128,19,5,Oasis
+129,19,6,Parched Pond
+130,19,7,Parched Thickets
+131,20,1,Dry Flats
+132,20,2,Dry Hills
+133,20,3,Dry Cliffs
+134,21,1,Sandy Flats
+135,21,2,Dunes
+136,21,3,Sandy Cliffs
+137,22,1,Xeric Desert
+138,22,2,Xeric Hills
+139,22,3,Xeric Cliffs
+140,22,7,Xeric Thickets
+141,23,1,Bleak Wasteland
+142,23,2,Bleak Hills
+143,23,3,Bleak Cliffs
+144,24,1,Steppe Flats
+145,24,2,Steppe Hills
+146,24,3,Steppe Cliffs
+147,24,4,Steppe Peaks
+148,24,5,Wetlands
+149,24,7,Steppe Thickets
+150,24,8,Steppe Woodland
+151,24,10,Steppe Wooded Slopes
+152,25,1,Torrid Plans
+153,25,2,Torrid Hills
+154,25,5,Torrid Marsh
+155,25,7,Torrid Thickets
+156,25,8,Torrid Woodland
+157,26,1,Wispy Plains
+158,26,2,Wispy Hills
+159,26,5,Mangrove
+160,26,7,Wispy Thickets
+161,26,8,Wispy Woodland
+162,26,10,Wispy Wooded Slopes
+163,27,1,Savannah
+164,27,2,Savannah Hills
+165,27,5,Watering Hole
+166,27,7,Savannah Thickets
+167,27,8,Savannah Woodland
+168,28,1,Sandy Desert
+169,28,2,Sweltering Hills
+170,28,5,Sweltering Marsh
+171,28,7,Sweltering Thickets
+172,28,8,Sweltering Woodland
+173,29,1,Equatorial Flats
+174,29,2,Equatorial Hills
+175,29,7,Equatorial Thickets
+176,30,1,Red Wasteland
+177,30,2,Red Hills
+178,30,3,Red Cliffs
+179,31,1,Semiarid Desert
+180,31,2,Burning Hills
+181,31,3,Burning Cliffs
+182,32,1,Scorched Flats
+183,32,2,Scorched Hills
+184,32,3,Scorched Cliffs
+185,32,7,Scorched Thickets
+186,33,1,Arid Desert
+187,33,2,Arid Dunes

@@ -1,0 +1,42 @@
+1,001000,Polar Desert,Polar Desert
+2,013000,Glacier,Glacier
+3,014000,Glacial Mountain,Glacial Mountain
+4,043000,Blizzard Cliffs,Blizzard Cliffs
+5,101101,Barren Icelands,Barren Icelands
+6,112102,Boreal Plains,Boreal Plains
+7,113101,Tundra,Tundra
+8,113100,Snow Cliffs,Snow Cliffs
+9,114101,Alpine Tundra,Alpine Tundra
+10,121102,Montane Shrubland,Montane Shrubland
+11,122102,Taiga,Taiga
+12,122112,Boreal Forest,Boreal Forest
+13,132101,Snowlands,Snowlands
+14,202101,Wastelands,Wastelands
+15,203101,Barren Cliffs,Barren Cliffs
+16,211114,Plains,Plains
+17,212114,Temperate Steppe,Temperate Steppe
+18,220113,Marsh,Marsh
+19,222114,Broadleaf Forest,Broadleaf Forest
+20,224113,Mountain Forest,Mountain Forest
+21,230013,Swamp,Swamp
+22,231105,Prairie,Prairie
+23,232014,Coniferous Forest,Coniferous Forest
+24,243014,Redwood Forest,Redwood Forest
+25,301001,Semiarid Desert,Semiarid Desert
+26,311103,Steppe,Steppe
+27,313002,Dunes,Dunes
+28,320113,Bog,Bog
+29,322114,Subtropical Forest,Subtropical Forest
+30,330013,Mangrove,Mangrove
+31,332005,Sclerophyll,Sclerophyll
+32,333114,Riparian,Riparian
+33,342005,Temperate Jungle,Temperate Jungle
+34,401000,Arid Desert,Arid Desert
+35,411002,Xeric Shrubland,Xeric Shrubland
+36,411002,Savannah,Savannah
+37,412002,Dry Steppe,Dry Steppe
+38,421003,Tree Savannah,Tree Savannah
+39,433105,River Valley,River Valley
+40,430002,Jungle Bog,Jungle Bog
+41,442003,Rainforest,Rainforest
+42,442103,Monsoon Forest,Monsoon Forest
