@@ -346,7 +346,7 @@ namespace LoreGen.Simulation
             {
                 string[] line = climateTypeLine.Split(new char[] { ',' });
                 int id = Convert.ToInt32(line[1]);
-                ClimateTypes.Add(new ClimateType(line[0], id,line[2]));
+                ClimateTypes.Add(new ClimateType(line[0], id,line[2], line[3]));
             }
 
         }
@@ -364,7 +364,7 @@ namespace LoreGen.Simulation
                 string[] line = climateLine.Split(new char[] { ',' });
                 ClimateType primary = ClimateTypes.Where(ct => ct.ID == Convert.ToInt32(line[1])).Single();
                 ClimateType secondary = ClimateTypes.Where(ct => ct.ID == Convert.ToInt32(line[2])).Single();
-                Climate climate = new Climate (Convert.ToInt32(line[0]), primary , secondary , line[3] );
+                Climate climate = new Climate (Convert.ToInt32(line[0]), primary , secondary , line[3], line[4] );
                 Climates.Add(climate);
             }
         }
@@ -380,7 +380,7 @@ namespace LoreGen.Simulation
             foreach (string biomeLine in biomeLines)
             {
                 string[] line = biomeLine.Split(new char[] { ',' });
-                Biomes.Add(new Biome(Convert.ToInt32(line[0]), line[1], line[2]));
+                Biomes.Add(new Biome(Convert.ToInt32(line[0]), line[1], line[2], line[3]));
             }
         }
 
@@ -395,7 +395,7 @@ namespace LoreGen.Simulation
             foreach(string terrainTypeLine in terrainTypeLines)
             {
                 string[] line = terrainTypeLine.Split(new char[] { ',' });
-                TerrainTypes.Add(new TerrainType(Convert.ToInt32(line[1]), line[0]));
+                TerrainTypes.Add(new TerrainType(Convert.ToInt32(line[1]), line[0], line[2]));
             }
         }
 
@@ -412,7 +412,7 @@ namespace LoreGen.Simulation
                 string[] line = terrainLine.Split(new char[] { ',' });
                 Climate climate = Climates.Where(c => c.ID == Convert.ToInt32(line[1])).Single();
                 TerrainType terrainType = TerrainTypes.Where(tt => tt.ID == Convert.ToInt32(line[2])).Single();
-                Terrain terrain = new Terrain(Convert.ToInt32(line[0]), climate, terrainType, line[3]);
+                Terrain terrain = new Terrain(Convert.ToInt32(line[0]), climate, terrainType, line[3], string.Empty);//line[4]);
                 Terrains.Add(terrain);
             }
 

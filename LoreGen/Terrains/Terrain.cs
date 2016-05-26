@@ -16,14 +16,16 @@ namespace LoreGen.Terrains
         public string Name;
         public int ID;
         public TerrainDisplayInfo DisplayInfo;
+        public string Description;
 
-        public Terrain(int ID, Climate Climate, TerrainType TerrainType, string Name)
+        public Terrain(int ID, Climate Climate, TerrainType TerrainType, string Name, string Description)
         {
             this.ID = ID;
             this.Climate = Climate;
             this.TerrainType = TerrainType;
             this.Name = Name;
-            this.DisplayInfo = new TerrainDisplayInfo(this);
+            this.Description = Description;
+            this.DisplayInfo = new TerrainDisplayInfo(this);            
         }
 
     }

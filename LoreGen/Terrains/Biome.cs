@@ -19,16 +19,18 @@ namespace LoreGen.Terrains
         public BiomeHabitability Habitability;
         public int ID;
         public string Name;
+        public string Description;
         public List<BiomeClimateTypeWeight> ClimateTypeWeights;
         public List<BiomeTerrainTypeWeight> TerrainTypeWeights;
         public List<BiomeClimateWeight> ClimateWeights;
         public WeightedRandomContainer<Terrain> TerrainPattern;
         public SimEngine SimEngine;
 
-        public Biome(int ID, string ParametersCode, string Name)
+        public Biome(int ID, string ParametersCode, string Name, string Description)
         {
             this.ID = ID;
             this.Name = Name;
+            this.Description = Description;
             ClimateTypeWeights = new List<BiomeClimateTypeWeight>();
             TerrainTypeWeights = new List<BiomeTerrainTypeWeight>();
             ClimateWeights = new List<BiomeClimateWeight>();
