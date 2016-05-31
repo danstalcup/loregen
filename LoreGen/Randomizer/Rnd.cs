@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 using LoreGen.Lang;
 using LoreGen.WorldGen;
 using LoreGen.Terrains;
@@ -22,6 +23,7 @@ namespace LoreGen.Randomizer
         /// Seed used in this random number generator
         /// </summary>
         public int Seed;
+        public int[] Keys;
 
         /// <summary>
         /// Uses clock ticks as seed
@@ -29,8 +31,7 @@ namespace LoreGen.Randomizer
         public Rnd()
         {
             Seed = unchecked((int)(DateTime.Now.Ticks));
-            rnd = new Random(Seed);
-            SimpleRNG.SetSeed(AnyUint(),AnyUint());
+            Initialize();
         }
 
         /// <summary>
@@ -40,8 +41,20 @@ namespace LoreGen.Randomizer
         public Rnd(int Seed)
         {
             this.Seed = Seed;
+            Initialize();
+        }
+
+        private void Initialize()
+        {
             rnd = new Random(Seed);
             SimpleRNG.SetSeed(AnyUint(), AnyUint());
+            byte[] mykey = new byte[64];
+            rnd.NextBytes(mykey);            
+            Keys = new int[1000];
+            for(int i=0;i<1000;i++)
+            {
+                Keys[i] = rnd.Next(10000);
+            }
         }
 
         /// <summary>
@@ -217,6 +230,47 @@ namespace LoreGen.Randomizer
         public int NormalAsInt(double mean, double stddev)
         {            
             return (int)(Math.Round(Normal(mean, stddev), MidpointRounding.AwayFromZero));
+        }
+
+
+        // BEGIN DAN EXPERIMENTS 5-26
+
+        public double Next(int[] Params)
+        {                       
+            long value = Seed;            
+            int ind = Seed;            
+            long cap = 1000000000000000000;
+            for(int j =0; j<Params.Length;j++)
+            {
+                int i = Params[j];
+                int nextInd = Keys[Math.Abs(i+j+ind)%1000];
+                string newValue = value.ToString() + nextInd.ToString();
+                if (newValue.Length > 18) newValue = newValue.Substring(0, 18);
+                value = Convert.ToInt64(newValue);
+                ind = nextInd;
+
+            }
+            value = value % cap;
+            if (value < 0)
+            {
+                value = Math.Abs(value);                
+            }            
+            string valueString = value.ToString();
+            if(valueString.Length < 3)
+            {
+                valueString += "1234321";
+            }
+            string outString = "0.";
+            for (int i = 0; i < valueString.Length / 3;i++ )
+            {
+                outString += Keys[Convert.ToInt32(valueString.Substring(valueString.Length - (i+1) * 3, 3))].ToString("0000");
+            }
+            return Convert.ToDouble(outString);
+        }                
+
+        public int Next(int min, int max, int[] Params)
+        {
+            return (int)(Next(Params) * (max + min)) - min;
         }
     }
 }
