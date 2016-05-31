@@ -159,7 +159,7 @@ namespace LoreGen.Simulation
         {
             ConfigFileSuccessfullyRead = false;
             DataFolder = "Default";
-            Version = "0.1";
+            Version = "0.12";
             UsePresetSeed = false;
             PresetSeed = 0;
             this.ConfigFilepath = ConfigFilepath;
