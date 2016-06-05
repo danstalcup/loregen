@@ -465,7 +465,15 @@ namespace LoreGen.WorldGen
             List<WorldBlock> StartingBlockCandidates = ContinentArea.Blocks().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Land || cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline).ToList();
             if (StartingBlockCandidates.Count < NumRegions)
             {
-                NumRegions = StartingBlockCandidates.Count;
+                //This is kind of hacky
+                if (StartingBlockCandidates.Count == 0)
+                {
+                    StartingBlockCandidates = new List<WorldBlock> { ContinentArea.Blocks().First() };
+                }
+                else
+                {
+                    NumRegions = StartingBlockCandidates.Count;
+                }
             }      
 
             WorldBlockArea[] RegionAreas = new WorldBlockArea[NumRegions];
