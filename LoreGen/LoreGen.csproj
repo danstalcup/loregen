@@ -40,10 +40,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Landforms\Landform.cs" />
+    <Compile Include="Landforms\LandformType.cs" />
     <Compile Include="Lang\Language.cs" />
     <Compile Include="Lang\LetterSound.cs" />
     <Compile Include="Lang\PhoneticInventory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="Randomizer\ListR.cs" />
     <Compile Include="Randomizer\Rnd.cs" />
     <Compile Include="Randomizer\SimpleRNG.cs" />
@@ -66,6 +73,33 @@
     <Compile Include="WorldGen\WorldBlockCollection.cs" />
     <Compile Include="WorldGen\WorldEntity.cs" />
     <Compile Include="WorldGen\WorldTasks.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\BiomePatterns.csv" />
+    <None Include="Resources\Climates.csv" />
+    <None Include="Resources\ClimateTypes.csv" />
+    <None Include="Resources\EdgePatterns.csv" />
+    <None Include="Resources\LanguageRules.csv" />
+    <None Include="Resources\PhoneticInventories.csv" />
+    <None Include="Resources\TerrainRules.csv" />
+    <None Include="Resources\Terrains.csv" />
+    <None Include="Resources\TerrainTypes.csv" />
+    <None Include="Resources\WorldRules.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Biomes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\LetterSounds.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\README.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

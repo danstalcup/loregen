@@ -57,6 +57,8 @@ namespace LoreGen.WorldGen
         /// <summary>
         /// A sea
         /// </summary>
-        Sea
+        Sea,
+
+        Landform
     }
 }

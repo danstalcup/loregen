@@ -124,7 +124,7 @@ namespace LoreGen.WorldGen
                 Continent.GenerateContinentWithAreaFromStartingBlock(this, continentStartingBlock);
             }
 
-            while(UnallocatedBlocks.Count > 0)
+           while(UnallocatedBlocks.Count > 0)
             {
                 WorldBlock nextBlock = ListR<WorldBlock>.RandomFromList(UnallocatedBlocks.Where(b => b.SurroundingBlocksAsList().Any(sb => sb.Status.Continent != null)).ToList(),Rnd);
                 Continent newContinent = ListR<WorldBlock>.RandomFromList(nextBlock.SurroundingBlocksAsList().Where(sb => sb.Status.Continent != null).ToList(), Rnd).Status.Continent;
@@ -146,7 +146,7 @@ namespace LoreGen.WorldGen
                     block.Status.WaterStatus = WorldBlockWaterStatus.Land;
                 }
             }
-
+            
             bool BorderOcean = false;
 
             if(BorderOcean)

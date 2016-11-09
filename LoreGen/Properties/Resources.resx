@@ -117,44 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="BiomePatterns" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\BiomePatterns.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="Biomes" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Biomes.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="Climates" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Climates.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="ClimateTypes" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\ClimateTypes.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="EdgePatterns" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\EdgePatterns.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="LanguageRules" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\LanguageRules.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="LetterSounds" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\LetterSounds.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-16</value>
-  </data>
-  <data name="PhoneticInventories" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\PhoneticInventories.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="README" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\README.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="TerrainRules" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\TerrainRules.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="Terrains" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Terrains.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="TerrainTypes" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\TerrainTypes.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
-  <data name="WorldRules" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\WorldRules.csv;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
-  </data>
 </root>

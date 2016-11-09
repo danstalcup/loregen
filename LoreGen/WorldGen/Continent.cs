@@ -118,7 +118,7 @@ namespace LoreGen.WorldGen
             //generate seas
             GenerateSeas();
             
-            NewErodeCoasts();            
+            NewErodeCoasts();                        
             foreach (WorldBlock wb in ContinentArea.Blocks().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline))
             {
                 WorldTasks.ApplyCoastlineToBlock(wb, 10);
