@@ -12,6 +12,14 @@
         <span class="muted">LoreGen v0.12</span>
     </div>
     <form class="seed" @onsubmit="GenerateFromSeed" @onsubmit:preventDefault>
+        <label>Generator
+            <select @bind="generatorInput" title="@CurrentDescription">
+                @foreach (var g in Session.Generators)
+                {
+                    <option value="@g.Id" title="@g.Description">@g.DisplayName</option>
+                }
+            </select>
+        </label>
         <label>Seed <input type="number" @bind="seedInput" @bind:event="oninput" /></label>
         <button type="submit" class="btn" disabled="@busy">Generate</button>
         <button type="button" class="btn primary" disabled="@busy" @onclick="GenerateRandom">@(busy ? "Generating…" : "New world")</button>
@@ -48,23 +56,28 @@
 
     private string tab = "map";
     private int seedInput;
+    private string generatorInput;
     private bool busy;
     private string error;
 
     protected override void OnInitialized()
     {
         seedInput = Session.Seed;
+        generatorInput = Session.GeneratorId;
         Session.Changed += OnChanged;
     }
+
+    private string CurrentDescription => Session.Generators.FirstOrDefault(g => g.Id == generatorInput)?.Description;
 
     private void OnChanged()
     {
         seedInput = Session.Seed;
+        generatorInput = Session.GeneratorId;
         InvokeAsync(StateHasChanged);
     }
 
-    private Task GenerateFromSeed() => Run(() => Session.Generate(seedInput));
-    private Task GenerateRandom() => Run(Session.GenerateRandom);
+    private Task GenerateFromSeed() => Run(() => Session.Generate(seedInput, generatorInput));
+    private Task GenerateRandom() => Run(() => Session.GenerateRandom(generatorInput));
 
     private async Task Run(Action generate)
     {

@@ -15,7 +15,7 @@
             <div class="map-options">
                 <label>Colour by
                     <select value="@Map.Context" @onchange="OnContextChanged">
-                        @foreach (var c in MapView.Contexts)
+                        @foreach (var c in Map.AvailableContexts)
                         {
                             <option value="@c">@c</option>
                         }

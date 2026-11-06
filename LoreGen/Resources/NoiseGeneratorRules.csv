@@ -1,0 +1,16 @@
+# Key,Value,Description  -- settings for the noise world generator; rows may appear in any order.
+LandFractionMean,0.32,Share of the map that is land (mean)
+LandFractionStdDev,0.06,Share of the map that is land (std dev)
+LandFractionMin,0.18,Share of the map that is land (min)
+LandFractionMax,0.5,Share of the map that is land (max)
+Octaves,6,Layers of noise (more is more detailed coastlines)
+Frequency,3.5,Size of the broadest features (larger is smaller features)
+Lacunarity,2,How fast each layer's frequency grows
+Persistence,0.6,How fast each layer's strength fades (lower is smoother)
+WarpStrength,0.7,How much the coastlines are bent into winding shapes (0 is none)
+MaskStrength,0.3,How strongly land gathers around the continent centres (0 is pure noise and 1 is smooth blobs)
+MaskRadiusMin,0.18,Size of the area around each continent centre (min; 1 is the map height)
+MaskRadiusMax,0.38,Size of the area around each continent centre (max)
+EdgeBorder,0.08,Width of the border where land fades into ocean at the map edge (share of the map)
+MinLandmassBlocks,8,Smallest island that is kept (in blocks)
+MinSeaBlocks,4,Smallest enclosed body of water that is kept (in blocks); smaller ones are filled in

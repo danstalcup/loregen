@@ -100,61 +100,13 @@ namespace LoreGen.Simulation
 
 
         /// <summary>
-        /// Reads a rules file of "Key,Value[,Description]" rows. Rows may appear in any order; blank lines and
-        /// lines starting with '#' are ignored.
+        /// Loads a keyed rules file ("Key,Value[,Description]" rows) from the data folder, falling back to the copy
+        /// embedded in LoreGen. Generators use this to read their own settings files.
         /// </summary>
-        private Dictionary<string, double> ReadKeyedValues(string filename)
+        /// <param name="filename">File name, for example "WorldRules.csv"</param>
+        public RulesFile LoadRules(string filename)
         {
-            var values = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            foreach (string rawLine in ReadDataLines(filename))
-            {
-                string line = rawLine.Trim();
-                if (line.Length == 0 || line[0] == '#') continue;
-                string[] parts = line.Split(new char[] { ',' }, 3);
-                if (parts.Length < 2)
-                    throw new InvalidDataException(filename + ": expected 'Key,Value[,Description]' but found: " + line);
-                string key = parts[0].Trim();
-                if (values.ContainsKey(key))
-                    throw new InvalidDataException(filename + ": duplicate key '" + key + "'");
-                try { values[key] = double.Parse(parts[1].Trim(), System.Globalization.CultureInfo.InvariantCulture); }
-                catch (FormatException) { throw new InvalidDataException(filename + ": value for '" + key + "' is not a number: " + parts[1].Trim()); }
-            }
-            return values;
-        }
-
-        /// <summary>
-        /// Looks up required values by key and reports missing or unrecognized keys.
-        /// </summary>
-        private class RuleReader
-        {
-            private readonly string filename;
-            private readonly Dictionary<string, double> values;
-            private readonly HashSet<string> used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            public RuleReader(string filename, Dictionary<string, double> values)
-            {
-                this.filename = filename;
-                this.values = values;
-            }
-
-            public double D(string key)
-            {
-                double value;
-                if (!values.TryGetValue(key, out value))
-                    throw new InvalidDataException(filename + ": missing required key '" + key + "'");
-                used.Add(key);
-                return value;
-            }
-
-            public int I(string key) { return Convert.ToInt32(D(key)); }
-
-            /// <summary>Call after reading everything: unrecognized keys are almost always typos.</summary>
-            public void Finish()
-            {
-                var unknown = values.Keys.Where(k => !used.Contains(k)).ToList();
-                if (unknown.Count > 0)
-                    throw new InvalidDataException(filename + ": unrecognized key(s): " + string.Join(", ", unknown));
-            }
+            return new RulesFile(filename, ReadDataLines(filename));
         }
 
         /// <summary>
@@ -256,7 +208,7 @@ namespace LoreGen.Simulation
         /// </summary>
         public void InitializeLanguageRules()
         {
-            var r = new RuleReader("LanguageRules.csv", ReadKeyedValues("LanguageRules.csv"));
+            var r = LoadRules("LanguageRules.csv");
             LanguageRules = new LanguageRules();
             LanguageRules.LongRimeProbability = r.D("LongRimeProbability");
             LanguageRules.LongRimeMin = r.D("LongRimeMin");
@@ -313,7 +265,7 @@ namespace LoreGen.Simulation
         /// </summary>
         public void InitializeWorldRules()
         {
-            var r = new RuleReader("WorldRules.csv", ReadKeyedValues("WorldRules.csv"));
+            var r = LoadRules("WorldRules.csv");
             WorldRules = new WorldRules();
             WorldRules.ContinentsMin = r.I("ContinentsMin");
             WorldRules.ContinentsMax = r.I("ContinentsMax");
@@ -527,7 +479,7 @@ namespace LoreGen.Simulation
         /// </summary>
         public void InitializeTerrainRules()
         {
-            var r = new RuleReader("TerrainRules.csv", ReadKeyedValues("TerrainRules.csv"));
+            var r = LoadRules("TerrainRules.csv");
             TerrainRules = new TerrainRules();
             TerrainRules.CombinationWeightReducer = r.D("CombinationWeightReducer");
             r.Finish();

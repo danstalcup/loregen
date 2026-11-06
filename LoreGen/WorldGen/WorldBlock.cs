@@ -504,6 +504,13 @@ namespace LoreGen.WorldGen
         public Terrain Terrain;
         public bool RegionBoundariesHaveBeenSmoothed;
 
+        /// <summary>
+        /// Height of this block relative to sea level, for generators that model elevation (null for those that don't).
+        /// 0 is sea level, positive values are land up to 1 at the highest point, and negative values are water down to
+        /// -1 at the deepest point.
+        /// </summary>
+        public double? Elevation;
+
         public WorldBlockWaterStatus WaterStatus;
 
         /// <summary>
@@ -520,6 +527,7 @@ namespace LoreGen.WorldGen
                 Region = this.Region,
                 Terrain = this.Terrain,
                 WaterStatus = this.WaterStatus,
+                Elevation = this.Elevation,
                 RegionBoundariesHaveBeenSmoothed = false
             };
         }        

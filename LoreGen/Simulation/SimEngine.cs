@@ -7,6 +7,7 @@ using System.IO;
 
 using LoreGen.Randomizer;
 using LoreGen.WorldGen;
+using LoreGen.WorldGen.Generators;
 using LoreGen.Lang;
 
 namespace LoreGen.Simulation
@@ -28,6 +29,17 @@ namespace LoreGen.Simulation
         /// Reads and stores info for this simulation
         /// </summary>
         public SimData SimData;
+
+        /// <summary>
+        /// The world generators this engine can use. Starts with the ones that ship with LoreGen; register your own to
+        /// make them selectable by Id.
+        /// </summary>
+        public WorldGeneratorRegistry Generators;
+
+        /// <summary>
+        /// If set, this generator is used instead of the one named by Configuration.GeneratorId.
+        /// </summary>
+        public IWorldGenerator WorldGenerator;
 
         /// <summary>
         /// Access to Language-related tasks        
@@ -89,17 +101,25 @@ namespace LoreGen.Simulation
             {
                 Rnd = new Rnd();
             }
+            Generators = WorldGeneratorRegistry.CreateDefault();
             SimData = new SimData(this);
             SimData.Initialize();
             Language = new SimEngineLanguageTasks(this);            
         }
 
         /// <summary>
-        /// Generates a world using the current configuration
+        /// Generates a world using the generator named in the configuration (or <see cref="WorldGenerator"/> if set).
+        /// If generation fails, the exception propagates and <see cref="World"/> keeps whatever it held before.
         /// </summary>
         public void GenerateWorld()
         {
-            World = World.GenerateWorld(this);
+            IWorldGenerator generator = WorldGenerator ?? Generators.Get(Configuration.GeneratorId);
+            World generated = generator.Generate(this);
+            if (generated == null)
+                throw new InvalidOperationException("World generator '" + generator.Id + "' returned no world.");
+            generated.GeneratorId = generator.Id;
+            generated.GeneratorVersion = generator.Version;
+            World = generated;
         }
         
         
@@ -164,9 +184,9 @@ namespace LoreGen.Simulation
         public int PresetSeed;
 
         /// <summary>
-        /// Algorithm used to generate land and water ("generatormode" in the config file). Legacy by default.
+        /// Id of the world generator to use ("generatormode" in the config file). Resolved when a world is generated.
         /// </summary>
-        public WorldGeneratorMode GeneratorMode = WorldGeneratorMode.Legacy;
+        public string GeneratorId = WorldGeneratorRegistry.DefaultId;
 
         /// <summary>
         /// File path of the configuration file
@@ -221,7 +241,7 @@ namespace LoreGen.Simulation
                     }
                     if (ConfigLineData[0].Trim().ToLower() == "generatormode")
                     {
-                        GeneratorMode = (WorldGeneratorMode)Enum.Parse(typeof(WorldGeneratorMode), ConfigLineData[1].Trim(), true);
+                        GeneratorId = ConfigLineData[1].Trim();
                     }
                     if (ConfigLineData[0].Trim().ToLower() == "presetseed")
                     {

@@ -131,3 +131,20 @@ TerrainRules.csv
 
 This file contains values used when generating biome and terrain patterns.
 Same key-based format as WorldRules.csv; keys match the fields of the TerrainRules struct, e.g. CombinationWeightReducer.
+Generator-specific rules files
+
+Each world generator keeps its own settings in its own keyed rules file (same Key,Value,Description format as WorldRules.csv),
+loaded through SimData.LoadRules. The shared files above (WorldRules.csv and so on) only hold settings every generator uses
+or that belong to the original "legacy" generator, so adding a generator never changes their format.
+
+NoiseGeneratorRules.csv
+
+Settings for the "noise" world generator (Key,Value,Description rows, any order; all keys required).
+LandFractionMean/StdDev/Min/Max - the share of the map that is land is drawn from this normal distribution and clamped
+Octaves, Frequency, Lacunarity, Persistence - the fractal noise: layers, size of the broadest features, how fast detail grows and fades
+WarpStrength - how much coastlines wind (0 is none)
+MaskStrength - how strongly land gathers around the continent centres (0 is pure noise, 1 is smooth blobs)
+MaskRadiusMin/Max - size of the area around each continent centre (1 is the map height)
+EdgeBorder - width of the border where land fades into ocean at the map edge (share of the map)
+MinLandmassBlocks - smallest island kept; MinSeaBlocks - smallest enclosed body of water kept (smaller ones are filled in)
+The number of continent centres comes from ContinentsMin/Max in WorldRules.csv.

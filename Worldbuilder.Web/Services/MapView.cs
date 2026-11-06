@@ -27,10 +27,17 @@ public class MapView
     public LoreGen.WorldGen.Region CurrentRegion { get; private set; }
     public WorldBlock Selected { get; private set; }
 
-    public static readonly MapContext[] Contexts =
+    private static readonly MapContext[] BaseContexts =
     {
         MapContext.General, MapContext.Continents, MapContext.Regions, MapContext.Biomes, MapContext.Terrains
     };
+
+    /// <summary>The colour modes to offer. Elevation appears only if the world's generator produced elevation data.</summary>
+    public IReadOnlyList<MapContext> AvailableContexts =>
+        HasElevation ? BaseContexts.Append(MapContext.Elevation).ToArray() : BaseContexts;
+
+    public bool HasElevation =>
+        session.Engine.World.WorldBlock.ChildBlocks[0, 0].Status.Elevation.HasValue;
 
     public MapView(WorldSession session) { this.session = session; }
 
@@ -152,6 +159,7 @@ public class MapView
     private string LabelFor(WorldBlock block)
     {
         var s = block.Status;
+        if (Context == MapContext.Elevation) return Map.ElevationBand(block) ?? "Unknown";
         if (s.WaterStatus == WorldBlockWaterStatus.Water) return "Water";
         switch (Context)
         {
@@ -198,6 +206,7 @@ public class MapView
         if (s.Continent != null) lines.Add(new("Continent", s.Continent.Name));
         if (s.Ocean != null) lines.Add(new("Ocean", s.Ocean.Name));
         if (s.Sea != null) lines.Add(new("Sea", s.Sea.Name));
+        if (s.Elevation.HasValue) lines.Add(new("Elevation", $"{s.Elevation.Value:0.00} ({Map.ElevationBand(block)})"));
         lines.Add(new("Surface", s.WaterStatus switch
         {
             WorldBlockWaterStatus.Water => "Water",

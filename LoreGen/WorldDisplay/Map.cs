@@ -11,8 +11,41 @@ namespace LoreGen.WorldDisplay
 {  
     public class Map
     {
+        /// <summary>
+        /// Name of the elevation band a block falls in, or null if the block has no elevation.
+        /// </summary>
+        public static string ElevationBand(WorldBlock Block)
+        {
+            double? e = Block.Status.Elevation;
+            if (!e.HasValue) return null;
+            if (e < -0.5) return "Deep water";
+            if (e < -0.2) return "Water";
+            if (e < 0) return "Shallows";
+            if (e < 0.25) return "Lowland";
+            if (e < 0.5) return "Upland";
+            if (e < 0.75) return "Highland";
+            return "Mountain";
+        }
+
+        private static Color ElevationColor(WorldBlock Block)
+        {
+            switch (ElevationBand(Block))
+            {
+                case "Deep water": return Color.FromArgb(10, 40, 110);
+                case "Water": return Color.FromArgb(25, 85, 160);
+                case "Shallows": return Color.FromArgb(40, 130, 200);
+                case "Lowland": return Color.FromArgb(110, 170, 80);
+                case "Upland": return Color.FromArgb(175, 175, 90);
+                case "Highland": return Color.FromArgb(145, 110, 80);
+                case "Mountain": return Color.FromArgb(235, 235, 240);
+            }
+            return Color.Black;
+        }
+
         public static Color GetColor(WorldBlock Block, MapContext MapContext)
         {
+            if (MapContext == MapContext.Elevation) return ElevationColor(Block);
+
             //
             //if (null != Block.Status.Sea) return Color.DarkBlue;
 
@@ -74,6 +107,6 @@ namespace LoreGen.WorldDisplay
     }
     public enum MapContext
     {
-        General, Continents, Regions, Biomes, Terrains, TerrainTiles
+        General, Continents, Regions, Biomes, Terrains, TerrainTiles, Elevation
     }
 }

@@ -89,26 +89,6 @@ namespace LoreGen.Tests
             finally { System.IO.Directory.Delete(folder, true); }
         }
 
-        // ---- Generator mode -------------------------------------------------------------------
-
-        [Fact]
-        public void LegacyGeneratorIsTheDefault()
-        {
-            var engine = new SimEngine(777);
-            Assert.Equal(WorldGeneratorMode.Legacy, engine.Configuration.GeneratorMode);
-            engine.GenerateWorld();
-            Assert.NotEmpty(engine.World.Continents);
-        }
-
-        [Fact]
-        public void UnimplementedGeneratorFailsWithoutLeavingAHalfBuiltWorld()
-        {
-            var engine = new SimEngine(777);
-            engine.Configuration.GeneratorMode = WorldGeneratorMode.Noise;
-            Assert.Throws<System.NotImplementedException>(() => engine.GenerateWorld());
-            Assert.Null(engine.World);
-        }
-
         [Fact]
         public void GeneratesWorldsForManySeeds()
         {

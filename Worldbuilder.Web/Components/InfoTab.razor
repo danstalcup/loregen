@@ -13,6 +13,7 @@
         <h3>World</h3>
         <dl class="info">
             <dt>Seed</dt><dd>@Session.Seed</dd>
+            <dt>Generator</dt><dd>@GeneratorName (v@world.GeneratorVersion)</dd>
             <dt>Grid size</dt><dd>@root.Width &times; @root.Height blocks</dd>
             <dt>Continents</dt><dd>@world.Continents.Count</dd>
             <dt>Oceans</dt><dd>@world.Oceans.Count</dd>
@@ -58,6 +59,9 @@
     protected override void OnInitialized() => Session.Changed += OnChanged;
     private void OnChanged() => InvokeAsync(StateHasChanged);
     public void Dispose() => Session.Changed -= OnChanged;
+
+    private string GeneratorName =>
+        Session.Generators.FirstOrDefault(g => g.Id == Session.Engine.World.GeneratorId)?.DisplayName ?? Session.Engine.World.GeneratorId;
 
     private static int LandBlocks(Continent c) =>
         c.ContinentArea.BlocksList.Count(b => b.Status.WaterStatus == WorldBlockWaterStatus.Land || b.Status.WaterStatus == WorldBlockWaterStatus.Coastline);
