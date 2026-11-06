@@ -1,0 +1,53 @@
+@using Worldbuilder.Web.Services
+@implements IDisposable
+@inject WorldSession Session
+
+<section class="card">
+    <div class="row">
+        <button class="btn primary" @onclick="NewLanguage">New random language</button>
+        <button class="btn" @onclick="Describe">Describe language</button>
+        <button class="btn" @onclick="Names">Generate 100 names</button>
+        <button class="btn" @onclick="Words">Generate 50 words</button>
+    </div>
+    @if (!string.IsNullOrEmpty(title))
+    {
+        <h3>@title</h3>
+    }
+    <pre class="output">@output</pre>
+</section>
+
+@code {
+    private string title = "";
+    private string output = "Generate a language to begin.";
+
+    protected override void OnInitialized() => Session.Changed += OnChanged;
+    private void OnChanged() { title = ""; output = "Generate a language to begin."; InvokeAsync(StateHasChanged); }
+    public void Dispose() => Session.Changed -= OnChanged;
+
+    private void NewLanguage()
+    {
+        Session.TestLanguage = Session.Engine.Language.GetRandomLanguage();
+        Describe();
+    }
+
+    private void Describe()
+    {
+        var lang = Session.GetTestLanguage();
+        title = lang.LanguageName;
+        output = lang.ToString();
+    }
+
+    private void Names()
+    {
+        var lang = Session.GetTestLanguage();
+        title = $"{lang.LanguageName}: names";
+        output = string.Join("\n", Enumerable.Range(0, 100).Select(_ => lang.GetName()));
+    }
+
+    private void Words()
+    {
+        var lang = Session.GetTestLanguage();
+        title = $"{lang.LanguageName}: words";
+        output = string.Join("\n", Enumerable.Range(0, 50).Select(_ => lang.GetWord()));
+    }
+}
