@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Drawing;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace LoreGen.WorldDisplay
 {
     public class Tileset
     {
-        public Bitmap MyOriginalTilesheet;
-        public Bitmap[,] Tiles;
+        public Image<Rgba32> MyOriginalTilesheet;
+        public Image<Rgba32>[,] Tiles;
         public int TileWidth;
         public int TileHeight;
         public int NumTilesX;
@@ -19,7 +21,7 @@ namespace LoreGen.WorldDisplay
 
         public Tileset(string filename)
         {
-            MyOriginalTilesheet = new Bitmap(filename);
+            MyOriginalTilesheet = Image.Load<Rgba32>(filename);
             TileWidth = 15;
             TileHeight = 15;
             NumTilesX = 32;
@@ -30,7 +32,7 @@ namespace LoreGen.WorldDisplay
 
         public Tileset(string filename, int tileX, int tileY, int numTilesX, int numTilesY, int tilesetType)
         {
-            MyOriginalTilesheet = new Bitmap(filename);
+            MyOriginalTilesheet = Image.Load<Rgba32>(filename);
             TileWidth = tileX;
             TileHeight = tileY;
             NumTilesX = numTilesX;
@@ -41,43 +43,52 @@ namespace LoreGen.WorldDisplay
 
         private void InitializeTiles()
         {
-            Tiles = new Bitmap[NumTilesX, NumTilesY];
+            Tiles = new Image<Rgba32>[NumTilesX, NumTilesY];
             for (int x = 0; x < NumTilesX; x++)
                 for (int y = 0; y < NumTilesY; y++)
-                    Tiles[x, y] = MyOriginalTilesheet.Clone(new Rectangle(x * TileWidth, y * TileHeight, TileWidth, TileHeight), System.Drawing.Imaging.PixelFormat.Format8bppIndexed);//System.Drawing.Imaging.PixelFormat.DontCare);
+                    Tiles[x, y] = MyOriginalTilesheet.Clone(ctx => ctx.Crop(new Rectangle(x * TileWidth, y * TileHeight, TileWidth, TileHeight)));
         }
 
-        public Image Tile(int tile)
+        public Image<Rgba32> Tile(int tile)
         {
             return Tile(tile % NumTilesX, tile / NumTilesX);
         }
 
-        public Image Tile(int x, int y)
+        public Image<Rgba32> Tile(int x, int y)
         {
             return Tiles[x, y];
         }
 
-        public void DrawTile(int tile, Rectangle destination, Graphics g)
+        public void DrawTile(int tile, Rectangle destination, Image<Rgba32> target)
         {
-            DrawTile(tile / NumTilesX, tile % NumTilesX, destination, g);
+            DrawTile(tile / NumTilesX, tile % NumTilesX, destination, target);
         }
 
-        public void DrawTile(int x, int y, Rectangle destination, Graphics g)
+        public void DrawTile(int x, int y, Rectangle destination, Image<Rgba32> target)
         {
-            g.DrawImage(MyOriginalTilesheet, destination, x * TileWidth, y * TileHeight, TileWidth, TileHeight, GraphicsUnit.Pixel);
+            using (Image<Rgba32> sourceTile = MyOriginalTilesheet.Clone(ctx => ctx.Crop(new Rectangle(x * TileWidth, y * TileHeight, TileWidth, TileHeight))))
+            {
+                target.Mutate(ctx =>
+                {
+                    if (destination.Width != TileWidth || destination.Height != TileHeight)
+                    {
+                        sourceTile.Mutate(sctx => sctx.Resize(destination.Width, destination.Height));
+                    }
+                    ctx.DrawImage(sourceTile, new Point(destination.X, destination.Y), 1f);
+                });
+            }
         }
 
-        public Bitmap GetClone(int x, int y)
+        public Image<Rgba32> GetClone(int x, int y)
         {
-            return MyOriginalTilesheet.Clone(new Rectangle(x * TileWidth, y * TileHeight, 15, 15), System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            return MyOriginalTilesheet.Clone(ctx => ctx.Crop(new Rectangle(x * TileWidth, y * TileHeight, 15, 15)));
         }
-        public Bitmap CopyTile(int x, int y)
+
+        public Image<Rgba32> CopyTile(int x, int y)
         {
             Rectangle rect = new Rectangle(0, 0, TileWidth, TileHeight);
-            Bitmap bmp = new Bitmap(rect.Width, rect.Height);
-            Graphics g = Graphics.FromImage(bmp);
-            DrawTile(x, y, rect, g);
-            g.Dispose();
+            Image<Rgba32> bmp = new Image<Rgba32>(rect.Width, rect.Height);
+            DrawTile(x, y, rect, bmp);
             return bmp;
         }
 
