@@ -1,0 +1,87 @@
+@page "/"
+@using Worldbuilder.Web.Components
+@using Worldbuilder.Web.Services
+@implements IDisposable
+@inject WorldSession Session
+
+<PageTitle>Worldbuilder</PageTitle>
+
+<header class="topbar">
+    <div class="brand">
+        <h1>Worldbuilder</h1>
+        <span class="muted">LoreGen v0.12</span>
+    </div>
+    <form class="seed" @onsubmit="GenerateFromSeed" @onsubmit:preventDefault>
+        <label>Seed <input type="number" @bind="seedInput" @bind:event="oninput" /></label>
+        <button type="submit" class="btn" disabled="@busy">Generate</button>
+        <button type="button" class="btn primary" disabled="@busy" @onclick="GenerateRandom">@(busy ? "Generating…" : "New world")</button>
+    </form>
+</header>
+
+@if (error != null)
+{
+    <p class="error" role="alert">@error</p>
+}
+
+<nav class="tabs" role="tablist">
+    @foreach (var (key, label) in Tabs)
+    {
+        <button role="tab" aria-selected="@(tab == key)" class="@(tab == key ? "tab active" : "tab")" @onclick="() => tab = key">@label</button>
+    }
+</nav>
+
+<div class="tab-body">
+    @switch (tab)
+    {
+        case "map": <MapTab /> break;
+        case "info": <InfoTab /> break;
+        case "language": <LanguageTab /> break;
+        case "data": <DataTab /> break;
+    }
+</div>
+
+@code {
+    private static readonly (string, string)[] Tabs =
+    {
+        ("map", "Map"), ("info", "World info"), ("language", "Language generator"), ("data", "Raw data")
+    };
+
+    private string tab = "map";
+    private int seedInput;
+    private bool busy;
+    private string error;
+
+    protected override void OnInitialized()
+    {
+        seedInput = Session.Seed;
+        Session.Changed += OnChanged;
+    }
+
+    private void OnChanged()
+    {
+        seedInput = Session.Seed;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private Task GenerateFromSeed() => Run(() => Session.Generate(seedInput));
+    private Task GenerateRandom() => Run(Session.GenerateRandom);
+
+    private async Task Run(Action generate)
+    {
+        busy = true;
+        StateHasChanged();
+        await Task.Delay(30); // let the UI paint the busy state before the (synchronous) generation
+        try
+        {
+            generate();
+            error = null;
+        }
+        catch (Exception ex)
+        {
+            error = $"World generation failed: {ex.Message}. Try another seed.";
+        }
+        busy = false;
+    }
+
+    public void Dispose() => Session.Changed -= OnChanged;
+}

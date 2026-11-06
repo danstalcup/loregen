@@ -199,7 +199,7 @@ namespace LoreGen.Simulation
                     }
                     if (ConfigLineData[0].Trim().ToLower() == "presetseed")
                     {
-                        PresetSeed = Convert.ToInt32(ConfigLineData[1].Trim());
+                        PresetSeed = int.Parse(ConfigLineData[1].Trim(), System.Globalization.CultureInfo.InvariantCulture);
                     }
                 }
                 ConfigFileSuccessfullyRead = true;

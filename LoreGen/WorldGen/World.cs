@@ -210,6 +210,7 @@ namespace LoreGen.WorldGen
                 double CurrentWaterSize = ContiguousWaterBlocks.Count;
                 double CurrentWaterPercent = CurrentWaterSize / TotalWaterSize;
                 int CurrentOceans = (int)(Math.Round(NumOceans * CurrentWaterPercent,MidpointRounding.AwayFromZero));
+                if (CurrentOceans < 1) CurrentOceans = 1; // every body of water needs at least one ocean to grow from
                 if (CurrentOceans > ContiguousWaterBlocks.Count) CurrentOceans = ContiguousWaterBlocks.Count;
 
                 //Create Ocean Starting Points
@@ -236,19 +237,16 @@ namespace LoreGen.WorldGen
 
         private void ExpandContiguousWaterArea(HashSet<WorldBlock> Contiguous, WorldBlock LatestBlock, List<WorldBlock> RemainingWorldBlocks)
         {
-            if(LatestBlock == null || LatestBlock.Status.WaterStatus != WorldBlockWaterStatus.Water || Contiguous.Contains(LatestBlock))
+            // Iterative (not recursive) so large worlds can't overflow the stack
+            Stack<WorldBlock> pending = new Stack<WorldBlock>();
+            pending.Push(LatestBlock);
+            while (pending.Count > 0)
             {
-                return;
-            }
-            else
-            {
-                Contiguous.Add(LatestBlock);
-                RemainingWorldBlocks.Remove(LatestBlock);
-                List<WorldBlock> NeighboringBlocks = LatestBlock.SurroundingBlocksAsList();
-                foreach(WorldBlock Neighbor in NeighboringBlocks)
-                {
-                    ExpandContiguousWaterArea(Contiguous, Neighbor,RemainingWorldBlocks);
-                }
+                WorldBlock block = pending.Pop();
+                if (block == null || block.Status.WaterStatus != WorldBlockWaterStatus.Water || Contiguous.Contains(block)) continue;
+                Contiguous.Add(block);
+                RemainingWorldBlocks.Remove(block);
+                foreach (WorldBlock Neighbor in block.SurroundingBlocksAsList()) pending.Push(Neighbor);
             }
         }
 

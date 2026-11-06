@@ -47,7 +47,6 @@ namespace LoreGen.Randomizer
         private void Initialize()
         {
             rnd = new Random(Seed);
-            SimpleRNG.SetSeed(AnyUint(), AnyUint());
             byte[] mykey = new byte[64];
             rnd.NextBytes(mykey);            
             Keys = new int[1000];
@@ -218,7 +217,11 @@ namespace LoreGen.Randomizer
         {
             //AnyUint());
             
-            return SimpleRNG.GetNormal(mean, stddev);
+            if (stddev <= 0.0) return mean;
+            // Box-Muller, drawing from this instance's generator so seeds stay independent
+            double u1 = 1.0 - rnd.NextDouble(); // (0,1], avoids log(0)
+            double u2 = rnd.NextDouble();
+            return mean + stddev * Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
         }
 
         /// <summary>
@@ -270,7 +273,7 @@ namespace LoreGen.Randomizer
 
         public int Next(int min, int max, int[] Params)
         {
-            return (int)(Next(Params) * (max + min)) - min;
+            return (int)(Next(Params) * (max - min)) + min;
         }
     }
 }
