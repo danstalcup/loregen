@@ -1,112 +1,20 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{85324863-9171-4651-A442-C71A129F42BC}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>LoreGen</RootNamespace>
     <AssemblyName>LoreGen</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Landforms\Landform.cs" />
-    <Compile Include="Landforms\LandformType.cs" />
-    <Compile Include="Lang\Language.cs" />
-    <Compile Include="Lang\LetterSound.cs" />
-    <Compile Include="Lang\PhoneticInventory.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Randomizer\ListR.cs" />
-    <Compile Include="Randomizer\Rnd.cs" />
-    <Compile Include="Randomizer\SimpleRNG.cs" />
-    <Compile Include="Randomizer\WeightedRandomContainer.cs" />
-    <Compile Include="Simulation\SimData.cs" />
-    <Compile Include="Simulation\SimEngine.cs" />
-    <Compile Include="Terrains\Biome.cs" />
-    <Compile Include="Terrains\Climate.cs" />
-    <Compile Include="Terrains\ClimateType.cs" />
-    <Compile Include="Terrains\Terrain.cs" />
-    <Compile Include="Terrains\TerrainType.cs" />
-    <Compile Include="WorldDisplay\DisplayInfo.cs" />
-    <Compile Include="WorldDisplay\Map.cs" />
-    <Compile Include="WorldDisplay\Tileset.cs" />
-    <Compile Include="WorldGen\Continent.cs" />
-    <Compile Include="WorldGen\EdgePattern.cs" />
-    <Compile Include="WorldGen\Region.cs" />
-    <Compile Include="WorldGen\World.cs" />
-    <Compile Include="WorldGen\WorldBlock.cs" />
-    <Compile Include="WorldGen\WorldBlockCollection.cs" />
-    <Compile Include="WorldGen\WorldEntity.cs" />
-    <Compile Include="WorldGen\WorldTasks.cs" />
+    <Content Include="Resources\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\BiomePatterns.csv" />
-    <None Include="Resources\Climates.csv" />
-    <None Include="Resources\ClimateTypes.csv" />
-    <None Include="Resources\EdgePatterns.csv" />
-    <None Include="Resources\LanguageRules.csv" />
-    <None Include="Resources\PhoneticInventories.csv" />
-    <None Include="Resources\TerrainRules.csv" />
-    <None Include="Resources\Terrains.csv" />
-    <None Include="Resources\TerrainTypes.csv" />
-    <None Include="Resources\WorldRules.csv" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Biomes.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\LetterSounds.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\README.txt" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>
