@@ -1,0 +1,64 @@
+@using LoreGen.WorldGen
+@using Worldbuilder.Web.Services
+@implements IDisposable
+@inject WorldSession Session
+
+@{
+    var world = Session.Engine.World;
+    var root = world.WorldBlock;
+}
+
+<div class="grid-2">
+    <section class="card">
+        <h3>World</h3>
+        <dl class="info">
+            <dt>Seed</dt><dd>@Session.Seed</dd>
+            <dt>Grid size</dt><dd>@root.Width &times; @root.Height blocks</dd>
+            <dt>Continents</dt><dd>@world.Continents.Count</dd>
+            <dt>Oceans</dt><dd>@world.Oceans.Count</dd>
+        </dl>
+    </section>
+    <section class="card">
+        <h3>Oceans</h3>
+        <table>
+            <thead><tr><th>Name</th><th class="num">Blocks</th></tr></thead>
+            <tbody>
+                @foreach (var o in world.Oceans)
+                {
+                    <tr><td>@o.Name</td><td class="num">@o.OceanArea.BlocksList.Count</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+</div>
+
+@foreach (var c in world.Continents)
+{
+    <section class="card">
+        <h3>@c.Name <span class="muted">&mdash; @LandBlocks(c) land blocks</span></h3>
+        <table>
+            <thead><tr><th>Region</th><th>Biome</th><th>Language</th><th class="num">Land blocks</th><th class="num">Areas</th></tr></thead>
+            <tbody>
+                @foreach (var r in c.Regions)
+                {
+                    <tr>
+                        <td>@r.Name</td>
+                        <td>@r.Biome?.Name</td>
+                        <td>@r.Language?.LanguageName</td>
+                        <td class="num">@r.RegionArea.BlocksList.Count(b => b.Status.WaterStatus != WorldBlockWaterStatus.Water)</td>
+                        <td class="num">@r.RegionArea.ContiguousAreas().Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@code {
+    protected override void OnInitialized() => Session.Changed += OnChanged;
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Session.Changed -= OnChanged;
+
+    private static int LandBlocks(Continent c) =>
+        c.ContinentArea.BlocksList.Count(b => b.Status.WaterStatus == WorldBlockWaterStatus.Land || b.Status.WaterStatus == WorldBlockWaterStatus.Coastline);
+}

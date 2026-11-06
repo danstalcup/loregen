@@ -1,0 +1,182 @@
+@using System.Globalization
+@using LoreGen.WorldDisplay
+@using Worldbuilder.Web.Services
+@implements IAsyncDisposable
+@inject WorldSession Session
+@inject IJSRuntime JS
+
+<div class="map-layout">
+    <div class="map-main">
+        <div class="map-toolbar">
+            <div class="breadcrumb">
+                <button class="btn" disabled="@(!Map.CanZoomOut)" @onclick="ZoomOut">&larr; Back</button>
+                <strong>@Map.Title</strong>
+            </div>
+            <div class="map-options">
+                <label>Colour by
+                    <select value="@Map.Context" @onchange="OnContextChanged">
+                        @foreach (var c in MapView.Contexts)
+                        {
+                            <option value="@c">@c</option>
+                        }
+                    </select>
+                </label>
+                <label class="check"><input type="checkbox" checked="@Map.HiDef" @onchange="OnHiDefChanged" /> High detail</label>
+            </div>
+        </div>
+        <div class="canvas-wrap">
+            <canvas @ref="canvas" class="map-canvas" style="@CanvasStyle"></canvas>
+        </div>
+        <p class="hint">Click a square for details. Double-click to zoom into a continent, then a region.</p>
+    </div>
+
+    <aside class="map-side">
+        <section class="card">
+            <h3>Selected block</h3>
+            @if (Map.Selected == null)
+            {
+                <p class="muted">Nothing selected.</p>
+            }
+            else
+            {
+                <dl class="info">
+                    @foreach (var line in Map.Describe(Map.Selected))
+                    {
+                        <dt>@line.Label</dt>
+                        <dd>@line.Value</dd>
+                    }
+                </dl>
+            }
+        </section>
+        <section class="card">
+            <h3>Legend</h3>
+            <ul class="legend">
+                @foreach (var entry in legend.Take(40))
+                {
+                    <li><span class="swatch" style="background:@entry.Hex"></span>@entry.Label</li>
+                }
+            </ul>
+            @if (legend.Count > 40)
+            {
+                <p class="muted">…and @(legend.Count - 40) more.</p>
+            }
+        </section>
+    </aside>
+</div>
+
+@code {
+    private ElementReference canvas;
+    private IJSObjectReference module;
+    private DotNetObjectReference<MapTab> self;
+    private bool dirty = true;
+    private bool attached;
+    private List<LegendEntry> legend = new();
+    private (int X, int Y, int Width, int Height) bounds;
+
+    private MapView Map => Session.Map;
+
+    private string CanvasStyle
+    {
+        get
+        {
+            var w = bounds.Width <= 0 ? 1 : bounds.Width;
+            var h = bounds.Height <= 0 ? 1 : bounds.Height;
+            var ratio = ((double)w / h).ToString("0.####", CultureInfo.InvariantCulture);
+            return $"aspect-ratio:{w}/{h}; max-width:calc(75vh * {ratio});";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnWorldChanged;
+        Prepare();
+    }
+
+    private void OnWorldChanged()
+    {
+        dirty = true;
+        Prepare();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Prepare()
+    {
+        bounds = Map.GetBounds();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/map.js");
+            self = DotNetObjectReference.Create(this);
+            await module.InvokeVoidAsync("attach", canvas, self);
+            attached = true;
+        }
+        if (attached && dirty)
+        {
+            dirty = false;
+            var (rects, entries) = Map.Build();
+            bounds = Map.GetBounds();
+            legend = entries;
+            await module.InvokeVoidAsync("draw", canvas, bounds.Width, bounds.Height, rects, Map.SelectedRect());
+            StateHasChanged(); // legend + aspect ratio
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnMapPointer(double fx, double fy, bool doubleClick)
+    {
+        var block = Map.BlockAt(fx, fy);
+        if (block == null) return;
+        if (doubleClick)
+        {
+            var before = Map.Zoom;
+            Map.ZoomInto(block);
+            if (Map.Zoom != before)
+            {
+                Redraw();
+                return;
+            }
+        }
+        Map.Select(block);
+        await module.InvokeVoidAsync("setSelection", canvas, Map.SelectedRect());
+        StateHasChanged();
+    }
+
+    private void Redraw()
+    {
+        dirty = true;
+        Prepare();
+        StateHasChanged();
+    }
+
+    private void ZoomOut()
+    {
+        Map.ZoomOut();
+        Redraw();
+    }
+
+    private void OnContextChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<MapContext>(e.Value?.ToString(), out var ctx)) Map.Context = ctx;
+        Redraw();
+    }
+
+    private void OnHiDefChanged(ChangeEventArgs e)
+    {
+        Map.HiDef = e.Value is bool b && b;
+        Map.Select(null);
+        Redraw();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Session.Changed -= OnWorldChanged;
+        if (module != null)
+        {
+            try { await module.InvokeVoidAsync("detach", canvas); await module.DisposeAsync(); } catch (JSDisconnectedException) { }
+        }
+        self?.Dispose();
+    }
+}

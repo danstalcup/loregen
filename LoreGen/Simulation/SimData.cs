@@ -84,10 +84,7 @@ namespace LoreGen.Simulation
         public SimData(SimEngine SimEngine)
         {
             this.SimEngine = SimEngine;
-            string configuredDataFolder = SimEngine.Configuration.DataFolder;
-            this.DataFolder = Path.IsPathRooted(configuredDataFolder)
-                ? configuredDataFolder
-                : Path.Combine(AppContext.BaseDirectory, configuredDataFolder);
+            this.DataFolder = SimEngine.Configuration.DataFolder;
         }
 
 
@@ -97,10 +94,33 @@ namespace LoreGen.Simulation
         private static int ToI(double d) { return Convert.ToInt32(d); }
 
         /// <summary>
-        /// Folder to read data in from, resolved to an absolute path. "Resources" (relative to the running
-        /// assembly's base directory) by default.
+        /// Folder to read data in from. "Default" by default.
         /// </summary>
-        public string DataFolder = "Resources";
+        public string DataFolder = "Default";
+
+
+        /// <summary>
+        /// Reads a data file as lines. Looks in the data folder on disk first (so data can be overridden),
+        /// then falls back to the copy embedded in the LoreGen assembly.
+        /// </summary>
+        private string[] ReadDataLines(string filename)
+        {
+            string path = Path.Combine(DataFolder, filename);
+            if (File.Exists(path)) return File.ReadAllLines(path);
+
+            var assembly = typeof(SimData).Assembly;
+            using (Stream stream = assembly.GetManifestResourceStream("LoreGen.Resources." + filename))
+            {
+                if (stream == null) throw new FileNotFoundException("Data file not found on disk or embedded: " + filename, path);
+                using (var reader = new StreamReader(stream, true))
+                {
+                    var lines = new List<string>();
+                    string line;
+                    while ((line = reader.ReadLine()) != null) lines.Add(line);
+                    return lines.ToArray();
+                }
+            }
+        }
 
         /// <summary>
         /// Loads in all data
@@ -128,7 +148,7 @@ namespace LoreGen.Simulation
         public void InitializeLetterSounds()
         {
             LetterSounds = new List<LetterSound>();
-            string[] letterLines = File.ReadAllLines(Path.Combine(DataFolder, "LetterSounds.txt"));
+            string[] letterLines = ReadDataLines("LetterSounds.txt");
             foreach (string letterLine in letterLines)
             {
                 string[] letterData = letterLine.Split();
@@ -155,7 +175,7 @@ namespace LoreGen.Simulation
         public void InitializePhoneticInventories()
         {
             PhoneticInventories = new List<PhoneticInventory>();
-            string[] inventoryLines = File.ReadAllLines(Path.Combine(DataFolder, "PhoneticInventories.csv"));
+            string[] inventoryLines = ReadDataLines("PhoneticInventories.csv");
             foreach (string inventoryLine in inventoryLines)
             {
                 string[] inventoryData = inventoryLine.Split(new char[] { ',' });                
@@ -179,7 +199,7 @@ namespace LoreGen.Simulation
         public void InitializeLanguageRules()
         {
             LanguageRules = new LanguageRules();
-            string[] languageLines = File.ReadAllLines(Path.Combine(DataFolder, "LanguageRules.csv"));
+            string[] languageLines = ReadDataLines("LanguageRules.csv");
             double[] languageInfo = new double[languageLines.Length];
             for (int i =0; i<languageLines.Length;i++)
             {
@@ -242,7 +262,7 @@ namespace LoreGen.Simulation
         public void InitializeWorldRules()
         {
             WorldRules = new WorldRules();
-            string[] worldLines = File.ReadAllLines(Path.Combine(DataFolder, "WorldRules.csv"));
+            string[] worldLines = ReadDataLines("WorldRules.csv");
             double[] worldInfo = new double[worldLines.Length];
             for (int i = 0; i < worldLines.Length; i++)
             {
@@ -285,7 +305,7 @@ namespace LoreGen.Simulation
         public void InitializeEdgePatterns()
         {
             EdgePatterns = new List<EdgePattern>();
-            string[] patternLines = File.ReadAllLines(Path.Combine(DataFolder, "EdgePatterns.csv"));
+            string[] patternLines = ReadDataLines("EdgePatterns.csv");
 
             int i = 0;
             while(i < patternLines.Length)
@@ -351,7 +371,7 @@ namespace LoreGen.Simulation
         private void InitializeClimateTypes()
         {
             ClimateTypes = new List<ClimateType>();
-            string[] climateTypeLines = File.ReadAllLines(Path.Combine(DataFolder, "ClimateTypes.csv"));
+            string[] climateTypeLines = ReadDataLines("ClimateTypes.csv");
 
             foreach(string climateTypeLine in climateTypeLines)
             {
@@ -368,7 +388,7 @@ namespace LoreGen.Simulation
         private void InitializeClimates()
         {
             Climates = new List<Climate>();
-            string[] climateLines = File.ReadAllLines(Path.Combine(DataFolder, "Climates.csv"));
+            string[] climateLines = ReadDataLines("Climates.csv");
 
             foreach(string climateLine in climateLines)
             {
@@ -386,7 +406,7 @@ namespace LoreGen.Simulation
         private void InitializeBiomes()
         {
             Biomes = new List<Biome>();
-            string[] biomeLines = File.ReadAllLines(Path.Combine(DataFolder, "Biomes.txt"));
+            string[] biomeLines = ReadDataLines("Biomes.txt");
 
             foreach (string biomeLine in biomeLines)
             {
@@ -401,7 +421,7 @@ namespace LoreGen.Simulation
         private void InitializeTerrainTypes()
         {
             TerrainTypes = new List<TerrainType>();
-            string[] terrainTypeLines = File.ReadAllLines(Path.Combine(DataFolder, "TerrainTypes.csv"));
+            string[] terrainTypeLines = ReadDataLines("TerrainTypes.csv");
 
             foreach(string terrainTypeLine in terrainTypeLines)
             {
@@ -416,7 +436,7 @@ namespace LoreGen.Simulation
         private void InitializeTerrains()
         {
             Terrains = new List<Terrain>();
-            string[] terrainLines = File.ReadAllLines(Path.Combine(DataFolder, "Terrains.csv"));
+            string[] terrainLines = ReadDataLines("Terrains.csv");
 
             foreach(string terrainLine in terrainLines)
             {
@@ -434,7 +454,7 @@ namespace LoreGen.Simulation
         /// </summary>
         private void InitializeBiomePatterns()
         {
-            string[] biomePatternLines = File.ReadAllLines(Path.Combine(DataFolder, "BiomePatterns.csv"));
+            string[] biomePatternLines = ReadDataLines("BiomePatterns.csv");
 
             for (int i = 0; i < biomePatternLines.Length; i += 3)
             {
@@ -462,7 +482,7 @@ namespace LoreGen.Simulation
         private void InitializeTerrainRules()
         {
             TerrainRules = new TerrainRules();
-            string[] terrainRulesLines = File.ReadAllLines(Path.Combine(DataFolder, "TerrainRules.csv"));
+            string[] terrainRulesLines = ReadDataLines("TerrainRules.csv");
             double[] terrainInfo = new double[terrainRulesLines.Length];
             for (int i = 0; i < terrainRulesLines.Length; i++)
             {
