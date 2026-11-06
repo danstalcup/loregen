@@ -4,7 +4,8 @@ LoreGen generates fictional worlds: continents, seas and oceans, regions, biomes
 procedurally generated language for each continent and region (so every place gets a name that sounds like it
 belongs there). Worldbuilder is a browser app for exploring the results.
 
-Worlds are reproducible: the same seed produces the same world.
+Worlds are reproducible: the same seed produces the same world, no matter how many other engines are running
+or what language/region the machine is set to.
 
 ## What's in the repo
 
@@ -44,7 +45,8 @@ dotnet test
 - **Language generator**: Generate a random language, inspect its rules, and produce sample names and words.
 - **Raw data**: The climate, terrain and biome data the simulation loaded.
 
-Enter a seed and press **Generate** to recreate a world, or press **New world** for a random one.
+Enter a seed and press **Generate** to recreate a world, or press **New world** for a random one. If a world fails
+to generate, the app shows an error and keeps the previous world.
 
 ## Using the library
 
@@ -69,17 +71,29 @@ Console.WriteLine(language.GetName());   // e.g. a place name in that language
 
 1. Continents are grown from random seed blocks across the world grid.
 2. Each continent's edge becomes coastline, and coastal blocks become water to form oceans.
-3. Seas are carved into each continent and its coasts are eroded; coastline blocks get a finer sub-grid shaped
-   by the patterns in `EdgePatterns.csv`.
+3. Seas (up to one per continent, set by `WorldRules.csv`) are carved into each continent's own land and
+   registered in `Continent.Seas`. Coasts are eroded, and coastline blocks get a finer sub-grid shaped by the
+   patterns in `EdgePatterns.csv`.
 4. Each continent is divided into regions. A region's biome depends on its latitude, and its terrain is drawn
    from weighted patterns in the data files.
-5. Every continent has a root language; each region gets a variation of it, which names the region.
+5. Every continent has a root language. Each region gets its own copy of it, shifted slightly, which names the
+   region. Changing one region's language doesn't affect the others.
 
 ### Generator mode
 
 `SimEngine.Configuration.GeneratorMode` (or `generatormode=` in `loregen.config`) selects the land generator.
 `Legacy` is the default and is the algorithm described above. `Noise` is reserved for an upcoming height-field
 generator and currently throws `NotImplementedException`.
+
+## Tests
+
+`dotnet test` runs the suite in [`LoreGen.Tests`](LoreGen.Tests). Besides basic loading and generation, it checks:
+
+- generation succeeds across 150 seeds, and the same seed gives the same world even when other engines are created in between
+- data loads correctly under a comma-decimal culture (`de-DE`)
+- rule files accept reordered rows and report missing or unrecognized keys
+- regions have their own languages, and seas are registered on their continent
+- the default generator is `Legacy`, and an unimplemented one fails without leaving a half-built world
 
 ## Data files
 
@@ -114,3 +128,9 @@ of every file is documented in [`LoreGen/Resources/README.txt`](LoreGen/Resource
 | `usepresetseed` | `true` to use `presetseed` instead of a clock-based seed |
 | `presetseed` | The seed to use |
 | `generatormode` | `Legacy` or `Noise` |
+
+## Roadmap
+
+The land generator is being replaced with a height-field one based on fractal noise (elevation, climate and biomes
+derived from the same fields, with regions that follow the terrain). `GeneratorMode` is the switch that lets the old
+and new generators coexist while that is built.
