@@ -27,8 +27,9 @@ public class WorldSession
     public void Generate(int seed)
     {
         Seed = seed;
-        Engine = new SimEngine(seed);
-        Engine.GenerateWorld();
+        var engine = new SimEngine(seed);
+        engine.GenerateWorld(); // if this throws, the previous world stays in place
+        Engine = engine;
         TestLanguage = null;
         Map = new MapView(this);
         Changed?.Invoke();

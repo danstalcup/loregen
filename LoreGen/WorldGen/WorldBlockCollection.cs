@@ -329,13 +329,16 @@ namespace LoreGen.WorldGen
         
         private void FindContiguousArea(HashSet<WorldBlock> contiguousArea, WorldBlock start, List<WorldBlock> uncountedBlocks)
         {
-            if(contiguousArea.Contains(start)) return;
-            contiguousArea.Add(start);
-            uncountedBlocks.Remove(start);
-            List<WorldBlock> neighborsInRegion = start.SurroundingBlocksAsList().Where(sb => uncountedBlocks.Contains(sb)).ToList();
-            foreach(WorldBlock neighbor in neighborsInRegion)
+            Stack<WorldBlock> pending = new Stack<WorldBlock>();
+            pending.Push(start);
+            while (pending.Count > 0)
             {
-                FindContiguousArea(contiguousArea, neighbor, uncountedBlocks);
+                WorldBlock block = pending.Pop();
+                if (contiguousArea.Contains(block)) continue;
+                contiguousArea.Add(block);
+                uncountedBlocks.Remove(block);
+                foreach (WorldBlock neighbor in block.SurroundingBlocksAsList())
+                    if (uncountedBlocks.Contains(neighbor)) pending.Push(neighbor);
             }
         }
     }

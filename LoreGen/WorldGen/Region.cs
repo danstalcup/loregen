@@ -63,7 +63,7 @@ namespace LoreGen.WorldGen
             this.RegionArea.Entity = this;
             this.WorldEntityType = WorldEntityType.Region;
             this.Continent = Continent;
-            this.Language = Continent.RootLanguage.Skew();
+            this.Language = Continent.RootLanguage.Copy().Skew();
             this.Name = this.Language.GetName();
             Continent.Regions.Add(this);
             SelectBiome();
@@ -132,7 +132,8 @@ namespace LoreGen.WorldGen
 
         private void SelectBiome()
         {
-            double medianY = RegionArea.BlocksList[0].TrueY;// ((double)this.RegionBlock.TrueY + (double)(0.5 * this.RegionBlock.TrueHeight));
+            WorldBlock first = RegionArea.BlocksList[0];
+            double medianY = first.TrueY + 0.5 * first.TrueHeight;// ((double)this.RegionBlock.TrueY + (double)(0.5 * this.RegionBlock.TrueHeight));
             double globalHeight = (double)Continent.World.WorldBlock.TrueHeight;
             double ratio = medianY / globalHeight;
             double adjRatio = Math.Abs(ratio - 0.5) * 1.25;//!!!
@@ -189,9 +190,8 @@ namespace LoreGen.WorldGen
         /// </summary>
         public Continent Continent;
         /// <summary>
-        /// Area representing the block.
+        /// Area representing the sea.
         /// </summary>
-        public string Name;
         public WorldBlockArea SeaBlock;
         /// <summary>
         /// Constructor for the sea. Sea is added to the Continent's collection of Seas.
@@ -201,7 +201,9 @@ namespace LoreGen.WorldGen
         public Sea(Continent Continent, List<WorldBlock> SeaBlocks)
         {
             SeaBlock = new WorldBlockArea(SeaBlocks, this);            
-            this.Continent = Continent;            
+            this.Continent = Continent;
+            this.World = Continent.World;
+            Continent.Seas.Add(this);
             foreach (WorldBlock block in SeaBlocks)
             {
                 block.Status.Sea = this;
