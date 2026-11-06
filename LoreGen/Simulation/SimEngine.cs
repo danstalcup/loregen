@@ -164,6 +164,11 @@ namespace LoreGen.Simulation
         public int PresetSeed;
 
         /// <summary>
+        /// Algorithm used to generate land and water ("generatormode" in the config file). Legacy by default.
+        /// </summary>
+        public WorldGeneratorMode GeneratorMode = WorldGeneratorMode.Legacy;
+
+        /// <summary>
         /// File path of the configuration file
         /// </summary>
         public string ConfigFilepath;
@@ -213,6 +218,10 @@ namespace LoreGen.Simulation
                     if (ConfigLineData[0].Trim().ToLower() == "usepresetseed")
                     {
                         UsePresetSeed = Convert.ToBoolean(ConfigLineData[1].Trim());
+                    }
+                    if (ConfigLineData[0].Trim().ToLower() == "generatormode")
+                    {
+                        GeneratorMode = (WorldGeneratorMode)Enum.Parse(typeof(WorldGeneratorMode), ConfigLineData[1].Trim(), true);
                     }
                     if (ConfigLineData[0].Trim().ToLower() == "presetseed")
                     {

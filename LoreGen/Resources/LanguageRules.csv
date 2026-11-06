@@ -1,47 +1,48 @@
-Probability long rime is allowed,0
-Min long rime probability,0.1
-Max long rime probability,0.3
-Long rime probability skew,0.1
-Probability complex pre-onset is allowed,0.6
-Min complex pre-onset probability,0.1
-Max complex pre-onset probability,0.3
-Complex pre-onset probability skew,0.1
-Probability complex post-onset is allowed,0.6
-Min complex post-onset probability,0.1
-Max complex post-onset probability,0.3
-Complex post-onset probability skew,0.1
-Probability coda is allowed,0.8
-Min coda probability,0.1
-Max coda probability,0.3
-Coda probability skew,0.1
-Probability codas may be complex,0.8
-Min complex coda probability,0.1
-Max complex coda probability,0.3
-Complex coda probability skew,0.1
-Probability hyphens may be used,0.3
-Min hyphen probability,0.2
-Max hyphen probability,0.8
-Hyphen probability skew,0.1
-Probability apostrophes may be used (for glottal stops),0.3
-Min probability first consonant is skipped,0.2
-Max probability first consonant is skipped,0.8
-First consonant missing probability skew,0.1
-Syllables per word – mean min,1.75
-Syllables per word – mean max,3
-Syllables mean probability skew,0.3
-Syllables per word – std dev min,0.15
-Syllables per word – std dev max,0.75
-Syllables std dev probability skew,0.15
-Words per name – mean min,1
-Words per name – mean max,3
-Words mean probability skew,0.3
-Words per name – std dev min,0.15
-Words per name – std dev max,0.75
-Words std dev probability skew,0.15
-Script exoticness factor – mean min,1
-Script exoticness factor – mean max,4
-Exoticness mean probability skew,0.3
-Script exoticness factor – std dev min,0.25
-Script exoticness factor – std dev max,0.75
-Exoticness std dev probability skew,0.15
-Max number of skewed elements,6
+# Key,Value,Description  -- rows may appear in any order; keys must match exactly.
+LongRimeProbability,0,Probability long rime is allowed
+LongRimeMin,0.1,Min long rime probability
+LongRimeMax,0.3,Max long rime probability
+LongRimeSkew,0.1,Long rime probability skew
+ComplexPreOnsetProbability,0.6,Probability complex pre-onset is allowed
+ComplexPreOnsetMin,0.1,Min complex pre-onset probability
+ComplexPreOnsetMax,0.3,Max complex pre-onset probability
+ComplexPreOnsetSkew,0.1,Complex pre-onset probability skew
+ComplexPostOnsetProbability,0.6,Probability complex post-onset is allowed
+ComplexPostOnsetMin,0.1,Min complex post-onset probability
+ComplexPostOnsetMax,0.3,Max complex post-onset probability
+ComplexPostOnsetSkew,0.1,Complex post-onset probability skew
+CodaProbability,0.8,Probability coda is allowed
+CodaMin,0.1,Min coda probability
+CodaMax,0.3,Max coda probability
+CodaSkew,0.1,Coda probability skew
+ComplexCodaProbability,0.8,Probability codas may be complex
+ComplexCodaMin,0.1,Min complex coda probability
+ComplexCodaMax,0.3,Max complex coda probability
+ComplexCodaSkew,0.1,Complex coda probability skew
+HyphenProbability,0.3,Probability hyphens may be used
+HyphenMin,0.2,Min hyphen probability
+HyphenMax,0.8,Max hyphen probability
+HyphenSkew,0.1,Hyphen probability skew
+ApostropheProbability,0.3,Probability apostrophes may be used (for glottal stops)
+FirstConsonantSkippedMin,0.2,Min probability first consonant is skipped
+FirstConsonantSkippedMax,0.8,Max probability first consonant is skipped
+FirstConsonantSkippedSkew,0.1,First consonant missing probability skew
+SyllablesMeanMin,1.75,Syllables per word - mean min
+SyllablesMeanMax,3,Syllables per word - mean max
+SyllablesMeanSkew,0.3,Syllables mean probability skew
+SyllablesStdDevMin,0.15,Syllables per word - std dev min
+SyllablesStdDevMax,0.75,Syllables per word - std dev max
+SyllablesStdDevSkew,0.15,Syllables std dev probability skew
+WordsMeanMin,1,Words per name - mean min
+WordsMeanMax,3,Words per name - mean max
+WordsMeanSkew,0.3,Words mean probability skew
+WordsStdDevMin,0.15,Words per name - std dev min
+WordsStdDevMax,0.75,Words per name - std dev max
+WordsStdDevSkew,0.15,Words std dev probability skew
+ExoticnessMeanMin,1,Script exoticness factor - mean min
+ExoticnessMeanMax,4,Script exoticness factor - mean max
+ExoticnessMeanSkew,0.3,Exoticness mean probability skew
+ExoticnessStdDevMin,0.25,Script exoticness factor - std dev min
+ExoticnessStdDevMax,0.75,Script exoticness factor - std dev max
+ExoticnessStdDevSkew,0.15,Exoticness std dev probability skew
+MaxSkewedElements,6,Max number of skewed elements

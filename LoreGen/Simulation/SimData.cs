@@ -93,6 +93,64 @@ namespace LoreGen.Simulation
 
 
         /// <summary>
+        /// Reads a rules file of "Key,Value[,Description]" rows. Rows may appear in any order; blank lines and
+        /// lines starting with '#' are ignored.
+        /// </summary>
+        private Dictionary<string, double> ReadKeyedValues(string filename)
+        {
+            var values = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            foreach (string rawLine in ReadDataLines(filename))
+            {
+                string line = rawLine.Trim();
+                if (line.Length == 0 || line[0] == '#') continue;
+                string[] parts = line.Split(new char[] { ',' }, 3);
+                if (parts.Length < 2)
+                    throw new InvalidDataException(filename + ": expected 'Key,Value[,Description]' but found: " + line);
+                string key = parts[0].Trim();
+                if (values.ContainsKey(key))
+                    throw new InvalidDataException(filename + ": duplicate key '" + key + "'");
+                try { values[key] = double.Parse(parts[1].Trim(), System.Globalization.CultureInfo.InvariantCulture); }
+                catch (FormatException) { throw new InvalidDataException(filename + ": value for '" + key + "' is not a number: " + parts[1].Trim()); }
+            }
+            return values;
+        }
+
+        /// <summary>
+        /// Looks up required values by key and reports missing or unrecognized keys.
+        /// </summary>
+        private class RuleReader
+        {
+            private readonly string filename;
+            private readonly Dictionary<string, double> values;
+            private readonly HashSet<string> used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            public RuleReader(string filename, Dictionary<string, double> values)
+            {
+                this.filename = filename;
+                this.values = values;
+            }
+
+            public double D(string key)
+            {
+                double value;
+                if (!values.TryGetValue(key, out value))
+                    throw new InvalidDataException(filename + ": missing required key '" + key + "'");
+                used.Add(key);
+                return value;
+            }
+
+            public int I(string key) { return Convert.ToInt32(D(key)); }
+
+            /// <summary>Call after reading everything: unrecognized keys are almost always typos.</summary>
+            public void Finish()
+            {
+                var unknown = values.Keys.Where(k => !used.Contains(k)).ToList();
+                if (unknown.Count > 0)
+                    throw new InvalidDataException(filename + ": unrecognized key(s): " + string.Join(", ", unknown));
+            }
+        }
+
+        /// <summary>
         /// Reads a data file as lines. Looks in the data folder on disk first (so data can be overridden),
         /// then falls back to the copy embedded in the LoreGen assembly.
         /// </summary>
@@ -191,105 +249,93 @@ namespace LoreGen.Simulation
         /// </summary>
         public void InitializeLanguageRules()
         {
+            var r = new RuleReader("LanguageRules.csv", ReadKeyedValues("LanguageRules.csv"));
             LanguageRules = new LanguageRules();
-            string[] languageLines = ReadDataLines("LanguageRules.csv");
-            double[] languageInfo = new double[languageLines.Length];
-            for (int i =0; i<languageLines.Length;i++)
-            {
-                string[] line = languageLines[i].Split(new char[]{','});
-                languageInfo[i] = Convert.ToDouble(line[1]);
-            }
-            
-            LanguageRules.LongRimeProbability = languageInfo[0];
-            LanguageRules.LongRimeMin = languageInfo[1];
-            LanguageRules.LongRimeMax = languageInfo[2];
-            LanguageRules.LongRimeSkew = languageInfo[3];
-            LanguageRules.ComplexPreOnsetProbability = languageInfo[4];
-            LanguageRules.ComplexPreOnsetMin = languageInfo[5];
-            LanguageRules.ComplexPreOnsetMax = languageInfo[6];
-            LanguageRules.ComplexPreOnsetSkew = languageInfo[7];
-            LanguageRules.ComplexPostOnsetProbability = languageInfo[8];
-            LanguageRules.ComplexPostOnsetMin = languageInfo[9];
-            LanguageRules.ComplexPostOnsetMax = languageInfo[10];
-            LanguageRules.ComplexPostOnsetSkew = languageInfo[11];
-            LanguageRules.CodaProbability = languageInfo[12];
-            LanguageRules.CodaMin = languageInfo[13];
-            LanguageRules.CodaMax = languageInfo[14];
-            LanguageRules.CodaSkew = languageInfo[15];
-            LanguageRules.ComplexCodaProbability = languageInfo[16];
-            LanguageRules.ComplexCodaMin = languageInfo[17];
-            LanguageRules.ComplexCodaMax = languageInfo[18];
-            LanguageRules.ComplexCodaSkew = languageInfo[19];
-            LanguageRules.HyphenProbability = languageInfo[20];
-            LanguageRules.HyphenMin = languageInfo[21];
-            LanguageRules.HyphenMax = languageInfo[22];
-            LanguageRules.HyphenSkew = languageInfo[23];
-            LanguageRules.ApostropheProbability = languageInfo[24];
-            LanguageRules.FirstConsonantSkippedMin = languageInfo[25];
-            LanguageRules.FirstConsonantSkippedMax = languageInfo[26];
-            LanguageRules.FirstConsonantSkippedSkew = languageInfo[27];
-            LanguageRules.SyllablesMeanMin = languageInfo[28];
-            LanguageRules.SyllablesMeanMax = languageInfo[29];
-            LanguageRules.SyllablesMeanSkew = languageInfo[30];
-            LanguageRules.SyllablesStdDevMin = languageInfo[31];
-            LanguageRules.SyllablesStdDevMax = languageInfo[32];
-            LanguageRules.SyllablesStdDevSkew = languageInfo[33];            
-            LanguageRules.WordsMeanMin = languageInfo[34];
-            LanguageRules.WordsMeanMax = languageInfo[35];
-            LanguageRules.WordsMeanSkew = languageInfo[36];
-            LanguageRules.WordsStdDevMin = languageInfo[37];
-            LanguageRules.WordsStdDevMax = languageInfo[38];
-            LanguageRules.WordsStdDevSkew = languageInfo[39];
-            LanguageRules.ExoticnessMeanMin = languageInfo[40];
-            LanguageRules.ExoticnessMeanMax = languageInfo[41];
-            LanguageRules.ExoticnessMeanSkew = languageInfo[42];
-            LanguageRules.ExoticnessStdDevMin = languageInfo[43];
-            LanguageRules.ExoticnessStdDevMax = languageInfo[44];
-            LanguageRules.ExoticnessStdDevSkew = languageInfo[45];
-            LanguageRules.MaxSkewedElements = Convert.ToInt32(languageInfo[46]);
-                 }
+            LanguageRules.LongRimeProbability = r.D("LongRimeProbability");
+            LanguageRules.LongRimeMin = r.D("LongRimeMin");
+            LanguageRules.LongRimeMax = r.D("LongRimeMax");
+            LanguageRules.LongRimeSkew = r.D("LongRimeSkew");
+            LanguageRules.ComplexPreOnsetProbability = r.D("ComplexPreOnsetProbability");
+            LanguageRules.ComplexPreOnsetMin = r.D("ComplexPreOnsetMin");
+            LanguageRules.ComplexPreOnsetMax = r.D("ComplexPreOnsetMax");
+            LanguageRules.ComplexPreOnsetSkew = r.D("ComplexPreOnsetSkew");
+            LanguageRules.ComplexPostOnsetProbability = r.D("ComplexPostOnsetProbability");
+            LanguageRules.ComplexPostOnsetMin = r.D("ComplexPostOnsetMin");
+            LanguageRules.ComplexPostOnsetMax = r.D("ComplexPostOnsetMax");
+            LanguageRules.ComplexPostOnsetSkew = r.D("ComplexPostOnsetSkew");
+            LanguageRules.CodaProbability = r.D("CodaProbability");
+            LanguageRules.CodaMin = r.D("CodaMin");
+            LanguageRules.CodaMax = r.D("CodaMax");
+            LanguageRules.CodaSkew = r.D("CodaSkew");
+            LanguageRules.ComplexCodaProbability = r.D("ComplexCodaProbability");
+            LanguageRules.ComplexCodaMin = r.D("ComplexCodaMin");
+            LanguageRules.ComplexCodaMax = r.D("ComplexCodaMax");
+            LanguageRules.ComplexCodaSkew = r.D("ComplexCodaSkew");
+            LanguageRules.HyphenProbability = r.D("HyphenProbability");
+            LanguageRules.HyphenMin = r.D("HyphenMin");
+            LanguageRules.HyphenMax = r.D("HyphenMax");
+            LanguageRules.HyphenSkew = r.D("HyphenSkew");
+            LanguageRules.ApostropheProbability = r.D("ApostropheProbability");
+            LanguageRules.FirstConsonantSkippedMin = r.D("FirstConsonantSkippedMin");
+            LanguageRules.FirstConsonantSkippedMax = r.D("FirstConsonantSkippedMax");
+            LanguageRules.FirstConsonantSkippedSkew = r.D("FirstConsonantSkippedSkew");
+            LanguageRules.SyllablesMeanMin = r.D("SyllablesMeanMin");
+            LanguageRules.SyllablesMeanMax = r.D("SyllablesMeanMax");
+            LanguageRules.SyllablesMeanSkew = r.D("SyllablesMeanSkew");
+            LanguageRules.SyllablesStdDevMin = r.D("SyllablesStdDevMin");
+            LanguageRules.SyllablesStdDevMax = r.D("SyllablesStdDevMax");
+            LanguageRules.SyllablesStdDevSkew = r.D("SyllablesStdDevSkew");
+            LanguageRules.WordsMeanMin = r.D("WordsMeanMin");
+            LanguageRules.WordsMeanMax = r.D("WordsMeanMax");
+            LanguageRules.WordsMeanSkew = r.D("WordsMeanSkew");
+            LanguageRules.WordsStdDevMin = r.D("WordsStdDevMin");
+            LanguageRules.WordsStdDevMax = r.D("WordsStdDevMax");
+            LanguageRules.WordsStdDevSkew = r.D("WordsStdDevSkew");
+            LanguageRules.ExoticnessMeanMin = r.D("ExoticnessMeanMin");
+            LanguageRules.ExoticnessMeanMax = r.D("ExoticnessMeanMax");
+            LanguageRules.ExoticnessMeanSkew = r.D("ExoticnessMeanSkew");
+            LanguageRules.ExoticnessStdDevMin = r.D("ExoticnessStdDevMin");
+            LanguageRules.ExoticnessStdDevMax = r.D("ExoticnessStdDevMax");
+            LanguageRules.ExoticnessStdDevSkew = r.D("ExoticnessStdDevSkew");
+            LanguageRules.MaxSkewedElements = r.I("MaxSkewedElements");
+            r.Finish();
+        }
 
         /// <summary>
         /// Loads in world rule data from "WorldRules.csv"
         /// </summary>
         public void InitializeWorldRules()
         {
+            var r = new RuleReader("WorldRules.csv", ReadKeyedValues("WorldRules.csv"));
             WorldRules = new WorldRules();
-            string[] worldLines = ReadDataLines("WorldRules.csv");
-            double[] worldInfo = new double[worldLines.Length];
-            for (int i = 0; i < worldLines.Length; i++)
-            {
-                string[] line = worldLines[i].Split(new char[] { ',' });
-                worldInfo[i] = Convert.ToDouble(line[1]);
-            }
-
-            WorldRules.ContinentsMin = Convert.ToInt32(worldInfo[0]);
-            WorldRules.ContinentsMax = Convert.ToInt32(worldInfo[1]);
-            WorldRules.WorldLengthMean = worldInfo[2];
-            WorldRules.WorldLengthStdDev = worldInfo[3];
-            WorldRules.WorldLengthMin = Convert.ToInt32(worldInfo[4]);
-            WorldRules.WorldLengthMax = Convert.ToInt32(worldInfo[5]);
-            WorldRules.WorldHeightLengthRatio = worldInfo[6];
-            WorldRules.SplitBlockMinimumPercentage = worldInfo[7];
-            WorldRules.RegionsMean = worldInfo[8];
-            WorldRules.RegionsStdDev = worldInfo[9];
-            WorldRules.RegionsMin = Convert.ToInt32(worldInfo[10]);
-            WorldRules.RegionsMax = Convert.ToInt32(worldInfo[11]);
-            WorldRules.ZoomScaleLarge = Convert.ToInt32(worldInfo[12]);
-            WorldRules.ZoomScaleSmall = Convert.ToInt32(worldInfo[13]);
-            WorldRules.CoastlineBorderMean = worldInfo[14];
-            WorldRules.CoastlineBorderStdDev = worldInfo[15];
-            WorldRules.CoastlineBorderMin = worldInfo[16];
-            WorldRules.CoastlineBorderMax = worldInfo[17];
-            WorldRules.SeasPerContinentMin = Convert.ToInt32(worldInfo[18]);
-            WorldRules.SeasPerContinentMax = Convert.ToInt32(worldInfo[19]);
-            WorldRules.ContinentPerSeaMin = worldInfo[20];
-            WorldRules.ContinentPerSeaMax = worldInfo[21];
-            WorldRules.ContinentInSeasTotalMin = worldInfo[22];
-            WorldRules.ContinentInSeasTotalMax = worldInfo[23];
-            WorldRules.MediterraneanSeaProbability = worldInfo[24];
-            WorldRules.ContinentCoastErosionMin = worldInfo[25];
-            WorldRules.ContinentCoastErosionMax = worldInfo[26];
+            WorldRules.ContinentsMin = r.I("ContinentsMin");
+            WorldRules.ContinentsMax = r.I("ContinentsMax");
+            WorldRules.WorldLengthMean = r.D("WorldLengthMean");
+            WorldRules.WorldLengthStdDev = r.D("WorldLengthStdDev");
+            WorldRules.WorldLengthMin = r.I("WorldLengthMin");
+            WorldRules.WorldLengthMax = r.I("WorldLengthMax");
+            WorldRules.WorldHeightLengthRatio = r.D("WorldHeightLengthRatio");
+            WorldRules.SplitBlockMinimumPercentage = r.D("SplitBlockMinimumPercentage");
+            WorldRules.RegionsMean = r.D("RegionsMean");
+            WorldRules.RegionsStdDev = r.D("RegionsStdDev");
+            WorldRules.RegionsMin = r.I("RegionsMin");
+            WorldRules.RegionsMax = r.I("RegionsMax");
+            WorldRules.ZoomScaleLarge = r.I("ZoomScaleLarge");
+            WorldRules.ZoomScaleSmall = r.I("ZoomScaleSmall");
+            WorldRules.CoastlineBorderMean = r.D("CoastlineBorderMean");
+            WorldRules.CoastlineBorderStdDev = r.D("CoastlineBorderStdDev");
+            WorldRules.CoastlineBorderMin = r.D("CoastlineBorderMin");
+            WorldRules.CoastlineBorderMax = r.D("CoastlineBorderMax");
+            WorldRules.SeasPerContinentMin = r.I("SeasPerContinentMin");
+            WorldRules.SeasPerContinentMax = r.I("SeasPerContinentMax");
+            WorldRules.ContinentPerSeaMin = r.D("ContinentPerSeaMin");
+            WorldRules.ContinentPerSeaMax = r.D("ContinentPerSeaMax");
+            WorldRules.ContinentInSeasTotalMin = r.D("ContinentInSeasTotalMin");
+            WorldRules.ContinentInSeasTotalMax = r.D("ContinentInSeasTotalMax");
+            WorldRules.MediterraneanSeaProbability = r.D("MediterraneanSeaProbability");
+            WorldRules.ContinentCoastErosionMin = r.D("ContinentCoastErosionMin");
+            WorldRules.ContinentCoastErosionMax = r.D("ContinentCoastErosionMax");
+            r.Finish();
         }
 
         /// <summary>
@@ -472,18 +518,12 @@ namespace LoreGen.Simulation
         /// <summary>
         /// Loads terrain rules from TerrainRules.csv. 
         /// </summary>
-        private void InitializeTerrainRules()
+        public void InitializeTerrainRules()
         {
+            var r = new RuleReader("TerrainRules.csv", ReadKeyedValues("TerrainRules.csv"));
             TerrainRules = new TerrainRules();
-            string[] terrainRulesLines = ReadDataLines("TerrainRules.csv");
-            double[] terrainInfo = new double[terrainRulesLines.Length];
-            for (int i = 0; i < terrainRulesLines.Length; i++)
-            {
-                string[] line = terrainRulesLines[i].Split(new char[] { ',' });
-                terrainInfo[i] = Convert.ToDouble(line[1]);
-            }
-
-            TerrainRules.CombinationWeightReducer = terrainInfo[0];
+            TerrainRules.CombinationWeightReducer = r.D("CombinationWeightReducer");
+            r.Finish();
         }
 
     }

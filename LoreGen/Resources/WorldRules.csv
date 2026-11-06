@@ -1,27 +1,28 @@
-Number of continents (min),1
-Number of continents (max),9
-World length (x 100m) (mean),400000
-World length (x 100m) (stddev),50000
-World length (x 100m) (min),100000
-World length (x 100m) (max),700000
-World map height/length ratio,0.75
-Split block percentage minimum percentage of parent block,0.25
-Global number of regions (mean),40
-Global number of regions (std dev),5
-Global number of regions (min),25
-Global number of regions (max),55
-Number of blocks per section in a large zoom,10000
-Number of blocks per section in a small zoom,100
-Percent of continent edge devoted to water (mean),0.1
-Percent of continent edge devoted to water (stddev),0.02
-Percent of continent edge devoted to water (min),0.04
-Percent of continent edge devoted to water (max),0.16
-Number of seas per continent (min),0
-Number of seas per continent (max),2
-Percent of continent in one sea (min),0.05
-Percent of continent in one sea (max),0.15
-Percent of continent total in seas (min),0
-Percent of continent total in seas (max),0.3
-Percent chance a sea is mediterranean,0.15
-Percent of continent worn away (min),0.2
-Percent of continent worn away (max),0.4
+# Key,Value,Description  -- rows may appear in any order; keys must match exactly.
+ContinentsMin,1,Number of continents (min)
+ContinentsMax,9,Number of continents (max)
+WorldLengthMean,400000,World length (x 100m) (mean)
+WorldLengthStdDev,50000,World length (x 100m) (stddev)
+WorldLengthMin,100000,World length (x 100m) (min)
+WorldLengthMax,700000,World length (x 100m) (max)
+WorldHeightLengthRatio,0.75,World map height/length ratio
+SplitBlockMinimumPercentage,0.25,Split block percentage minimum percentage of parent block
+RegionsMean,40,Global number of regions (mean)
+RegionsStdDev,5,Global number of regions (std dev)
+RegionsMin,25,Global number of regions (min)
+RegionsMax,55,Global number of regions (max)
+ZoomScaleLarge,10000,Number of blocks per section in a large zoom
+ZoomScaleSmall,100,Number of blocks per section in a small zoom
+CoastlineBorderMean,0.1,Percent of continent edge devoted to water (mean)
+CoastlineBorderStdDev,0.02,Percent of continent edge devoted to water (stddev)
+CoastlineBorderMin,0.04,Percent of continent edge devoted to water (min)
+CoastlineBorderMax,0.16,Percent of continent edge devoted to water (max)
+SeasPerContinentMin,0,Number of seas per continent (min)
+SeasPerContinentMax,2,Number of seas per continent (max)
+ContinentPerSeaMin,0.05,Percent of continent in one sea (min)
+ContinentPerSeaMax,0.15,Percent of continent in one sea (max)
+ContinentInSeasTotalMin,0,Percent of continent total in seas (min)
+ContinentInSeasTotalMax,0.3,Percent of continent total in seas (max)
+MediterraneanSeaProbability,0.15,Percent chance a sea is mediterranean
+ContinentCoastErosionMin,0.2,Percent of continent worn away (min)
+ContinentCoastErosionMax,0.4,Percent of continent worn away (max)

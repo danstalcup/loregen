@@ -63,6 +63,18 @@ namespace LoreGen.WorldGen
         /// <returns></returns>
         public static World GenerateWorld(SimEngine simEngine)
         {
+            switch (simEngine.Configuration.GeneratorMode)
+            {
+                case WorldGeneratorMode.Legacy:
+                    return GenerateLegacyWorld(simEngine);
+                default:
+                    // Checked before a World is constructed so a failed attempt doesn't leave simEngine.World half-built
+                    throw new NotImplementedException("World generator '" + simEngine.Configuration.GeneratorMode + "' is not implemented yet.");
+            }
+        }
+
+        private static World GenerateLegacyWorld(SimEngine simEngine)
+        {
             //Create world
             World world = new World(simEngine);                               
                         

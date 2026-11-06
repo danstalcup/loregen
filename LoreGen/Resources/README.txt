@@ -2,10 +2,15 @@ Last updated: 4/9/16
 
 WorldRules.csv
 
-This file contains the probabilities used when generating the layout of a world. Values must remain in order. All values read from the second column.
+This file contains the probabilities used when generating the layout of a world.
+Rows may appear in any order. Every key must be present, and unrecognized keys are an error.
 Format for each row:
-Description of value [,]
-Value
+Key (*) [,]
+Value [,]
+Description (optional, ignored by the program; must not contain commas)
+
+(*) The key is the exact name of the matching field in the WorldRules struct, e.g. ContinentsMin.
+Blank lines and lines starting with # are ignored. Decimal numbers always use '.', whatever the machine's language.
 
 LetterSounds.txt
 
@@ -29,10 +34,8 @@ IDs of letter sounds in this phonetic vocalbulary [separated by ,s]
 
 LanguageRules.csv
 
-This file contains the probabilities used when generating new words in new languages. Values must remain in order. All values read from the second column.
-Format for each row:
-Description of value [,]
-Value
+This file contains the probabilities used when generating new words in new languages.
+Same key-based format as WorldRules.csv; keys match the fields of the LanguageRules struct, e.g. LongRimeProbability.
 
 ClimateTypes.csv
 
@@ -126,7 +129,5 @@ Weights put to words:
 
 TerrainRules.csv
 
-This file contains values used when generating biome and terrain patterns. Values must remain in order. All values read from the second column.
-Format for each row:
-Description of value [,]
-Value
+This file contains values used when generating biome and terrain patterns.
+Same key-based format as WorldRules.csv; keys match the fields of the TerrainRules struct, e.g. CombinationWeightReducer.

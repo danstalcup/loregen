@@ -1,1 +1,2 @@
-Adjustment when combining climate type weights (larger number means combinations are less likely -- range of 3 to 6 recommended),4.5
+# Key,Value,Description  -- rows may appear in any order; keys must match exactly.
+CombinationWeightReducer,4.5,Adjustment when combining climate type weights (larger number means combinations are less likely -- range of 3 to 6 recommended)
