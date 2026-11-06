@@ -141,3 +141,5 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
 }
 .loading-progress-text { position: absolute; text-align: center; font-weight: bold; inset: calc(20vh + 3.25rem) 0 auto 0.2rem; color: var(--muted); }
 .loading-progress-text:after { content: var(--blazor-load-percentage-text, "Loading"); }
+
+.error { color: #b00020; padding: 0.5rem 1rem; margin: 0; }

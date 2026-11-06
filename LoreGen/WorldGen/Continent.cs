@@ -318,7 +318,7 @@ namespace LoreGen.WorldGen
 
                     WorldBlock nextEdgeBlock = ListR<WorldBlock>.RandomFromList(seaBlockEdge,Rnd);
                     //List<WorldBlock> nextSeaBlockPossibilities = nextEdgeBlock.SurroundingBlocks().Where(wb => wb.Status.WaterStatus == WorldBlockWaterStatus.Coastline).ToList();
-                    List<WorldBlock> nextSeaBlockPossibilities = nextEdgeBlock.SurroundingBlocksAsList();
+                    List<WorldBlock> nextSeaBlockPossibilities = nextEdgeBlock.SurroundingBlocksAsList().Where(sb => sb.Status.Continent == this && sb.Status.WaterStatus != WorldBlockWaterStatus.Water).ToList();
                     
                     if (nextSeaBlockPossibilities.Count == 0) continue;
 

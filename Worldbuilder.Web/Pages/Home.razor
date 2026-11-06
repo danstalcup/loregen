@@ -18,6 +18,11 @@
     </form>
 </header>
 
+@if (error != null)
+{
+    <p class="error" role="alert">@error</p>
+}
+
 <nav class="tabs" role="tablist">
     @foreach (var (key, label) in Tabs)
     {
@@ -44,6 +49,7 @@
     private string tab = "map";
     private int seedInput;
     private bool busy;
+    private string error;
 
     protected override void OnInitialized()
     {
@@ -65,7 +71,15 @@
         busy = true;
         StateHasChanged();
         await Task.Delay(30); // let the UI paint the busy state before the (synchronous) generation
-        generate();
+        try
+        {
+            generate();
+            error = null;
+        }
+        catch (Exception ex)
+        {
+            error = $"World generation failed: {ex.Message}. Try another seed.";
+        }
         busy = false;
     }
 
