@@ -1,0 +1,54 @@
+@using LoreGen.Terrains
+@using Worldbuilder.Web.Services
+@inject WorldSession Session
+
+@{
+    var data = Session.Engine.SimData;
+}
+
+<p class="muted">The raw data the simulation loaded (defaults embedded in LoreGen).</p>
+
+<details class="card" open>
+    <summary>Climate types (@data.ClimateTypes.Count) and climates (@data.Climates.Count)</summary>
+    <table>
+        <thead><tr><th>Climate type</th><th class="num">ID</th></tr></thead>
+        <tbody>@foreach (var ct in data.ClimateTypes) { <tr><td>@ct.Name</td><td class="num">@ct.ID</td></tr> }</tbody>
+    </table>
+    <table>
+        <thead><tr><th>Climate</th><th>Primary</th><th>Secondary</th><th class="num">ID</th></tr></thead>
+        <tbody>@foreach (var c in data.Climates) { <tr><td>@c.Name</td><td>@c.PrimaryClimateType.Name</td><td>@c.SecondaryClimateType.Name</td><td class="num">@c.ID</td></tr> }</tbody>
+    </table>
+</details>
+
+<details class="card">
+    <summary>Terrain types (@data.TerrainTypes.Count) and terrains (@data.Terrains.Count)</summary>
+    <table>
+        <thead><tr><th>Terrain type</th><th class="num">ID</th></tr></thead>
+        <tbody>@foreach (var tt in data.TerrainTypes) { <tr><td>@tt.Name</td><td class="num">@tt.ID</td></tr> }</tbody>
+    </table>
+    <table>
+        <thead><tr><th>Terrain</th><th>Type</th><th>Climate</th><th class="num">ID</th></tr></thead>
+        <tbody>@foreach (var t in data.Terrains) { <tr><td>@t.Name</td><td>@t.TerrainType.Name</td><td>@t.Climate.Name</td><td class="num">@t.ID</td></tr> }</tbody>
+    </table>
+</details>
+
+<details class="card">
+    <summary>Biomes (@data.Biomes.Count)</summary>
+    <table>
+        <thead><tr><th>Name</th><th>Temperature</th><th>Precipitation</th><th>Contour</th><th>Seasons (temp)</th><th>Seasons (precip)</th><th>Habitability</th></tr></thead>
+        <tbody>
+            @foreach (var b in data.Biomes)
+            {
+                <tr>
+                    <td>@b.Name</td>
+                    <td>@Biome.TraitName(b.Temperature)</td>
+                    <td>@Biome.TraitName(b.Precipitation)</td>
+                    <td>@Biome.TraitName(b.Contour)</td>
+                    <td>@Biome.TraitName(b.SeasonsTemp)</td>
+                    <td>@Biome.TraitName(b.SeasonsPrecip)</td>
+                    <td>@Biome.TraitName(b.Habitability)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</details>

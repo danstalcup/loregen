@@ -59,10 +59,27 @@ namespace LoreGen.Simulation
         /// Initializes the SimEngine and loads configuration data
         /// </summary>
         /// <param name="ConfigFilepath">filepath of configuration file</param>
-        public SimEngine(string ConfigFilepath="loregen.config")
+        public SimEngine(string ConfigFilepath="loregen.config") : this(ConfigFilepath, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes the SimEngine with a specific random seed (no configuration file is needed)
+        /// </summary>
+        /// <param name="Seed">seed for the random number generator, or null for a clock-based seed</param>
+        public SimEngine(int? Seed) : this(null, Seed)
+        {
+        }
+
+        private SimEngine(string ConfigFilepath, int? Seed)
         {
             Configuration = new SimEngineConfiguration(ConfigFilepath);
-            Configuration.Configure();
+            if (ConfigFilepath != null) Configuration.Configure();
+            if (Seed.HasValue)
+            {
+                Configuration.UsePresetSeed = true;
+                Configuration.PresetSeed = Seed.Value;
+            }
 
             if (Configuration.UsePresetSeed)
             {
