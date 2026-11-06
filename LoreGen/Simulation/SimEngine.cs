@@ -175,22 +175,30 @@ namespace LoreGen.Simulation
         public SimEngineConfiguration(string ConfigFilepath)
         {
             ConfigFileSuccessfullyRead = false;
-            DataFolder = "Default";
+            DataFolder = "Resources";
             Version = "0.12";
             UsePresetSeed = false;
             PresetSeed = 0;
             this.ConfigFilepath = ConfigFilepath;
         }
 
+        /// <summary>
+        /// Resolves a (possibly relative) path against the running assembly's base directory, so data/config
+        /// lookups don't depend on the process's current working directory.
+        /// </summary>
+        private static string ResolveAgainstBaseDirectory(string path)
+        {
+            return Path.IsPathRooted(path) ? path : Path.Combine(AppContext.BaseDirectory, path);
+        }
 
         /// <summary>
         /// Loads and processes the configuration file
         /// </summary>
         public void Configure()
-        {            
+        {
             try
             {
-                string[] ConfigLines = File.ReadAllLines(ConfigFilepath);
+                string[] ConfigLines = File.ReadAllLines(ResolveAgainstBaseDirectory(ConfigFilepath));
                 foreach (string ConfigLine in ConfigLines)
                 {
                     string[] ConfigLineData = ConfigLine.Trim().Split(new char[] { '=' });
