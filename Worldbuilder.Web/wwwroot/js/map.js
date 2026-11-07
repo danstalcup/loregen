@@ -3,6 +3,13 @@
 
 const states = new WeakMap();
 
+// Tileset image: a grid of 15px cells, a 1px gridline on each cell's top/left edge. Column = terrain type ID,
+// row = climate ID (row 0 and column 0 hold the sheet's labels).
+const TILE_PITCH = 15;
+const TILE_SIZE = 14;
+const tileset = new Image();
+tileset.src = new URL('../img/tiles1.png', import.meta.url).href;
+
 export function attach(canvas, dotNetRef) {
     const state = { canvas, dotNetRef, rects: null, width: 1, height: 1, selected: null };
     states.set(canvas, state);
@@ -19,6 +26,9 @@ export function attach(canvas, dotNetRef) {
         const [fx, fy] = frac(e);
         dotNetRef.invokeMethodAsync('OnMapPointer', fx, fy, true);
     });
+
+    state.onTilesLoaded = () => paint(state);
+    tileset.addEventListener('load', state.onTilesLoaded);
 
     state.observer = new ResizeObserver(() => paint(state));
     state.observer.observe(canvas);
@@ -45,6 +55,7 @@ export function detach(canvas) {
     const state = states.get(canvas);
     if (state) {
         state.observer.disconnect();
+        tileset.removeEventListener('load', state.onTilesLoaded);
         states.delete(canvas);
     }
 }
@@ -62,11 +73,19 @@ function paint(state) {
     if (!rects) return;
 
     const sx = pw / width, sy = ph / height;
-    for (let i = 0; i < rects.length; i += 5) {
+    ctx.imageSmoothingEnabled = false;
+    const tilesReady = tileset.complete && tileset.naturalWidth > 0;
+    for (let i = 0; i < rects.length; i += 6) {
         const x0 = Math.floor(rects[i] * sx), y0 = Math.floor(rects[i + 1] * sy);
         const x1 = Math.ceil((rects[i] + rects[i + 2]) * sx), y1 = Math.ceil((rects[i + 1] + rects[i + 3]) * sy);
-        ctx.fillStyle = '#' + rects[i + 4].toString(16).padStart(6, '0');
-        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        const tile = rects[i + 5];
+        if (tile >= 0 && tilesReady) {
+            const col = tile & 255, row = tile >> 8;
+            ctx.drawImage(tileset, col * TILE_PITCH + 1, row * TILE_PITCH + 1, TILE_SIZE, TILE_SIZE, x0, y0, x1 - x0, y1 - y0);
+        } else {
+            ctx.fillStyle = '#' + rects[i + 4].toString(16).padStart(6, '0');
+            ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        }
     }
 
     if (selected) {

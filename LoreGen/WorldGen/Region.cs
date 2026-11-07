@@ -31,32 +31,8 @@ namespace LoreGen.WorldGen
 
         public Language Language; // Add multiple languages per region
 
-        /*public Region(Continent Continent, WorldBlockRectangle RegionBlock)
-        {
-            this.World = Continent.World;
-            this.RegionBlock = RegionBlock;
-            this.RegionBlock.Entity = this;
-            this.WorldEntityType = WorldEntityType.Region;
-            this.Continent = Continent;
-            this.Language = Continent.RootLanguage.Skew();
-            this.Name = this.Language.GetName();
-            Continent.Regions.Add(this);
-            SelectBiome();
-            foreach (WorldBlock wb in RegionBlock.Blocks())
-            {
-                wb.Status.Region = this;
-                if(wb.Status.WaterStatus != WorldBlockWaterStatus.Water)
-                    wb.Status.Terrain = this.Biome.TerrainPattern.Get();
-                foreach (WorldBlock child in wb.ChildBlocksAsList(true))
-                {
-                    child.Status.Region = this;
-                    if (child.Status.WaterStatus != WorldBlockWaterStatus.Water)
-                        child.Status.Terrain = this.Biome.TerrainPattern.Get();
-                }
-            }
-        }*/
 
-        public Region(Continent Continent, WorldBlockArea RegionArea)
+        public Region(Continent Continent, WorldBlockArea RegionArea, Biome Biome = null)
         {
             this.World = Continent.World;
             this.RegionArea = RegionArea;
@@ -66,7 +42,8 @@ namespace LoreGen.WorldGen
             this.Language = Continent.RootLanguage.Copy().Skew();
             this.Name = this.Language.GetName();
             Continent.Regions.Add(this);
-            SelectBiome();
+            if (Biome != null) this.Biome = Biome;
+            else SelectBiome();
             foreach (WorldBlock wb in RegionArea.Blocks())
             {
                 wb.Status.Region = this;
@@ -103,18 +80,10 @@ namespace LoreGen.WorldGen
         /// <param name="Continent">Continent that contains this region</param>
         /// <param name="RegionBlock">Area representing the region</param>
         /// <returns>Generated region</returns>
-        /*public static Region GenerateRegion(Continent Continent, WorldBlockRectangle RegionBlock)
-        {
-            Region reg = new Region(Continent, RegionBlock);            
-            
-            reg.DisplayInfo = WorldEntityDisplayInfo.GenerateWithRandomColor(reg);                                    
 
-            return reg;
-        }*/
-
-        public static Region GenerateRegion(Continent Continent, WorldBlockArea RegionArea)
+        public static Region GenerateRegion(Continent Continent, WorldBlockArea RegionArea, Biome Biome = null)
         {
-            Region reg = new Region(Continent, RegionArea);
+            Region reg = new Region(Continent, RegionArea, Biome);
 
             reg.DisplayInfo = WorldEntityDisplayInfo.GenerateWithRandomColor(reg);
 

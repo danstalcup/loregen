@@ -119,6 +119,7 @@ namespace LoreGen.Simulation
                 throw new InvalidOperationException("World generator '" + generator.Id + "' returned no world.");
             generated.GeneratorId = generator.Id;
             generated.GeneratorVersion = generator.Version;
+            generated.GeneratorSettings = new Dictionary<string, double>(Configuration.GeneratorSettings, StringComparer.OrdinalIgnoreCase);
             World = generated;
         }
         
@@ -189,6 +190,12 @@ namespace LoreGen.Simulation
         public string GeneratorId = WorldGeneratorRegistry.DefaultId;
 
         /// <summary>
+        /// Settings for the world generator, by name (see IWorldGenerator.GetOptions for what a generator offers). In the
+        /// config file, write them as "setting.Name=value". Names are not case-sensitive.
+        /// </summary>
+        public Dictionary<string, double> GeneratorSettings = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// File path of the configuration file
         /// </summary>
         public string ConfigFilepath;
@@ -238,6 +245,11 @@ namespace LoreGen.Simulation
                     if (ConfigLineData[0].Trim().ToLower() == "usepresetseed")
                     {
                         UsePresetSeed = Convert.ToBoolean(ConfigLineData[1].Trim());
+                    }
+                    if (ConfigLineData[0].Trim().StartsWith("setting.", StringComparison.OrdinalIgnoreCase))
+                    {
+                        GeneratorSettings[ConfigLineData[0].Trim().Substring("setting.".Length)] =
+                            double.Parse(ConfigLineData[1].Trim(), System.Globalization.CultureInfo.InvariantCulture);
                     }
                     if (ConfigLineData[0].Trim().ToLower() == "generatormode")
                     {

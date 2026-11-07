@@ -131,13 +131,6 @@ namespace LoreGen.WorldGen
             }
         }
 
-        /*public WorldBlock(WorldBlock ParentBlock)
-        {
-            this.ParentBlock = ParentBlock;
-            this.SimEngine = ParentBlock.SimEngine;
-            this.Status = ParentBlock.Status.Copy();
-            Depth = ParentBlock.Depth + 1;             
-        }*/
 
         /// <summary>
         /// General constructor
@@ -218,14 +211,6 @@ namespace LoreGen.WorldGen
                     }
                 }
             }
-            /*
-            if (SurroundingBlocksAsList().Any(wb => wb.Status.WaterStatus != WorldBlockWaterStatus.Water))
-            {
-                foreach (WorldBlock wb in ChildBlocksAsList().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Water))
-                {
-                    WorldTasks.FixCoastlineForWaterBlock(wb);
-                }
-            }*/
         }
 
         /// <summary>
@@ -511,6 +496,18 @@ namespace LoreGen.WorldGen
         /// </summary>
         public double? Elevation;
 
+        /// <summary>
+        /// Climate of this block for generators that model it (null for those that don't): 0 is the coldest and 1 the
+        /// hottest. Use <see cref="Terrains.ClimateScale"/> to turn it into a named class.
+        /// </summary>
+        public double? Temperature;
+
+        /// <summary>
+        /// Wetness of this block for generators that model climate (null for those that don't): 0 is the driest land
+        /// in the world and 1 the wettest. Use <see cref="Terrains.ClimateScale"/> to turn it into a named class.
+        /// </summary>
+        public double? Moisture;
+
         public WorldBlockWaterStatus WaterStatus;
 
         /// <summary>
@@ -528,6 +525,8 @@ namespace LoreGen.WorldGen
                 Terrain = this.Terrain,
                 WaterStatus = this.WaterStatus,
                 Elevation = this.Elevation,
+                Temperature = this.Temperature,
+                Moisture = this.Moisture,
                 RegionBoundariesHaveBeenSmoothed = false
             };
         }        

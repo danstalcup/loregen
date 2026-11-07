@@ -13,7 +13,8 @@
         <h3>World</h3>
         <dl class="info">
             <dt>Seed</dt><dd>@Session.Seed</dd>
-            <dt>Generator</dt><dd>@GeneratorName (v@world.GeneratorVersion)</dd>
+            <dt>Generator</dt><dd>@GeneratorName (version @(world.GeneratorVersion))</dd>
+            <dt>Options</dt><dd>@SettingsText</dd>
             <dt>Grid size</dt><dd>@root.Width &times; @root.Height blocks</dd>
             <dt>Continents</dt><dd>@world.Continents.Count</dd>
             <dt>Oceans</dt><dd>@world.Oceans.Count</dd>
@@ -59,6 +60,21 @@
     protected override void OnInitialized() => Session.Changed += OnChanged;
     private void OnChanged() => InvokeAsync(StateHasChanged);
     public void Dispose() => Session.Changed -= OnChanged;
+
+    private string SettingsText
+    {
+        get
+        {
+            var settings = Session.Engine.World.GeneratorSettings;
+            if (settings.Count == 0) return "defaults";
+            var options = Session.OptionsFor(Session.Engine.World.GeneratorId);
+            return string.Join(", ", settings.Select(s =>
+            {
+                var option = options.FirstOrDefault(o => string.Equals(o.Key, s.Key, StringComparison.OrdinalIgnoreCase));
+                return option == null ? $"{s.Key} {s.Value}" : $"{option.Name} {option.Format(s.Value)}";
+            }));
+        }
+    }
 
     private string GeneratorName =>
         Session.Generators.FirstOrDefault(g => g.Id == Session.Engine.World.GeneratorId)?.DisplayName ?? Session.Engine.World.GeneratorId;

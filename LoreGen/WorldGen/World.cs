@@ -45,6 +45,12 @@ namespace LoreGen.WorldGen
         public string GeneratorVersion { get; internal set; }
 
         /// <summary>
+        /// The generator settings this world was made with (empty if the generator's defaults were used). The seed, generator
+        /// Id and Version, and these settings together identify the world. Set by SimEngine.
+        /// </summary>
+        public IReadOnlyDictionary<string, double> GeneratorSettings { get; internal set; } = new Dictionary<string, double>();
+
+        /// <summary>
         /// Just does basic initialization. To generate a world, use SimEngine.GenerateWorld
         /// </summary>
         /// <param name="SimEngine">Sim engine</param>

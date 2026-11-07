@@ -148,6 +148,63 @@ namespace LoreGen.Tests
             }
         }
 
+        // ---- Settings -------------------------------------------------------------------------
+
+        [Theory]
+        [MemberData(nameof(GeneratorIds))]
+        public void RejectsSettingsItDoesNotUnderstand(string id)
+        {
+            var engine = new SimEngine(1);
+            engine.Configuration.GeneratorId = id;
+            engine.Configuration.GeneratorSettings["NoSuchSetting"] = 1;
+            var ex = Assert.ThrowsAny<Exception>(() => engine.GenerateWorld());
+            Assert.Contains("NoSuchSetting", ex.Message);
+            Assert.Null(engine.World);
+        }
+
+        [Theory]
+        [MemberData(nameof(GeneratorIds))]
+        public void EveryOptionIsSafeAcrossItsWholeRange(string id)
+        {
+            var probe = new SimEngine(1);
+            var options = probe.Generators.Get(id).GetOptions(probe.SimData);
+            Assert.Equal(options.Count, options.Select(o => o.Key.ToLowerInvariant()).Distinct().Count());
+
+            foreach (var option in options)
+            {
+                // The ends of the range, and one step in from the bottom (just above an "automatic" zero)
+                var values = new[] { option.Minimum, Math.Min(option.Maximum, option.Minimum + option.Step), option.Maximum }.Distinct();
+                foreach (double value in values)
+                {
+                    var engine = new SimEngine(2);
+                    engine.Configuration.GeneratorId = id;
+                    engine.Configuration.GeneratorSettings[option.Key] = value;
+                    try
+                    {
+                        engine.GenerateWorld();
+                        AssertWellFormed(engine);
+                    }
+                    catch (Exception ex) { throw new Exception("Generator '" + id + "', " + option.Key + " = " + value + ": " + ex.Message, ex); }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GeneratorIds))]
+        public void SettingEveryOptionToItsDefaultChangesNothing(string id)
+        {
+            var probe = new SimEngine(1);
+            var options = probe.Generators.Get(id).GetOptions(probe.SimData);
+
+            var plain = Generate(id, 9);
+            var explicitDefaults = new SimEngine(9);
+            explicitDefaults.Configuration.GeneratorId = id;
+            foreach (var option in options) explicitDefaults.Configuration.GeneratorSettings[option.Key] = option.Default;
+            explicitDefaults.GenerateWorld();
+
+            Assert.Equal(Describe(plain.World), Describe(explicitDefaults.World));
+        }
+
         // ---- Determinism and isolation --------------------------------------------------------
 
         [Theory]

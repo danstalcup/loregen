@@ -424,7 +424,7 @@ namespace LoreGen.Simulation
             foreach(string terrainTypeLine in terrainTypeLines)
             {
                 string[] line = terrainTypeLine.Split(new char[] { ',' });
-                TerrainTypes.Add(new TerrainType(ToI(line[1]), line[0], line[2]));
+                TerrainTypes.Add(new TerrainType(ToI(line[1]), line[0], line[2], line.Length > 3 && line[3].Trim().Length > 0 ? ToI(line[3]) : TerrainType.DefaultRelief));
             }
         }
 

@@ -42,6 +42,36 @@ namespace LoreGen.WorldDisplay
             return Color.Black;
         }
 
+        /// <summary>
+        /// Name of the temperature class of a block, or null if the block has no temperature.
+        /// </summary>
+        public static string TemperatureBand(WorldBlock Block)
+        {
+            double? t = Block.Status.Temperature;
+            return t.HasValue ? Terrains.Biome.TraitName(Terrains.ClimateScale.Temperature(t.Value)) : null;
+        }
+
+        /// <summary>
+        /// Name of the moisture (precipitation) class of a block, or null if the block has no moisture.
+        /// </summary>
+        public static string MoistureBand(WorldBlock Block)
+        {
+            double? m = Block.Status.Moisture;
+            return m.HasValue ? Terrains.Biome.TraitName(Terrains.ClimateScale.Precipitation(m.Value)) : null;
+        }
+
+        private static readonly Color[] TemperatureColors =
+        {
+            Color.FromArgb(80, 110, 210), Color.FromArgb(120, 190, 225), Color.FromArgb(110, 190, 100),
+            Color.FromArgb(235, 200, 70), Color.FromArgb(215, 80, 50)
+        };
+
+        private static readonly Color[] MoistureColors =
+        {
+            Color.FromArgb(214, 190, 130), Color.FromArgb(190, 200, 120), Color.FromArgb(110, 180, 100),
+            Color.FromArgb(50, 140, 110), Color.FromArgb(20, 95, 120)
+        };
+
         public static Color GetColor(WorldBlock Block, MapContext MapContext)
         {
             if (MapContext == MapContext.Elevation) return ElevationColor(Block);
@@ -50,6 +80,12 @@ namespace LoreGen.WorldDisplay
             //if (null != Block.Status.Sea) return Color.DarkBlue;
 
             if (Block.Status.WaterStatus == WorldBlockWaterStatus.Water) return Color.Blue;
+
+            if (MapContext == MapContext.Temperature && Block.Status.Temperature.HasValue)
+                return TemperatureColors[(int)Terrains.ClimateScale.Temperature(Block.Status.Temperature.Value)];
+
+            if (MapContext == MapContext.Moisture && Block.Status.Moisture.HasValue)
+                return MoistureColors[(int)Terrains.ClimateScale.Precipitation(Block.Status.Moisture.Value)];
 
             if(MapContext == MapContext.Continents)
             {                
@@ -107,6 +143,6 @@ namespace LoreGen.WorldDisplay
     }
     public enum MapContext
     {
-        General, Continents, Regions, Biomes, Terrains, TerrainTiles, Elevation
+        General, Continents, Regions, Biomes, Terrains, TerrainTiles, Elevation, Temperature, Moisture
     }
 }

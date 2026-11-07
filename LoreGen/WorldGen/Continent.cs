@@ -99,11 +99,6 @@ namespace LoreGen.WorldGen
             //generate seas
             //cont.GenerateSeas();
 
-            /*foreach (WorldBlock wb in cont.ContinentArea.Blocks().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline))
-            {
-                WorldTasks.ApplyCoastlineToBlock(wb, 10);                
-                //cont.ErodeCoastlineBlock(wb);
-            }*/
 
             //cont.ErodeCoastlineAllBlocks();
             //generate regions
@@ -150,69 +145,9 @@ namespace LoreGen.WorldGen
             Seas = new List<Sea>();            
         }
 
-        /// <summary>
-        /// Generates a continent
-        /// </summary>
-        /// <param name="World">World in which continent resides</param>
-        /// <param name="ContinentBlock">Block representing this continent</param>
-        /// <param name="NumRegions">Number of regions in this continent</param>
-        /// <returns>Generated continent</returns>
-        public static Continent GenerateContinent(World World, WorldBlockRectangle ContinentBlock, int NumRegions)
-        {
-            Continent cont = new Continent(World, ContinentBlock);
-
-            cont.DisplayInfo = WorldEntityDisplayInfo.GenerateWithRandomColor(cont);
-
-            cont.ErodeCoasts();
-
-            //generate seas
-            //cont.GenerateSeas();
-
-            foreach (WorldBlock wb in ContinentBlock.Blocks().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline))
-            {
-                WorldTasks.ApplyCoastlineToBlock(wb, 10);
-                //cont.ErodeCoastlineBlock(wb);
-            }
-
-            cont.ErodeCoastlineAllBlocks();
-            //generate regions
-            cont.NewNewGenerateRegions(NumRegions);
-
-            return cont;
-
-        }
-
-        private void ErodeCoastlineAllBlocks()
-        {
-            //int CIRC_FACT = 10;
-            double erosionPercent = Rnd.Unweighted(Rules.ContinentCoastErosionMin, Rules.ContinentCoastErosionMax);
-            int continentCircumference = ContinentBlock.Blocks().SelectMany(b => b.ChildBlocksAsList()).Where(cb => cb != null && cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline).Count();
-            int estimateCoastlineArea = ContinentBlock.Blocks().SelectMany(b => b.ChildBlocksAsList()).Where(cb => cb != null && cb.Status.WaterStatus != WorldBlockWaterStatus.Water).Count();
-            int erosionCount = (int)Math.Round(erosionPercent * estimateCoastlineArea, MidpointRounding.AwayFromZero);
-
-            List<WorldBlock> erosionCandidates = ContinentBlock.Blocks().SelectMany(b => b.ChildBlocksAsList()).Where(cb => cb != null && cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline).ToList();
-
-            for (int i = 0; i < erosionCount; i++)
-            {
-                WorldBlock erosionBlock = ListR<WorldBlock>.RandomFromList(erosionCandidates, Rnd);//ListR<WorldBlock>.RandomFromList(ContinentBlock.Blocks().SelectMany(b => b.ChildBlocksAsList()).Where(cb => cb != null && cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline).ToList(), Rnd);
-                erosionBlock.Status.WaterStatus = WorldBlockWaterStatus.Water;
-                erosionCandidates.Remove(erosionBlock);
-                erosionCandidates.AddRange(WorldTasks.FixCoastlineForWaterBlock(erosionBlock));
-            } 
-        }
 
 
-        private void ErodeCoasts()
-        {
-            double erosionPercent = Rnd.Unweighted(Rules.ContinentCoastErosionMin, Rules.ContinentCoastErosionMax);
-            int erosionCount = (int)Math.Round(erosionPercent * ContinentBlock.Area(), MidpointRounding.AwayFromZero);
-            for (int i = 0; i < erosionCount; i++)
-            {
-                WorldBlock erosionBlock = ListR<WorldBlock>.RandomFromList(ContinentBlock.Blocks().Where(wb => wb.Status.WaterStatus == WorldBlockWaterStatus.Coastline).ToList(), Rnd);
-                erosionBlock.Status.WaterStatus = WorldBlockWaterStatus.Water;
-                WorldTasks.FixCoastlineForWaterBlock(erosionBlock);
-            } 
-        }
+
 
 
         private void NewErodeCoasts()
@@ -336,128 +271,7 @@ namespace LoreGen.WorldGen
 
         }
 
-        /*private void GenerateRegions(int NumRegions)
-        {
-            List<WorldBlockRectangle> RegionBlocks = new List<WorldBlockRectangle>();
-            WorldBlockRectangle FirstRegion = new WorldBlockRectangle { ParentBlock = World.WorldBlock, Height = ContinentBlock.Height, Width = ContinentBlock.Width, X = ContinentBlock.X, Y = ContinentBlock.Y };
-            RegionBlocks.Add(FirstRegion);
 
-            for(int r=1;r<NumRegions;r++)
-            {
-                WorldBlockRectangle LargestRegion = RegionBlocks.OrderByDescending(wbr => wbr.Area()).First();
-                if(LargestRegion.Width > LargestRegion.Height)
-                {
-                    int divider = (int)Rnd.Unweighted(Rules.SplitBlockMinimumPercentage * LargestRegion.Width, (1.0 - Rules.SplitBlockMinimumPercentage) * LargestRegion.Width);
-                    if (divider == 0 || divider == LargestRegion.Width) break;
-                    WorldBlockRectangle newRegion = new WorldBlockRectangle { Height = LargestRegion.Height, Width = divider, ParentBlock = LargestRegion.ParentBlock, X = LargestRegion.X, Y = LargestRegion.Y };
-                    LargestRegion.Width -= divider;
-                    LargestRegion.X += divider;
-                    RegionBlocks.Add(newRegion);
-                }
-                else
-                {
-                    int divider = (int)Rnd.Unweighted(Rules.SplitBlockMinimumPercentage * LargestRegion.Height, (1.0 - Rules.SplitBlockMinimumPercentage) * LargestRegion.Height);
-                    if (divider == 0 || divider == LargestRegion.Height) break;
-                    WorldBlockRectangle newRegion = new WorldBlockRectangle { Width = LargestRegion.Width, Height = divider, ParentBlock = LargestRegion.ParentBlock, X = LargestRegion.X, Y = LargestRegion.Y };
-                    LargestRegion.Height -= divider;
-                    LargestRegion.Y += divider;
-                    RegionBlocks.Add(newRegion);
-                }
-            }
-
-            foreach( WorldBlockRectangle regionBlock in RegionBlocks)
-            {
-                Region.GenerateRegion(this, regionBlock);
-            }
-
-        }*/
-
-        private void NewGenerateRegions(int NumRegions)
-        {
-            List<WorldBlock> StartingBlockCandidates = ContinentBlock.Blocks().Where(cb => cb.Status.WaterStatus == WorldBlockWaterStatus.Land || cb.Status.WaterStatus == WorldBlockWaterStatus.Coastline).ToList();            
-            if(StartingBlockCandidates.Count < NumRegions)
-            {
-                NumRegions = StartingBlockCandidates.Count;
-            }
-
-            //List<WorldBlock> UnallocatedContinentBlocks = ContinentBlock.Blocks();
-            //List<WorldBlock> AllocatedContinentBlocks = new List<WorldBlock>();
-            //HashSet<WorldBlock> PossibleNextRegionBlocks = new HashSet<WorldBlock>();
-
-            WorldBlockArea[] RegionAreas = new WorldBlockArea[NumRegions];
-            WorldBlock[] StartingBlocks = new WorldBlock[NumRegions];
-            Region[] GeneratedRegions = new Region[NumRegions];
-            for (int i = 0; i < NumRegions; i++ )
-            {
-                //PossibleNextRegionBlocks.RemoveWhere(pnr => AllocatedContinentBlocks.Contains(pnr));
-                StartingBlocks[i] = ListR<WorldBlock>.RandomFromList(StartingBlockCandidates, Rnd);
-                StartingBlockCandidates.Remove(StartingBlocks[i]);
-                //UnallocatedContinentBlocks.Remove(StartingBlocks[i]);
-                //AllocatedContinentBlocks.Add(StartingBlocks[i]);
-                /*foreach(WorldBlock wb in StartingBlocks[i].SurroundingBlocks())
-                {
-                    if(wb != null)// && !AllocatedContinentBlocks.Contains(wb))
-                    {
-                        PossibleNextRegionBlocks.Add(wb);
-                    }
-                }*/
-                RegionAreas[i] = new WorldBlockArea(new List<WorldBlock> { StartingBlocks[i] }, null);
-                GeneratedRegions[i] = Region.GenerateRegion(this, RegionAreas[i]);
-            }
-
-            while(ContinentBlock.Blocks().Where(cb => cb.Status.Region == null).Count() > 0)
-            {
-                //PossibleNextRegionBlocks.RemoveWhere(pnr => AllocatedContinentBlocks.Contains(pnr));
-                WorldBlock NextAllocatedBlock = ListR<WorldBlock>.RandomFromList(ContinentBlock.Blocks().Where(cb => cb.Status.Region == null).ToList(), Rnd);
-                List<WorldBlock> PossibleRegionConnectors = NextAllocatedBlock.SurroundingBlocks().Where(nb => nb != null && nb.Status.Region != null && nb.Status.WaterStatus != WorldBlockWaterStatus.Water).ToList(); //NextAllocatedBlock.SurroundingBlocks().Where(wb => wb != null && AllocatedContinentBlocks.Contains(wb) && wb.Status.WaterStatus != WorldBlockWaterStatus.Water).ToList();
-                if (PossibleRegionConnectors.Count == 0)
-                {
-                    PossibleRegionConnectors = NextAllocatedBlock.SurroundingBlocks().Where(nb => nb != null && nb.Status.Region != null).ToList();
-                }
-                Region RegionConnector = ListR<WorldBlock>.RandomFromList(PossibleRegionConnectors,Rnd).Status.Region;
-                //WorldBlockArea NewRegionArea = RegionAreas.Where(ra => ra.BlocksList.Contains(RegionConnector)).Single();
-                //NewRegionArea.BlocksList.Add(NextAllocatedBlock);
-                //PossibleNextRegionBlocks.Remove(NextAllocatedBlock);
-                //UnallocatedContinentBlocks.Remove(NextAllocatedBlock);
-                //AllocatedContinentBlocks.Add(NextAllocatedBlock);
-                /*foreach (WorldBlock wb in NextAllocatedBlock.SurroundingBlocks())
-                {
-                    if (wb != null)// && !AllocatedContinentBlocks.Contains(wb))
-                    {
-                        PossibleNextRegionBlocks.Add(wb);
-                    }
-                }*/
-                RegionConnector.AddBlock(NextAllocatedBlock);
-            }
-
-            /*for (int r = 1; r < NumRegions; r++)
-            {
-                WorldBlockRectangle LargestRegion = RegionAreas.OrderByDescending(wbr => wbr.Area()).First();
-                if (LargestRegion.Width > LargestRegion.Height)
-                {
-                    int divider = (int)Rnd.Unweighted(Rules.SplitBlockMinimumPercentage * LargestRegion.Width, (1.0 - Rules.SplitBlockMinimumPercentage) * LargestRegion.Width);
-                    if (divider == 0 || divider == LargestRegion.Width) break;
-                    WorldBlockRectangle newRegion = new WorldBlockRectangle { Height = LargestRegion.Height, Width = divider, ParentBlock = LargestRegion.ParentBlock, X = LargestRegion.X, Y = LargestRegion.Y };
-                    LargestRegion.Width -= divider;
-                    LargestRegion.X += divider;
-                    RegionAreas.Add(newRegion);
-                }
-                else
-                {
-                    int divider = (int)Rnd.Unweighted(Rules.SplitBlockMinimumPercentage * LargestRegion.Height, (1.0 - Rules.SplitBlockMinimumPercentage) * LargestRegion.Height);
-                    if (divider == 0 || divider == LargestRegion.Height) break;
-                    WorldBlockRectangle newRegion = new WorldBlockRectangle { Width = LargestRegion.Width, Height = divider, ParentBlock = LargestRegion.ParentBlock, X = LargestRegion.X, Y = LargestRegion.Y };
-                    LargestRegion.Height -= divider;
-                    LargestRegion.Y += divider;
-                    RegionAreas.Add(newRegion);
-                }
-            }*/
-
-            foreach (WorldBlockArea regionArea in RegionAreas)
-            {
-                Region.GenerateRegion(this, regionArea);
-            }
-        }
 
         private void NewNewGenerateRegions(int NumRegions)
         {

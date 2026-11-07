@@ -13,7 +13,7 @@
     </div>
     <form class="seed" @onsubmit="GenerateFromSeed" @onsubmit:preventDefault>
         <label>Generator
-            <select @bind="generatorInput" title="@CurrentDescription">
+            <select value="@generatorInput" @onchange="OnGeneratorChanged" title="@CurrentDescription">
                 @foreach (var g in Session.Generators)
                 {
                     <option value="@g.Id" title="@g.Description">@g.DisplayName</option>
@@ -25,6 +25,11 @@
         <button type="button" class="btn primary" disabled="@busy" @onclick="GenerateRandom">@(busy ? "Generating…" : "New world")</button>
     </form>
 </header>
+
+<details class="options-panel card">
+    <summary>Options@(settingsInput.Count > 0 ? $" ({settingsInput.Count} changed)" : "")</summary>
+    <OptionsPanel Options="@Session.OptionsFor(generatorInput)" Values="@settingsInput" OnChange="@(() => { })" />
+</details>
 
 @if (error != null)
 {
@@ -57,6 +62,7 @@
     private string tab = "map";
     private int seedInput;
     private string generatorInput;
+    private Dictionary<string, double> settingsInput = new();
     private bool busy;
     private string error;
 
@@ -64,7 +70,15 @@
     {
         seedInput = Session.Seed;
         generatorInput = Session.GeneratorId;
+        settingsInput = new Dictionary<string, double>(Session.Settings);
         Session.Changed += OnChanged;
+    }
+
+    // Options belong to a generator, so switching generator starts them afresh
+    private void OnGeneratorChanged(ChangeEventArgs e)
+    {
+        generatorInput = e.Value?.ToString();
+        settingsInput = new Dictionary<string, double>();
     }
 
     private string CurrentDescription => Session.Generators.FirstOrDefault(g => g.Id == generatorInput)?.Description;
@@ -76,8 +90,8 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private Task GenerateFromSeed() => Run(() => Session.Generate(seedInput, generatorInput));
-    private Task GenerateRandom() => Run(() => Session.GenerateRandom(generatorInput));
+    private Task GenerateFromSeed() => Run(() => Session.Generate(seedInput, generatorInput, settingsInput));
+    private Task GenerateRandom() => Run(() => Session.GenerateRandom(generatorInput, settingsInput));
 
     private async Task Run(Action generate)
     {
@@ -91,7 +105,7 @@
         }
         catch (Exception ex)
         {
-            error = $"World generation failed: {ex.Message}. Try another seed.";
+            error = $"World generation failed: {ex.Message} " + (settingsInput.Count > 0 ? "Try different options or another seed." : "Try another seed.");
         }
         busy = false;
     }

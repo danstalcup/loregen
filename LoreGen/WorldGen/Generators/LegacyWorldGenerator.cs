@@ -32,6 +32,10 @@ namespace LoreGen.WorldGen.Generators
 
         public World Generate(SimEngine engine)
         {
+            if (engine.Configuration.GeneratorSettings.Count > 0)
+                throw new ArgumentException("The '" + GeneratorId + "' generator has no settings, but these were given: "
+                    + string.Join(", ", engine.Configuration.GeneratorSettings.Keys) + ".");
+
             Run run = new Run(new World(engine));
             run.GenerateWorldBlock();
             run.NewGenerateContinents();

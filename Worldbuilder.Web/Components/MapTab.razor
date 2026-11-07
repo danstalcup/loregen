@@ -14,13 +14,14 @@
             </div>
             <div class="map-options">
                 <label>Colour by
-                    <select value="@Map.Context" @onchange="OnContextChanged">
+                    <select value="@Map.Context" disabled="@Map.UseTiles" @onchange="OnContextChanged">
                         @foreach (var c in Map.AvailableContexts)
                         {
                             <option value="@c">@c</option>
                         }
                     </select>
                 </label>
+                <label class="check" title="Draw terrain tiles from the tileset image instead of colours"><input type="checkbox" checked="@Map.UseTiles" @onchange="OnTilesChanged" /> Tileset</label>
                 <label class="check"><input type="checkbox" checked="@Map.HiDef" @onchange="OnHiDefChanged" /> High detail</label>
             </div>
         </div>
@@ -160,6 +161,12 @@
     private void OnContextChanged(ChangeEventArgs e)
     {
         if (Enum.TryParse<MapContext>(e.Value?.ToString(), out var ctx)) Map.Context = ctx;
+        Redraw();
+    }
+
+    private void OnTilesChanged(ChangeEventArgs e)
+    {
+        Map.UseTiles = e.Value is bool b && b;
         Redraw();
     }
 

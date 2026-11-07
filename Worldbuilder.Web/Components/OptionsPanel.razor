@@ -1,0 +1,90 @@
+@using System.Globalization
+@using LoreGen.WorldGen.Generators
+
+@* Controls for a generator's options, built from the descriptors it supplies. Values holds only the options that differ
+   from their defaults, so an untouched panel means "use the generator as it is". *@
+
+@if (Options.Count == 0)
+{
+    <p class="muted">This generator has no options.</p>
+}
+else
+{
+    <div class="options-actions">
+        <button type="button" class="btn" disabled="@(Values.Count == 0)" @onclick="ResetAll">Reset all</button>
+    </div>
+    <div class="option-groups">
+        @foreach (var group in Options.GroupBy(o => o.Group))
+        {
+            <fieldset class="option-group">
+                <legend>@group.Key</legend>
+                @foreach (var option in group)
+                {
+                    var value = ValueOf(option);
+                    var changed = Values.ContainsKey(option.Key);
+                    <div class="option @(changed ? "changed" : "")">
+                        @if (option.Kind == GeneratorOptionKind.Toggle)
+                        {
+                            <label class="check" title="@option.Description">
+                                <input type="checkbox" checked="@(value >= 0.5)" @onchange="e => Set(option, e.Value is true ? 1 : 0)" />
+                                @option.Name
+                            </label>
+                        }
+                        else
+                        {
+                            <label title="@option.Description">@option.Name</label>
+                            <div class="slider">
+                                <input type="range" aria-label="@option.Name"
+                                       min="@Text(option.Minimum)" max="@Text(option.Maximum)" step="@Text(option.Step)"
+                                       value="@Text(value)" @oninput="e => SetFromText(option, e.Value?.ToString())" />
+                                <output>@option.Format(value)</output>
+                            </div>
+                        }
+                        <button type="button" class="reset" title="Back to @option.Format(option.Default)" aria-label="Reset @option.Name"
+                                disabled="@(!changed)" @onclick="() => Reset(option)">&#8634;</button>
+                        <small class="muted">@option.Description</small>
+                    </div>
+                }
+            </fieldset>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>What the generator offers.</summary>
+    [Parameter] public IReadOnlyList<GeneratorOption> Options { get; set; } = Array.Empty<GeneratorOption>();
+
+    /// <summary>Values that differ from the defaults, by option key. Owned by the parent; this panel edits it.</summary>
+    [Parameter] public Dictionary<string, double> Values { get; set; } = new();
+
+    /// <summary>Raised after any change to Values.</summary>
+    [Parameter] public EventCallback OnChange { get; set; }
+
+    private double ValueOf(GeneratorOption option) => Values.TryGetValue(option.Key, out var v) ? v : option.Default;
+
+    // Always '.' as the decimal separator, whatever the browser's language: that is what the range input expects
+    private static string Text(double value) => value.ToString("R", CultureInfo.InvariantCulture);
+
+    private Task SetFromText(GeneratorOption option, string text) =>
+        double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? Set(option, v) : Task.CompletedTask;
+
+    private Task Set(GeneratorOption option, double value)
+    {
+        value = option.Clamp(value);
+        if (Math.Abs(value - option.Default) < 1e-9) Values.Remove(option.Key);
+        else Values[option.Key] = value;
+        return OnChange.InvokeAsync();
+    }
+
+    private Task Reset(GeneratorOption option)
+    {
+        Values.Remove(option.Key);
+        return OnChange.InvokeAsync();
+    }
+
+    private Task ResetAll()
+    {
+        Values.Clear();
+        return OnChange.InvokeAsync();
+    }
+}

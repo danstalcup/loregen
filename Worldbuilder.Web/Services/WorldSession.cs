@@ -20,6 +20,25 @@ public class WorldSession
     /// <summary>The generators the user can choose from.</summary>
     public IReadOnlyList<IWorldGenerator> Generators { get; } = WorldGeneratorRegistry.CreateDefault().All;
 
+    /// <summary>The generator settings the current world was made with (only those that differ from the defaults).</summary>
+    public IReadOnlyDictionary<string, double> Settings { get; private set; } = new Dictionary<string, double>();
+
+    // Any engine will do for asking a generator what it offers; this one is made the first time it is needed
+    private SimEngine optionsEngine;
+    private readonly Dictionary<string, IReadOnlyList<GeneratorOption>> optionsCache = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The options a generator offers, with defaults read from the loaded data.</summary>
+    public IReadOnlyList<GeneratorOption> OptionsFor(string generatorId)
+    {
+        if (generatorId == null) return Array.Empty<GeneratorOption>();
+        if (!optionsCache.TryGetValue(generatorId, out var options))
+        {
+            optionsEngine ??= new SimEngine(1);
+            optionsCache[generatorId] = options = optionsEngine.Generators.Get(generatorId).GetOptions(optionsEngine.SimData);
+        }
+        return options;
+    }
+
     /// <summary>Raised after a new world has been generated.</summary>
     public event Action Changed;
 
@@ -30,22 +49,28 @@ public class WorldSession
         Generate(Random.Shared.Next(1, 1_000_000));
     }
 
-    /// <summary>Generates a brand new world from the given seed, using the given generator (or the current one).</summary>
-    public void Generate(int seed, string generatorId = null)
+    /// <summary>
+    /// Generates a brand new world from the given seed, using the given generator and settings (or the current ones).
+    /// </summary>
+    public void Generate(int seed, string generatorId = null, IReadOnlyDictionary<string, double> settings = null)
     {
         generatorId ??= GeneratorId;
+        settings ??= Settings;
         var engine = new SimEngine(seed);
         engine.Configuration.GeneratorId = generatorId;
-        engine.GenerateWorld(); // if this throws, the previous world, seed and generator stay in place
+        foreach (var setting in settings) engine.Configuration.GeneratorSettings[setting.Key] = setting.Value;
+        engine.GenerateWorld(); // if this throws, the previous world, seed, generator and settings stay in place
         Seed = seed;
         GeneratorId = generatorId;
+        Settings = new Dictionary<string, double>(settings);
         Engine = engine;
         TestLanguage = null;
         Map = new MapView(this);
         Changed?.Invoke();
     }
 
-    public void GenerateRandom(string generatorId = null) => Generate(Random.Shared.Next(1, 1_000_000), generatorId);
+    public void GenerateRandom(string generatorId = null, IReadOnlyDictionary<string, double> settings = null) =>
+        Generate(Random.Shared.Next(1, 1_000_000), generatorId, settings);
 
     public Language GetTestLanguage() => TestLanguage ??= Engine.Language.GetRandomLanguage();
 }

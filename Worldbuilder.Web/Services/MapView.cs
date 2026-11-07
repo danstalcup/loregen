@@ -22,6 +22,12 @@ public class MapView
 
     public MapContext Context { get; set; } = MapContext.General;
     public bool HiDef { get; set; } = true;
+
+    /// <summary>Draw terrain tiles from the tileset image instead of flat colours. Water and tile-less blocks still use colours.</summary>
+    public bool UseTiles { get; set; }
+
+    /// <summary>The colour mode actually used: tile mode always shows terrain.</summary>
+    private MapContext EffectiveContext => UseTiles ? MapContext.Terrains : Context;
     public MapZoom Zoom { get; private set; } = MapZoom.World;
     public Continent CurrentContinent { get; private set; }
     public LoreGen.WorldGen.Region CurrentRegion { get; private set; }
@@ -33,8 +39,20 @@ public class MapView
     };
 
     /// <summary>The colour modes to offer. Elevation appears only if the world's generator produced elevation data.</summary>
-    public IReadOnlyList<MapContext> AvailableContexts =>
-        HasElevation ? BaseContexts.Append(MapContext.Elevation).ToArray() : BaseContexts;
+    public IReadOnlyList<MapContext> AvailableContexts
+    {
+        get
+        {
+            var contexts = BaseContexts.ToList();
+            if (HasElevation) contexts.Add(MapContext.Elevation);
+            if (HasClimate) contexts.AddRange(new[] { MapContext.Temperature, MapContext.Moisture });
+            return contexts;
+        }
+    }
+
+    /// <summary>Whether the world's generator produced temperature and moisture data.</summary>
+    public bool HasClimate =>
+        session.Engine.World.WorldBlock.ChildBlocks[0, 0].Status.Temperature.HasValue;
 
     public bool HasElevation =>
         session.Engine.World.WorldBlock.ChildBlocks[0, 0].Status.Elevation.HasValue;
@@ -122,7 +140,8 @@ public class MapView
     }
 
     /// <summary>
-    /// Flat array of rectangles to draw: x, y, width, height (world units, relative to the view origin), rgb.
+    /// Flat array of rectangles to draw: x, y, width, height (world units, relative to the view origin), rgb, tile.
+    /// The tile is (climate ID &lt;&lt; 8) | terrain type ID, the cell in the tileset image, or -1 to draw the colour.
     /// Also fills in a legend of the colours used.
     /// </summary>
     public (int[] Rects, List<LegendEntry> Legend) Build()
@@ -133,12 +152,13 @@ public class MapView
         var legend = new Dictionary<int, string>();
         foreach (var leaf in Leaves(grid))
         {
-            int rgb = Map.GetColor(leaf, Context).ToRgb();
+            int rgb = Map.GetColor(leaf, EffectiveContext).ToRgb();
             rects.Add(leaf.TrueX - b.X);
             rects.Add(leaf.TrueY - b.Y);
             rects.Add(leaf.TrueWidth);
             rects.Add(leaf.TrueHeight);
             rects.Add(rgb);
+            rects.Add(TileFor(leaf));
             if (!legend.ContainsKey(rgb)) legend[rgb] = LabelFor(leaf);
         }
         var entries = legend
@@ -146,6 +166,13 @@ public class MapView
             .OrderBy(e => e.Label)
             .ToList();
         return (rects.ToArray(), entries);
+    }
+
+    private int TileFor(WorldBlock block)
+    {
+        var terrain = block.Status.Terrain;
+        if (!UseTiles || terrain == null || block.Status.WaterStatus == WorldBlockWaterStatus.Water) return -1;
+        return (terrain.Climate.ID << 8) | terrain.TerrainType.ID;
     }
 
     /// <summary>Selected block's rectangle relative to the view origin, or null.</summary>
@@ -159,9 +186,11 @@ public class MapView
     private string LabelFor(WorldBlock block)
     {
         var s = block.Status;
-        if (Context == MapContext.Elevation) return Map.ElevationBand(block) ?? "Unknown";
+        if (EffectiveContext == MapContext.Elevation) return Map.ElevationBand(block) ?? "Unknown";
         if (s.WaterStatus == WorldBlockWaterStatus.Water) return "Water";
-        switch (Context)
+        if (EffectiveContext == MapContext.Temperature && s.Temperature.HasValue) return Map.TemperatureBand(block);
+        if (EffectiveContext == MapContext.Moisture && s.Moisture.HasValue) return Map.MoistureBand(block);
+        switch (EffectiveContext)
         {
             case MapContext.General:
                 return s.WaterStatus == WorldBlockWaterStatus.Coastline ? "Coastline" : "Land";
@@ -207,6 +236,8 @@ public class MapView
         if (s.Ocean != null) lines.Add(new("Ocean", s.Ocean.Name));
         if (s.Sea != null) lines.Add(new("Sea", s.Sea.Name));
         if (s.Elevation.HasValue) lines.Add(new("Elevation", $"{s.Elevation.Value:0.00} ({Map.ElevationBand(block)})"));
+        if (s.Temperature.HasValue) lines.Add(new("Temperature", $"{s.Temperature.Value:0.00} ({Map.TemperatureBand(block)})"));
+        if (s.Moisture.HasValue && s.WaterStatus != WorldBlockWaterStatus.Water) lines.Add(new("Moisture", $"{s.Moisture.Value:0.00} ({Map.MoistureBand(block)})"));
         lines.Add(new("Surface", s.WaterStatus switch
         {
             WorldBlockWaterStatus.Water => "Water",

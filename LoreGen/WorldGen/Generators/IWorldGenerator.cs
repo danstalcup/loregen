@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 using LoreGen.Simulation;
 
 namespace LoreGen.WorldGen.Generators
@@ -17,6 +20,8 @@ namespace LoreGen.WorldGen.Generators
     ///    The same engine seed must always give the same world.
     ///  - Read settings from engine.SimData. Put settings specific to your generator in a keyed rules file of your own
     ///    (see SimData.LoadRules) rather than adding keys to the shared ones.
+    ///  - Take settings from engine.Configuration.GeneratorSettings and reject any you do not understand with an exception
+    ///    that names the setting, rather than ignoring it. A generator with no settings rejects all of them.
     ///  - Do not assign engine.World. Return the finished world and the engine assigns it; if you throw, the engine
     ///    keeps whatever world it had before.
     ///  - Bump <see cref="Version"/> whenever a seed would start producing a different world.
@@ -55,9 +60,18 @@ namespace LoreGen.WorldGen.Generators
         string Version { get; }
 
         /// <summary>
+        /// The settings this generator offers, for user interfaces to build controls from. Defaults are read from the
+        /// engine's data, so they reflect any customised data files. A generator with no settings returns none.
+        /// </summary>
+        IReadOnlyList<GeneratorOption> GetOptions(SimData data)
+        {
+            return Array.Empty<GeneratorOption>();
+        }
+
+        /// <summary>
         /// Generates a complete world.
         /// </summary>
-        /// <param name="engine">The engine providing the random number generator and data</param>
+        /// <param name="engine">The engine providing the random number generator, data and settings</param>
         /// <returns>The finished world</returns>
         World Generate(SimEngine engine);
     }

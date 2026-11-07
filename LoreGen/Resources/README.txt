@@ -83,7 +83,10 @@ This file contains the Terrain Types.
 
 Format for each row:
 Name [,]
-ID Number
+ID Number [,]
+Description [,]
+Relief (optional, 0-4; default 1). How high and steep this terrain is: 0 = flat lowland, 2 = hills, 3 = cliffs, 4 = peaks.
+Generators that model elevation (such as "noise") put higher relief on higher ground. The "legacy" generator ignores it.
 
 Terrains.csv
 
@@ -148,3 +151,33 @@ MaskRadiusMin/Max - size of the area around each continent centre (1 is the map 
 EdgeBorder - width of the border where land fades into ocean at the map edge (share of the map)
 MinLandmassBlocks - smallest island kept; MinSeaBlocks - smallest enclosed body of water kept (smaller ones are filled in)
 The number of continent centres comes from ContinentsMin/Max in WorldRules.csv.
+CoastDetail - 1 gives blocks along coasts a 10x10 grid of sub-blocks with fine coastlines, 0 leaves the world at block resolution
+DetailStrength - how much fine wiggle is added to coastlines (0 is a smooth curve); DetailRange - how far from the coast it reaches
+DetailFrequency, DetailOctaves - the size and layering of the wiggle
+
+Climate and biome settings (also in NoiseGeneratorRules.csv)
+ClimateFrequency, ClimateOctaves - size and detail of the broad random climate patterns
+TemperatureLapse - how much colder the highest ground is; TemperatureNoise - random variation from the plain equator-to-pole pattern
+MoistureNoiseWeight, MoistureCoastWeight, MoistureLatitudeWeight - how much moisture comes from random patterns, from nearness to water, and from latitude
+MoistureReach - how far from water (in blocks) the coastal effect reaches; MoistureElevationGain - extra moisture on high ground
+MoistureColdPenalty - how much drier cold places are (0 is not at all)
+ContourFlatFrom, ContourHillyFrom, ContourJaggedFrom, ContourMountainousFrom - terrain roughness (mean elevation plus its spread) at which a region counts as each contour
+BiomeTemperatureWeight, BiomePrecipitationWeight, BiomeContourWeight - how much each matters when choosing the biome nearest a region's climate
+TerrainReliefStrength - how strongly high ground favours steep terrain (0 is not at all); ElevationPerRelief - how much elevation is one step of terrain relief
+
+Region and border settings (also in NoiseGeneratorRules.csv)
+RegionSeedCandidates - how hard region centres try to be far apart (candidates tried for each; 1 is purely random)
+RegionSlopeWeight, RegionHeightWeight, RegionClimateWeight - how costly it is for a region to spread across a slope, onto high ground, or across a change of climate (higher keeps borders on ridges and climate transitions; 0 for all three is plain outward spreading)
+RegionJitter - random unevenness in how far regions spread (higher gives more ragged borders)
+RegionMinBlocks - smallest region kept; smaller ones are merged into the neighbour they share the most border with (1 keeps all)
+RegionBorderDetail - 1 gives blocks on region borders a 10x10 grid of sub-blocks with winding borders, 0 leaves borders along block edges
+RegionBorderWarp, RegionBorderFrequency - how far (in blocks) and how often region borders wander
+DetailMinIsletCells - smallest fine-grained islet kept (in sub-blocks); smaller specks of land are dropped (1 keeps all)
+CoastDetail and RegionBorderDetail are independent: either, both or neither can be on.
+
+Settings that choose for you when left at 0 (also in NoiseGeneratorRules.csv)
+LandFraction - exact share of the map that is land; 0 chooses at random from LandFractionMean, StdDev, Min and Max
+ContinentCentres - exact number of places land gathers around; 0 chooses at random from the continent counts in WorldRules.csv
+RegionTarget - exact total number of regions to aim for; 0 chooses at random from the region counts in WorldRules.csv
+TemperatureOffset - shifts the whole world warmer (positive) or colder (negative); 0 is as usual
+Any key in this file can also be set per world with a generator setting of the same name (see the main README).

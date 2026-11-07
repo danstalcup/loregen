@@ -3,6 +3,10 @@ LandFractionMean,0.32,Share of the map that is land (mean)
 LandFractionStdDev,0.06,Share of the map that is land (std dev)
 LandFractionMin,0.18,Share of the map that is land (min)
 LandFractionMax,0.5,Share of the map that is land (max)
+LandFraction,0,Exact share of the map that is land (0 chooses at random from the mean and std dev above)
+ContinentCentres,0,Exact number of continent centres to start from (0 chooses at random from the continent counts in WorldRules.csv)
+RegionTarget,0,Exact total number of regions to aim for (0 chooses at random from the region counts in WorldRules.csv)
+TemperatureOffset,0,Shifts the whole world warmer (positive) or colder (negative); 0 is as usual
 Octaves,6,Layers of noise (more is more detailed coastlines)
 Frequency,3.5,Size of the broadest features (larger is smaller features)
 Lacunarity,2,How fast each layer's frequency grows
@@ -14,3 +18,37 @@ MaskRadiusMax,0.38,Size of the area around each continent centre (max)
 EdgeBorder,0.08,Width of the border where land fades into ocean at the map edge (share of the map)
 MinLandmassBlocks,8,Smallest island that is kept (in blocks)
 MinSeaBlocks,4,Smallest enclosed body of water that is kept (in blocks); smaller ones are filled in
+CoastDetail,1,Whether blocks along coasts get a finer grid of sub-blocks (1 = yes and 0 = no; 0 is lighter on memory)
+DetailStrength,0.12,How much fine wiggle is added to coastlines (0 is a smooth curve)
+DetailRange,0.3,How far from the coast the wiggle reaches (share of the elevation range)
+DetailFrequency,2.5,Size of the wiggles (larger is smaller wiggles; per block)
+DetailOctaves,3,Layers of fine wiggle
+DetailMinIsletCells,12,Smallest fine-grained islet kept (in sub-blocks); smaller specks of land are dropped (1 keeps all)
+ClimateFrequency,1.5,Size of the broad climate patterns (larger is smaller patterns)
+ClimateOctaves,4,Layers of detail in the climate patterns
+TemperatureLapse,0.4,How much colder high ground is (temperature lost at the highest point)
+TemperatureNoise,0.1,How much temperature varies at random from the plain equator-to-pole pattern
+MoistureNoiseWeight,0.4,How much moisture comes from broad random patterns
+MoistureCoastWeight,0.3,How much moisture comes from being near water
+MoistureLatitudeWeight,0.3,How much moisture follows latitude (wet equator and mid-latitudes and dry in between)
+MoistureReach,10,How far from water (in blocks) the coastal effect reaches
+MoistureElevationGain,0.15,How much wetter high ground is
+MoistureColdPenalty,0.65,How much drier cold places are (0 is not at all and 1 is no moisture at the coldest)
+ContourFlatFrom,0.25,Terrain roughness from which a region counts as flat (not lowlands)
+ContourHillyFrom,0.44,Terrain roughness from which a region counts as hilly
+ContourJaggedFrom,0.58,Terrain roughness from which a region counts as jagged
+ContourMountainousFrom,0.7,Terrain roughness from which a region counts as mountainous
+BiomeTemperatureWeight,3,How much matching temperature matters when choosing a region's biome
+BiomePrecipitationWeight,1.5,How much matching moisture matters when choosing a region's biome
+BiomeContourWeight,1,How much matching terrain roughness matters when choosing a region's biome
+TerrainReliefStrength,0.6,How strongly high ground favours steep terrain such as peaks (0 is not at all)
+ElevationPerRelief,0.25,How much elevation is a step up in terrain relief (lower is steeper terrain sooner)
+RegionSeedCandidates,8,How hard region centres try to be far apart (candidates tried for each; 1 is purely random)
+RegionSlopeWeight,10,How hard it is for a region to spread up or down a slope (higher keeps borders on steep ground)
+RegionHeightWeight,1.5,How hard it is for a region to spread onto high ground (higher keeps borders on ridges)
+RegionClimateWeight,6,How hard it is for a region to spread across a change of temperature or moisture
+RegionJitter,0.4,Random unevenness in how far regions spread (higher gives more ragged borders)
+RegionBorderDetail,1,Whether blocks on region borders get a finer grid of sub-blocks with winding borders (1 = yes and 0 = no)
+RegionBorderWarp,0.2,How far region borders can wander from straight (in blocks)
+RegionBorderFrequency,1.2,How often region borders wander (higher is more wiggles)
+RegionMinBlocks,3,Smallest region kept (in blocks); smaller ones are merged into the neighbour they share the most border with (1 keeps all)

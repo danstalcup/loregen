@@ -53,6 +53,17 @@ namespace LoreGen.Simulation
         }
 
         /// <summary>
+        /// Replaces the value of a key that is in the file, for settings supplied by the user.
+        /// </summary>
+        /// <exception cref="InvalidDataException">The file has no such key</exception>
+        public void Override(string key, double value)
+        {
+            if (!values.ContainsKey(key))
+                throw new InvalidDataException(filename + ": cannot set unknown setting '" + key + "'");
+            values[key] = value;
+        }
+
+        /// <summary>
         /// A required value as a double.
         /// </summary>
         public double D(string key)

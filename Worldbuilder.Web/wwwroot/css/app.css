@@ -143,3 +143,19 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
 .loading-progress-text:after { content: var(--blazor-load-percentage-text, "Loading"); }
 
 .error { color: #b00020; padding: 0.5rem 1rem; margin: 0; }
+
+/* Generator options */
+.options-panel { margin-bottom: 12px; }
+.options-actions { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.option-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.option-group { border: 1px solid var(--border, #ccc); border-radius: 6px; padding: 8px 12px 12px; margin: 0; min-width: 0; }
+.option-group legend { font-weight: 600; padding: 0 6px; }
+.option { display: grid; grid-template-columns: 1fr auto; column-gap: 8px; align-items: center; margin-top: 10px; }
+.option > small { grid-column: 1 / -1; }
+.option .slider { display: flex; align-items: center; gap: 8px; grid-column: 1; }
+.option .slider input[type="range"] { flex: 1; min-width: 0; }
+.option .slider output { min-width: 3.5em; text-align: right; font-variant-numeric: tabular-nums; }
+.option label { grid-column: 1; }
+.option .reset { grid-column: 2; grid-row: 1 / span 2; background: none; border: 1px solid transparent; cursor: pointer; font-size: 1.1em; color: inherit; border-radius: 4px; }
+.option .reset:disabled { visibility: hidden; }
+.option.changed label { font-weight: 600; }
