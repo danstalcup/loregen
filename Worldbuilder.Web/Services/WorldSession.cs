@@ -12,8 +12,6 @@ public class WorldSession
     public SimEngine Engine { get; private set; }
     public int Seed { get; private set; }
     public MapView Map { get; private set; }
-    public ILanguage TestLanguage { get; set; }
-
     /// <summary>How the current world's places were named.</summary>
     public LanguageStyle LanguageStyle { get; private set; } = LanguageStyle.Common;
 
@@ -71,13 +69,10 @@ public class WorldSession
         Settings = new Dictionary<string, double>(settings);
         LanguageStyle = style;
         Engine = engine;
-        TestLanguage = null;
         Map = new MapView(this);
         Changed?.Invoke();
     }
 
     public void GenerateRandom(string generatorId = null, IReadOnlyDictionary<string, double> settings = null, LanguageStyle? languageStyle = null) =>
         Generate(Random.Shared.Next(1, 1_000_000), generatorId, settings, languageStyle);
-
-    public ILanguage GetTestLanguage() => TestLanguage ??= Engine.Language.GetRandomLanguage();
 }

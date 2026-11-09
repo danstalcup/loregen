@@ -66,6 +66,11 @@ namespace LoreGen.Lang
         public string LanguageName { get; private set; }
 
         /// <summary>
+        /// The real language whose sounds this language uses
+        /// </summary>
+        public string ModelLanguage { get { return PhoneticInventory.ModelLanguage; } }
+
+        /// <summary>
         /// Returns a string showing all of the characteristics of the language
         /// </summary>
         /// <returns>String of the characteristics of the language</returns>

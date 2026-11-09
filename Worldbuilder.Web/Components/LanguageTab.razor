@@ -1,19 +1,11 @@
-@using Worldbuilder.Web.Services
 @using LoreGen.Lang
-@implements IDisposable
-@inject WorldSession Session
+@using LoreGen.Simulation
+@using LoreGen.WorldGen
 
-<section class="card">
-    <div class="row">
-        <label>Style
-            <select @bind="style">
-                <option value="@LanguageStyle.Common">Common</option>
-                <option value="@LanguageStyle.Phonetic">Phonetic</option>
-            </select>
-        </label>
-        <button class="btn primary" @onclick="NewLanguage">New random language</button>
-        <button class="btn" @onclick="Describe">Describe language</button>
-    </div>
+@* Side-by-side test bench for the two kinds of language. It runs on its own engine, so nothing here changes the
+   generated world, and every batch starts with a fresh name registry so a batch has no repeats. *@
+
+<section class="card lang-controls">
     <div class="row">
         <label>Naming
             <select @bind="kind">
@@ -23,50 +15,175 @@
                 }
             </select>
         </label>
-        <button class="btn" @onclick="Names">Generate 100 names</button>
-        <button class="btn" @onclick="Words">Generate 50 words</button>
+        <label>Biome
+            <select @bind="biomeId" title="Used by Common languages to describe regions">
+                <option value="0">(none)</option>
+                @foreach (var b in engine.SimData.Biomes)
+                {
+                    <option value="@b.ID">@b.Name</option>
+                }
+            </select>
+        </label>
+        <label>Side
+            <select @bind="direction" title="Which side of its parent the place lies on">
+                <option value="">(none)</option>
+                @foreach (var d in Enum.GetValues<Directions>())
+                {
+                    <option value="@d">@d</option>
+                }
+            </select>
+        </label>
+        <label>Parent name
+            <input type="text" @bind="parentName" @bind:event="oninput" placeholder="e.g. Valoria" size="12" />
+        </label>
+        <label>How many
+            <input type="number" min="1" max="200" @bind="count" />
+        </label>
     </div>
-    @if (!string.IsNullOrEmpty(title))
-    {
-        <h3>@title</h3>
-    }
-    <pre class="output">@output</pre>
+    <div class="row">
+        <button class="btn primary" @onclick="NamesBoth">Generate names</button>
+        <button class="btn" @onclick="WordsBoth">Generate words</button>
+        <button class="btn" @onclick="NewBoth">New languages</button>
+    </div>
+    <p class="hint">Hints (biome, side, parent name) shape Common names where a template can use them. Phonetic languages ignore them.</p>
 </section>
 
+<div class="grid-2">
+    @foreach (var p in panels)
+    {
+        <section class="card lang-panel">
+            <div class="lang-head">
+                <div>
+                    <span class="lang-style">@p.Style</span>
+                    <h3>@p.Language.LanguageName</h3>
+                    <div class="hint">@Summary(p)</div>
+                </div>
+                <div class="lang-actions">
+                    <button class="btn" @onclick="() => New(p)" title="A new random language">New</button>
+                    <button class="btn" @onclick="() => Dialect(p)" title="Replace it with a dialect of itself">Dialect</button>
+                    <button class="btn" @onclick="() => Describe(p)">Describe</button>
+                </div>
+            </div>
+            @if (p.Description != null)
+            {
+                <pre class="output">@p.Description</pre>
+            }
+            else if (p.Results.Count > 0)
+            {
+                <div class="hint">@p.Caption</div>
+                <ol class="name-list">
+                    @foreach (var name in p.Results)
+                    {
+                        <li>@name</li>
+                    }
+                </ol>
+            }
+            else
+            {
+                <p class="muted">Generate names or words to see them here.</p>
+            }
+        </section>
+    }
+</div>
+
 @code {
-    private string title = "";
-    private string output = "Generate a language to begin.";
-    private LanguageStyle style = LanguageStyle.Common;
+    private sealed class Panel
+    {
+        public LanguageStyle Style;
+        public ILanguage Language;
+        public string Parent;           // set when Language is a dialect
+        public List<string> Results = new();
+        public string Caption;
+        public string Description;
+    }
+
+    private readonly SimEngine engine = new(Random.Shared.Next(1, 1_000_000));
+    private List<Panel> panels;
+
     private NameKind kind = NameKind.Region;
+    private int biomeId;
+    private string direction = "";
+    private string parentName = "";
+    private int count = 40;
 
-    protected override void OnInitialized() => Session.Changed += OnChanged;
-    private void OnChanged() { title = ""; output = "Generate a language to begin."; InvokeAsync(StateHasChanged); }
-    public void Dispose() => Session.Changed -= OnChanged;
-
-    private void NewLanguage()
+    protected override void OnInitialized()
     {
-        Session.TestLanguage = Session.Engine.Language.GetRandomLanguage(style);
-        Describe();
+        panels = new List<Panel>
+        {
+            new Panel { Style = LanguageStyle.Common },
+            new Panel { Style = LanguageStyle.Phonetic }
+        };
+        NewBoth();
+        NamesBoth();
     }
 
-    private void Describe()
+    private NameContext Context() => new(kind)
     {
-        var lang = Session.GetTestLanguage();
-        title = lang.LanguageName;
-        output = lang.ToString();
+        Biome = engine.SimData.Biomes.FirstOrDefault(b => b.ID == biomeId),
+        Direction = Enum.TryParse<Directions>(direction, out var d) ? d : null,
+        ParentName = string.IsNullOrWhiteSpace(parentName) ? null : parentName.Trim()
+    };
+
+    private int Count => Math.Clamp(count, 1, 200);
+
+    private void NewBoth() { foreach (var p in panels) New(p); }
+    private void NamesBoth() { foreach (var p in panels) Names(p); }
+    private void WordsBoth() { foreach (var p in panels) Words(p); }
+
+    private void New(Panel p)
+    {
+        p.Language = engine.Language.GetRandomLanguage(p.Style);
+        p.Parent = null;
+        Refresh(p);
     }
 
-    private void Names()
+    private void Dialect(Panel p)
     {
-        var lang = Session.GetTestLanguage();
-        title = $"{lang.LanguageName}: {kind} names";
-        output = string.Join("\n", Enumerable.Range(0, 100).Select(_ => lang.GetName(kind)));
+        p.Parent = p.Parent ?? p.Language.LanguageName;
+        p.Language = p.Language.CreateDialect();
+        Refresh(p);
     }
 
-    private void Words()
+    private void Describe(Panel p)
     {
-        var lang = Session.GetTestLanguage();
-        title = $"{lang.LanguageName}: {kind} words";
-        output = string.Join("\n", Enumerable.Range(0, 50).Select(_ => lang.GetWord(kind)));
+        p.Description = p.Description == null ? p.Language.ToString() : null;
+    }
+
+    // After the language changes, show the same kind of output as before for the new language
+    private void Refresh(Panel p)
+    {
+        p.Description = null;
+        if (p.Caption?.Contains(" words") == true) Words(p);
+        else if (p.Results.Count > 0) Names(p);
+    }
+
+    private void Names(Panel p)
+    {
+        engine.Language.Names.Clear();
+        var context = Context();
+        p.Results = Enumerable.Range(0, Count).Select(_ => p.Language.GetName(context)).ToList();
+        p.Caption = $"{Count} {kind} names";
+        p.Description = null;
+    }
+
+    private void Words(Panel p)
+    {
+        var context = Context();
+        p.Results = Enumerable.Range(0, Count).Select(_ => p.Language.GetWord(context)).ToList();
+        p.Caption = $"{Count} {kind} words";
+        p.Description = null;
+    }
+
+    private static string Summary(Panel p)
+    {
+        string text = p.Language switch
+        {
+            CommonLanguage c => c.PrimaryFlavor.Id
+                + (c.SecondaryFlavor != null ? $" + {c.SecondaryFlavor.Id} ({c.SecondaryWeight:P0})" : "")
+                + $" · {c.DescriptiveShare:P0} descriptive",
+            PhoneticLanguage ph => $"Sounds modelled on {ph.ModelLanguage}",
+            _ => ""
+        };
+        return p.Parent != null ? $"{text} · dialect of {p.Parent}" : text;
     }
 }

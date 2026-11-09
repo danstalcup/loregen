@@ -44,7 +44,7 @@ h3 { font-size: 1rem; margin: 0 0 10px; }
 .seed { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .seed label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
 
-input[type="number"], select {
+input[type="number"], input[type="text"], select {
     background: var(--surface);
     color: var(--text);
     border: 1px solid var(--border);
@@ -125,6 +125,20 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
     background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
     padding: 10px; margin: 0; max-height: 60vh; overflow: auto; white-space: pre-wrap; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9rem;
 }
+
+.lang-controls .row label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.lang-controls input[type="number"] { width: 80px; }
+.lang-controls .hint { margin: 0; }
+.lang-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+.lang-head h3 { margin: 2px 0; font-size: 1.15rem; }
+.lang-style { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); font-weight: 600; }
+.lang-actions { display: flex; gap: 6px; }
+.name-list {
+    columns: 2 180px; column-gap: 24px; margin: 8px 0 0; padding-left: 2.2em;
+    max-height: 60vh; overflow: auto;
+}
+.name-list li { break-inside: avoid; padding: 1px 0; }
+.name-list li::marker { color: var(--muted); font-size: 0.8em; }
 
 @media (max-width: 860px) {
     .map-layout { grid-template-columns: minmax(0, 1fr); }

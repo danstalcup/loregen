@@ -67,6 +67,11 @@
         }
     </div>
 }
+else if (section == "languages")
+{
+    <p class="muted">Try out both kinds of language side by side. This doesn't change the generated world.</p>
+    <LanguageTab />
+}
 else
 {
     <p class="muted">Tools and reference material that don't depend on the world you've generated.</p>
@@ -81,20 +86,19 @@ else
     <div class="tab-body">
         @switch (referenceTab)
         {
-            case "language": <LanguageTab /> break;
             case "data": <DataTab /> break;
         }
     </div>
 }
 
 @code {
-    private static readonly (string, string)[] Sections = { ("worldbuilder", "Worldbuilder"), ("reference", "Reference") };
+    private static readonly (string, string)[] Sections = { ("worldbuilder", "Worldbuilder"), ("languages", "Languages"), ("reference", "Reference") };
     private static readonly (string, string)[] WorldTabs = { ("map", "Map"), ("info", "World info") };
-    private static readonly (string, string)[] ReferenceTabs = { ("language", "Language generator"), ("data", "Raw data") };
+    private static readonly (string, string)[] ReferenceTabs = { ("data", "Raw data") };
 
     private string section = "worldbuilder";
     private string worldTab = "map";
-    private string referenceTab = "language";
+    private string referenceTab = "data";
     private int seedInput;
     private string generatorInput;
     private Dictionary<string, double> settingsInput = new();
