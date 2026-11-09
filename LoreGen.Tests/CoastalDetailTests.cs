@@ -92,7 +92,7 @@ namespace LoreGen.Tests
         {
             for (int seed = 1; seed <= 15; seed++)
             {
-                var root = Generate(seed, ("RegionBorderDetail", "0")).World.WorldBlock;
+                var root = Generate(seed, ("RegionBorderDetail", "0"), ("FeatureDetail", "0")).World.WorldBlock;
                 for (int x = 0; x < root.Width; x++)
                 {
                     for (int y = 0; y < root.Height; y++)
@@ -122,7 +122,7 @@ namespace LoreGen.Tests
             for (int seed = 1; seed <= 10; seed++)
             {
                 var with = Generate(seed).World;
-                var without = Generate(seed, ("CoastDetail", "0"), ("RegionBorderDetail", "0")).World;
+                var without = Generate(seed, ("CoastDetail", "0"), ("RegionBorderDetail", "0"), ("FeatureDetail", "0")).World;
 
                 Assert.All(without.WorldBlock.ChildBlocksAsList(), b => Assert.Null(b.ChildBlocks));
                 Assert.Contains(with.WorldBlock.ChildBlocksAsList(), b => b.ChildBlocks != null);
@@ -261,7 +261,7 @@ namespace LoreGen.Tests
         {
             for (int seed = 1; seed <= 12; seed++)
             {
-                var root = Generate(seed, ("CoastDetail", "0")).World.WorldBlock;
+                var root = Generate(seed, ("CoastDetail", "0"), ("FeatureDetail", "0")).World.WorldBlock;
                 int bordered = 0;
                 for (int x = 0; x < root.Width; x++)
                 {

@@ -34,6 +34,7 @@ namespace LoreGen.WorldGen.Generators
             WorldGeneratorRegistry registry = new WorldGeneratorRegistry();
             registry.Register(new LegacyWorldGenerator());
             registry.Register(new NoiseWorldGenerator());
+            registry.Register(new TectonicWorldGenerator());
             return registry;
         }
 

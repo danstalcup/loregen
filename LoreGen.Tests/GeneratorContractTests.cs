@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LoreGen.Features;
 using LoreGen.Simulation;
 using LoreGen.WorldGen;
 using LoreGen.WorldGen.Generators;
@@ -107,6 +108,43 @@ namespace LoreGen.Tests
             {
                 Assert.False(string.IsNullOrWhiteSpace(ocean.Name), "ocean without a name");
                 Assert.NotNull(ocean.OceanArea);
+            }
+
+            foreach (GeographicFeature feature in world.Features)
+            {
+                string what = "feature '" + feature.Name + "'";
+                Assert.False(string.IsNullOrWhiteSpace(feature.Name), "feature without a name");
+                Assert.Same(world, feature.World);
+                Assert.NotNull(feature.Type);
+                Assert.Contains(feature.Scope, feature.Type.Scopes);
+                Assert.NotNull(feature.DisplayInfo);
+                Assert.True(feature.Footprint.Count > 0, what + " covers no blocks");
+                Assert.Equal(feature.Footprint.Count, feature.Footprint.Blocks.Distinct().Count());
+                foreach (WorldBlock block in feature.Footprint.Blocks)
+                {
+                    Assert.True(block.Depth == feature.Depth, what + " has a block at depth " + block.Depth);
+                    Assert.Same(world, block.World);
+                    Assert.True(feature.Contains(block), what + " does not contain its own block");
+                    Assert.Contains(feature, world.FeaturesAt(block));
+                }
+                if (feature.Type.Shape == FeatureShape.Linear)
+                {
+                    Assert.NotEmpty(feature.Spine);
+                    Assert.All(feature.Spine, b => Assert.True(feature.Footprint.IsMember(b), what + ": spine leaves the footprint"));
+                }
+            }
+
+            if (world.Plates.Count > 0)
+            {
+                var plates = new HashSet<TectonicPlate>(world.Plates);
+                Assert.Equal(world.WorldBlock.ChildBlocksAsList().Count, world.Plates.Sum(p => p.Blocks.Count));
+                foreach (TectonicPlate plate in world.Plates)
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(plate.Name), "plate without a name");
+                    Assert.All(plate.Blocks, b => Assert.Same(plate, b.Status.Plate));
+                }
+                foreach (WorldBlock block in world.WorldBlock.ChildBlocksAsList(true))
+                    Assert.True(block.Status.Plate != null && plates.Contains(block.Status.Plate), "block at depth " + block.Depth + " has no registered plate");
             }
 
             var continents = new HashSet<Continent>(world.Continents);
@@ -263,6 +301,14 @@ namespace LoreGen.Tests
             foreach (Continent c in world.Continents)
                 sb.Append(c.Name).Append(':').Append(c.Regions.Count).Append(':').Append(c.Seas.Count).Append(';');
             foreach (Ocean o in world.Oceans) sb.Append(o.Name).Append(';');
+            foreach (GeographicFeature f in world.Features)
+            {
+                sb.Append(f.Name).Append('[').Append(f.Type.Id).Append(':').Append(f.Seed).Append(':');
+                foreach (WorldBlock b in f.Footprint.Blocks) sb.Append(b.TrueX).Append('.').Append(b.TrueY).Append(' ');
+                sb.Append('>');
+                foreach (WorldBlock b in f.Spine) sb.Append(b.TrueX).Append('.').Append(b.TrueY).Append(' ');
+                sb.Append("];");
+            }
             foreach (WorldBlock b in world.WorldBlock.ChildBlocksAsList(true))
             {
                 WorldBlockStatus s = b.Status;

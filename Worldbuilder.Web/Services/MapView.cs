@@ -35,7 +35,7 @@ public class MapView
 
     private static readonly MapContext[] BaseContexts =
     {
-        MapContext.General, MapContext.Continents, MapContext.Regions, MapContext.Biomes, MapContext.Terrains
+        MapContext.General, MapContext.Continents, MapContext.Regions, MapContext.Biomes, MapContext.Terrains, MapContext.Features
     };
 
     /// <summary>The colour modes to offer. Elevation appears only if the world's generator produced elevation data.</summary>
@@ -46,6 +46,7 @@ public class MapView
             var contexts = BaseContexts.ToList();
             if (HasElevation) contexts.Add(MapContext.Elevation);
             if (HasClimate) contexts.AddRange(new[] { MapContext.Temperature, MapContext.Moisture });
+            if (session.Engine.World.Plates.Count > 0) contexts.Add(MapContext.Plates);
             return contexts;
         }
     }
@@ -187,6 +188,7 @@ public class MapView
     {
         var s = block.Status;
         if (EffectiveContext == MapContext.Elevation) return Map.ElevationBand(block) ?? "Unknown";
+        if (EffectiveContext == MapContext.Plates) return Map.PlateLabel(block);
         if (s.WaterStatus == WorldBlockWaterStatus.Water) return "Water";
         if (EffectiveContext == MapContext.Temperature && s.Temperature.HasValue) return Map.TemperatureBand(block);
         if (EffectiveContext == MapContext.Moisture && s.Moisture.HasValue) return Map.MoistureBand(block);
@@ -196,6 +198,7 @@ public class MapView
                 return s.WaterStatus == WorldBlockWaterStatus.Coastline ? "Coastline" : "Land";
             case MapContext.Continents: return s.Continent?.Name ?? "Unclaimed";
             case MapContext.Regions: return s.Region?.Name ?? "No region";
+            case MapContext.Features: return Map.FeatureToShow(block)?.Name ?? "No feature";
             case MapContext.Biomes:
                 return s.Region?.Biome != null ? Biome.TraitName(s.Region.Biome.Temperature) : "No biome";
             case MapContext.Terrains: return s.Terrain?.Name ?? "No terrain";
@@ -235,6 +238,15 @@ public class MapView
         if (s.Continent != null) lines.Add(new("Continent", s.Continent.Name));
         if (s.Ocean != null) lines.Add(new("Ocean", s.Ocean.Name));
         if (s.Sea != null) lines.Add(new("Sea", s.Sea.Name));
+        if (s.Plate != null)
+        {
+            lines.Add(new("Plate", $"{s.Plate.Name} ({(s.Plate.Continental ? "continental" : "oceanic")}, drifting {s.Plate.Heading})"));
+            var boundary = s.Plate.BoundaryAt(block);
+            if (boundary != PlateBoundaryKind.None) lines.Add(new("Plate boundary", boundary.ToString()));
+        }
+        var blockFeatures = session.Engine.World.FeaturesAt(block);
+        if (blockFeatures.Count > 0)
+            lines.Add(new("Features", string.Join(", ", blockFeatures.Select(f => $"{f.Name} ({f.Type.Name.ToLowerInvariant()})"))));
         if (s.Elevation.HasValue) lines.Add(new("Elevation", $"{s.Elevation.Value:0.00} ({Map.ElevationBand(block)})"));
         if (s.Temperature.HasValue) lines.Add(new("Temperature", $"{s.Temperature.Value:0.00} ({Map.TemperatureBand(block)})"));
         if (s.Moisture.HasValue && s.WaterStatus != WorldBlockWaterStatus.Water) lines.Add(new("Moisture", $"{s.Moisture.Value:0.00} ({Map.MoistureBand(block)})"));

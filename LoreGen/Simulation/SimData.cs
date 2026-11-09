@@ -82,7 +82,12 @@ namespace LoreGen.Simulation
         /// Collection of terrain generation rules, processed form "TerrainRules.csv"
         /// </summary>
         public TerrainRules TerrainRules;
-        
+
+        /// <summary>
+        /// Collection of geographic feature types, processed from "FeatureTypes.csv"
+        /// </summary>
+        public List<Features.FeatureType> FeatureTypes;
+
         /// <summary>
         /// Initialize the data processor
         /// </summary>
@@ -155,8 +160,28 @@ namespace LoreGen.Simulation
             InitializeTerrainTypes();
             InitializeTerrains();
             InitializeTerrainRules();
-            InitializeBiomePatterns();            
-        }        
+            InitializeBiomePatterns();
+            InitializeFeatureTypes();
+        }
+
+        /// <summary>
+        /// Loads in geographic feature types from "FeatureTypes.csv"
+        /// </summary>
+        public void InitializeFeatureTypes()
+        {
+            FeatureTypes = Features.FeatureType.Parse(ReadDataLines(Features.FeatureType.Filename));
+        }
+
+        /// <summary>
+        /// The geographic feature type with the given Id.
+        /// </summary>
+        /// <exception cref="KeyNotFoundException">No type has that Id</exception>
+        public Features.FeatureType FeatureType(string id)
+        {
+            Features.FeatureType type = FeatureTypes.FirstOrDefault(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (type == null) throw new KeyNotFoundException(Features.FeatureType.Filename + " has no feature type '" + id + "'.");
+            return type;
+        }
 
 
         /// <summary>

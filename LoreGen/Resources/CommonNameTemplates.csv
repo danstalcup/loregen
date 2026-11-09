@@ -1,5 +1,5 @@
 # Name templates for CommonLanguage: Kind,Style,Weight,Template
-# Kind: Language, World, Continent, Region, Sea or Ocean. Style: Proper (built from the flavour's sounds) or
+# Kind: Language, World, Continent, Region, Sea, Ocean, MountainRange or Desert. Style: Proper (built from the flavour's sounds) or
 # Descriptive (an English description, as names are "translated" in fiction). Each language mixes the two styles in its
 # own proportion; within a style a template is chosen by weight.
 #
@@ -8,7 +8,7 @@
 #   {Adj} {AdjC} {LandAdj} {SeaAdj} {SeaNoun}  words from CommonNameVocabulary.csv
 #   {Feature} {FeatureC}  land features suited to the biome (falls back to the "Any" list)
 #   {Dir} {DirAdj}  "North" / "Northern"; only used when the place lies clearly to one side
-#   {Parent}  the parent's name (a region's continent); only used when it is a single word
+#   {Parent}  the parent's name (a region's, range's or desert's continent); only used when it is a single word
 # A '+' joins two pieces into one word, smoothing the seam ("Valda" + "ia" = "Valdia"). Other text is copied as is.
 
 Language,Proper,6,{Root}+{LangEnding}
@@ -55,3 +55,28 @@ Ocean,Descriptive,3,The {SeaAdj} Ocean
 Ocean,Descriptive,2,The Sea of {SeaNoun}
 Ocean,Descriptive,4,The {DirAdj} Ocean
 Ocean,Descriptive,1,The {SeaAdj} Deep
+
+MountainRange,Proper,4,The {Root}+{Ending} Mountains
+MountainRange,Proper,2,The {Root}+{Middle}+{Ending} Mountains
+MountainRange,Proper,2,The {Root}+{Ending} Range
+MountainRange,Proper,1,The {Root}+{LangEnding} Peaks
+MountainRange,Proper,1,{Root}+{Ending} Spine
+MountainRange,Proper,1,The {Dir} {Root}+{Ending}
+MountainRange,Descriptive,3,The {Adj} Mountains
+MountainRange,Descriptive,2,The {Adj} Peaks
+MountainRange,Descriptive,1,The {Adj} Teeth
+MountainRange,Descriptive,2,The {AdjC}+spire Range
+MountainRange,Descriptive,1,The {DirAdj} Range
+MountainRange,Descriptive,1,The Spine of {Parent}
+
+Desert,Proper,4,The {Root}+{Ending} Desert
+Desert,Proper,2,The {Root}+{Middle}+{Ending} Desert
+Desert,Proper,2,The {Root}+{Ending} Waste
+Desert,Proper,1,The {Root}+{LangEnding} Sands
+Desert,Proper,1,The {Dir} {Root}+{Ending}
+Desert,Descriptive,3,The {Adj} Sands
+Desert,Descriptive,2,The {Adj} Waste
+Desert,Descriptive,2,The {Adj} Desert
+Desert,Descriptive,1,The {AdjC}+sand Expanse
+Desert,Descriptive,1,The {DirAdj} Desert
+Desert,Descriptive,1,The Wastes of {Parent}

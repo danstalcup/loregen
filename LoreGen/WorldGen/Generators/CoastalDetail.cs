@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 
+using LoreGen.Features;
 using LoreGen.Noise;
 using LoreGen.Randomizer;
 using LoreGen.Simulation;
@@ -10,9 +11,10 @@ namespace LoreGen.WorldGen.Generators
     /// <summary>
     /// Adds fine-grained coastlines and region borders to a world built by <see cref="NoiseWorldGenerator"/>.
     ///
-    /// Only blocks that can contain a coastline or a region border get a grid of sub-blocks: those with both land and
-    /// water somewhere in the 3x3 blocks around them, and land blocks with more than one region in the 3x3 around them.
-    /// Interior land and open ocean stay as single blocks.
+    /// Only blocks that can contain a coastline, a region border or a feature's edge get a grid of sub-blocks: those with
+    /// both land and water somewhere in the 3x3 blocks around them, land blocks with more than one region in the 3x3
+    /// around them, and land blocks on or beside the edge of a geographic feature (and every block of a mountain range,
+    /// so its crests can be found). Interior land and open ocean stay as single blocks.
     ///
     /// Within those blocks the fine elevation is the coarse elevation smoothly interpolated across block boundaries,
     /// plus fractal wiggle that fades out away from the coast. It is one function of position over the whole world,
@@ -20,6 +22,9 @@ namespace LoreGen.WorldGen.Generators
     /// to the coarse one: fine land must connect to coarse land, and fine water to coarse water, so detail only reshapes
     /// existing coasts and never creates stray lakes or specks of land: fine islets smaller than a handful of
     /// sub-blocks are dropped.
+    ///
+    /// High ground gets ridged relief on top, fading in from half the mountain height, which gives mountain ranges their
+    /// crests. It never turns land into water or water into land.
     ///
     /// Region borders are made to wind: each sub-block goes to the region of the nearest land block centre after its
     /// position has been nudged by smooth noise, and a final pass keeps every region in one piece.
@@ -42,6 +47,7 @@ namespace LoreGen.WorldGen.Generators
             bool[,] coastal = new bool[width, height];
             bool[,] regionMixed = new bool[width, height];
             bool[,] needsDetail = new bool[width, height];
+            bool[,] featureDetail = rules.FeatureDetail != 0 ? FeatureDetailBlocks(world, land) : new bool[width, height];
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -62,7 +68,7 @@ namespace LoreGen.WorldGen.Generators
                         }
                     }
                     coastal[x, y] = rules.CoastDetail != 0 && anyLand && anyWater;
-                    needsDetail[x, y] = coastal[x, y] || (rules.RegionBorderDetail != 0 && land[x, y] && regionMixed[x, y]);
+                    needsDetail[x, y] = coastal[x, y] || (rules.RegionBorderDetail != 0 && land[x, y] && regionMixed[x, y]) || featureDetail[x, y];
                 }
             }
 
@@ -75,6 +81,9 @@ namespace LoreGen.WorldGen.Generators
                 rules.DetailOctaves, rules.DetailFrequency, 2.0, 0.5);
             FractalNoise borderWarp = new FractalNoise(new SimplexNoise(engine.Rnd.Unweighted(int.MaxValue)),
                 2, rules.RegionBorderFrequency, 2.0, 0.5);
+            FractalNoise ridges = new FractalNoise(new SimplexNoise(engine.Rnd.Unweighted(int.MaxValue)),
+                4, rules.MountainReliefFrequency, 2.0, 0.5);
+            double reliefFrom = rules.MountainElevationFrom * 0.5, reliefFull = rules.MountainElevationFrom;
 
             for (int fx = 0; fx < fineWidth; fx++)
             {
@@ -96,6 +105,12 @@ namespace LoreGen.WorldGen.Generators
                         {
                             // Not near a coast: smooth the height out, but land stays land and water stays water
                             e = land[bx, by] ? Math.Max(Epsilon, smooth) : Math.Min(-Epsilon, smooth);
+                        }
+                        if (e > 0 && rules.MountainRelief > 0)
+                        {
+                            // Ridged relief on high ground; land stays land
+                            double fade = Smoothstep(reliefFrom, reliefFull, smooth);
+                            if (fade > 0) e = Math.Min(1.0, Math.Max(Epsilon, e + rules.MountainRelief * fade * ridges.Ridged(px + 0.5, py + 0.5)));
                         }
                     }
                     fineLand[fx, fy] = e > 0;
@@ -182,6 +197,37 @@ namespace LoreGen.WorldGen.Generators
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Land blocks that need sub-blocks for the world's features: every block of a mountain range (for its crests), the
+        /// edge blocks of other features, and the blocks beside any feature's edge (where its outline can spread).
+        /// </summary>
+        private static bool[,] FeatureDetailBlocks(World world, bool[,] land)
+        {
+            int width = land.GetLength(0), height = land.GetLength(1);
+            bool[,] detail = new bool[width, height];
+            Action<WorldBlock> mark = b => { if (b != null && b.Depth == 1 && land[b.X, b.Y]) detail[b.X, b.Y] = true; };
+            foreach (GeographicFeature feature in world.Features)
+            {
+                if (feature.Scope != FeatureScope.Continental) continue;
+                foreach (WorldBlock block in feature.Footprint.Blocks)
+                {
+                    bool edge = feature.Footprint.IsEdge(block);
+                    if (edge || feature.Type.Category == FeatureCategory.Mountain) mark(block);
+                    if (!edge) continue;
+                    foreach (WorldBlock beside in block.SurroundingBlocksAsList())
+                        if (!feature.Footprint.IsMember(beside)) mark(beside);
+                }
+            }
+            return detail;
+        }
+
+        private static double Smoothstep(double from, double to, double x)
+        {
+            if (to <= from) return x >= to ? 1.0 : 0.0;
+            double t = Math.Min(1.0, Math.Max(0.0, (x - from) / (to - from)));
+            return t * t * (3.0 - 2.0 * t);
         }
 
         /// <summary>

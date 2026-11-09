@@ -219,3 +219,17 @@ ContinentCentres - exact number of places land gathers around; 0 chooses at rand
 RegionTarget - exact total number of regions to aim for; 0 chooses at random from the region counts in WorldRules.csv
 TemperatureOffset - shifts the whole world warmer (positive) or colder (negative); 0 is as usual
 Any key in this file can also be set per world with a generator setting of the same name (see the main README).
+
+
+FeatureTypes.csv
+
+This file contains the kinds of geographic feature (mountain ranges, deserts, lakes...) that world generators can find.
+Format for each row (the comment lines at the top of the file explain each column):
+Id,Name,Category,Shape,Scopes,NameKind,Description
+
+
+TectonicGeneratorRules.csv
+
+This file contains the plate settings for the tectonic world generator (number of plates, continental crust, mountain
+building at plate boundaries). Same key-based format as WorldRules.csv. Everything after the elevation uses
+NoiseGeneratorRules.csv. Any key in this file can also be set per world with a generator setting of the same name.

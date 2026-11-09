@@ -1,0 +1,11 @@
+# Kinds of geographic feature: Id,Name,Category,Shape,Scopes,NameKind,Description
+# Id: used by the code that finds features (must not change once used). Name: shown to people.
+# Category: Mountain, Water, Desert, Forest, Plain, Valley, Volcanic, Ice or Wetland.
+# Shape: Point (a single spot), Linear (a long chain with a spine, such as a range or river) or Blob (a rounded area).
+# Scopes: the scopes a feature of this type may have, separated by '|': Continental (top-level blocks, ~1000 km),
+#   Regional (~100 km), Local (~10 km) or Minor (~1 km). Each feature has exactly one.
+# NameKind: the kind of name features of this type get (a NameKind with templates in CommonNameTemplates.csv).
+# Description: may contain commas.
+
+MountainRange,Mountain range,Mountain,Linear,Continental|Regional,MountainRange,A long chain of high ground, which may be broken by passes.
+Desert,Desert,Desert,Blob,Continental,Desert,A great expanse of hot or temperate land with little rain.

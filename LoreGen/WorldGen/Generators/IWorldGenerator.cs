@@ -35,6 +35,9 @@ namespace LoreGen.WorldGen.Generators
     ///  - Every top-level Water block belongs to an Ocean or a Sea (an enclosed body of water may be a Sea with no Ocean),
     ///    and every Ocean and Sea in a block's Status is registered on the World (World.Oceans) or its Continent
     ///    (Continent.Seas).
+    ///  - Geographic features are optional (a world may have none). Each one added with World.AddFeature has a name and a
+    ///    footprint of distinct blocks at its scope's depth, and a Linear feature's spine lies within its footprint.
+    ///    Features must not change the rest of the world's randomness: use GeographicFeature.SeedFor for their seeds.
     /// </summary>
     public interface IWorldGenerator
     {

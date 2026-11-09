@@ -59,6 +59,14 @@ namespace LoreGen.WorldGen
         /// </summary>
         Sea,
 
-        Landform
+        /// <summary>
+        /// A geographic feature: a mountain range, desert, lake...
+        /// </summary>
+        GeographicFeature,
+
+        /// <summary>
+        /// A tectonic plate
+        /// </summary>
+        TectonicPlate
     }
 }

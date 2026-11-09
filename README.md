@@ -40,8 +40,10 @@ dotnet test
 ## Using the Worldbuilder app
 
 - **Map**: Click a block for details. Double-click a continent to zoom in, then a region. "Colour by" switches between
-  general, continents, regions, biomes and terrains (plus elevation, for generators that model it). "High detail" shows the finer coastline and border blocks.
-- **World info**: The seed, the oceans, and a table of regions (biome, language, size) for each continent.
+  general, continents, regions, biomes, terrains and geographic features (plus elevation, climate and tectonic plates,
+  for generators that model them). "High detail" shows the finer coastline, border and feature-edge blocks.
+- **World info**: The seed, the oceans, the geographic features, the tectonic plates (if any), and a table of regions
+  (biome, language, size) for each continent.
 - **Language generator**: Generate a random language, inspect its rules, and produce sample names and words.
 - **Raw data**: The climate, terrain and biome data the simulation loaded.
 
@@ -114,6 +116,7 @@ The interface's documentation is the contract: what a world must contain, and th
 | --- | --- | --- |
 | `legacy` | Classic | The original algorithm, described above. The default. |
 | `noise` | Noise | Land comes from an elevation map of fractal noise. See below. |
+| `tectonic` | Tectonic | Land comes from drifting plates: continents ride on them, and mountains form where they meet. See below. |
 
 #### The noise generator
 
@@ -152,6 +155,40 @@ The interface's documentation is the contract: what a world must contain, and th
 Its settings are in `NoiseGeneratorRules.csv` and can be changed per world through its options (below); world size and the
 number of continents and regions come from `WorldRules.csv`. Set `CoastDetail` to 0 for a lighter world with no sub-blocks. The noise building blocks it uses
 (`SimplexNoise`, `FractalNoise`, `Heightmap`) are in [`LoreGen/Noise`](LoreGen/Noise).
+
+#### The tectonic generator
+
+The tectonic generator makes its elevation map from a simple model of plate tectonics
+([`PlateModel`](LoreGen/WorldGen/Generators/PlateModel.cs)); everything after that (steps 2 to 8 above, plus geographic
+features) is shared with the noise generator through
+[`ElevationWorldBuilder`](LoreGen/WorldGen/Generators/ElevationWorldBuilder.cs).
+
+1. **Plates.** A handful of well-spread seed blocks grow outward at once, each at its own rate, over ground made uneven
+   by noise, so plates differ in size and their boundaries wander. Every plate is in one piece.
+2. **Crust.** Some plates carry a continent, covering the part of the plate nearest its seed (half of it to all of it);
+   the rest is ocean floor. Continental plates are added until a target share of the map is continental crust.
+3. **Motion.** Each plate drifts in a random direction. Across each boundary the plates close (convergent), open
+   (divergent) or slide past each other (transform).
+4. **Uplift.** Two continents colliding raise a broad mountain belt; ocean floor diving under a continent leaves a trench
+   offshore and raises mountains just inland; ocean diving under ocean raises an island arc; a continent pulling apart
+   sinks into a rift that can flood into a long sea; ocean floor pulling apart rises into a mid-ocean ridge.
+5. **Elevation** is the crust height (edges smoothed into a slope) plus the uplift, plus noise for coastlines and hills.
+
+Mountain ranges therefore run along plate boundaries, mostly near coasts, rather than sitting in the middle of round
+landmasses. The plates are kept on the world (`World.Plates`, each block's `Status.Plate`) and shown by the Plates map
+view. Plate settings are in `TectonicGeneratorRules.csv`; the shared settings are those of `NoiseGeneratorRules.csv`,
+apart from the noise generator's own land-shaping ones, which this generator rejects.
+
+#### Geographic features
+
+Generators that model elevation and climate also find named geographic features
+([`GeographicFeature`](LoreGen/Features/GeographicFeature.cs)): mountain ranges in high ground, deserts in dry warm
+land, and, within each range, its main crests as smaller named ranges. A feature has a type (from `FeatureTypes.csv`),
+one scope (the block depth its shape is defined at: Continental, Regional, Local or Minor), and a footprint of blocks at
+that depth, which may be in several pieces (a range broken by passes). Blocks may belong to several features. Below its
+own depth a feature's edge is shaped by an `IFeatureRefiner` (fractal noise for deserts, the fine elevation's contours
+for ranges), which depends only on position, so the same seed gives the same shapes whatever order the world is
+explored in. Look features up with `World.FeaturesAt(block)`. Region borders follow feature edges.
 
 **Choosing one.** Set `engine.Configuration.GeneratorId`, or `generatormode=<id>` in `loregen.config`. Ids are
 case-insensitive, and an unknown id fails with a message listing the available ones. The Worldbuilder app has a

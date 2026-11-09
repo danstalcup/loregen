@@ -12,6 +12,20 @@ namespace LoreGen.WorldDisplay
     public class Map
     {
         /// <summary>
+        /// The feature to show for a block: the finest-scoped feature covering it (a sub-range rather than the range it is
+        /// part of), the first added if several tie; or null if none covers it.
+        /// </summary>
+        public static Features.GeographicFeature FeatureToShow(WorldBlock Block)
+        {
+            var features = Block.World?.FeaturesAt(Block);
+            if (features == null || features.Count == 0) return null;
+            var best = features[0];
+            foreach (var feature in features)
+                if (feature.Scope > best.Scope) best = feature;
+            return best;
+        }
+
+        /// <summary>
         /// Name of the elevation band a block falls in, or null if the block has no elevation.
         /// </summary>
         public static string ElevationBand(WorldBlock Block)
@@ -72,9 +86,34 @@ namespace LoreGen.WorldDisplay
             Color.FromArgb(50, 140, 110), Color.FromArgb(20, 95, 120)
         };
 
+        /// <summary>
+        /// Label for a block in the Plates view: the kind of plate boundary it lies on, or its plate's name.
+        /// </summary>
+        public static string PlateLabel(WorldBlock Block)
+        {
+            var plate = Block.Status.Plate;
+            if (plate == null) return "No plate";
+            var boundary = plate.BoundaryAt(Block);
+            return boundary == PlateBoundaryKind.None ? plate.Name : boundary + " boundary";
+        }
+
+        private static Color PlateColor(WorldBlock Block)
+        {
+            var plate = Block.Status.Plate;
+            if (plate == null) return Color.Black;
+            switch (plate.BoundaryAt(Block))
+            {
+                case PlateBoundaryKind.Convergent: return Color.FromArgb(200, 40, 40);
+                case PlateBoundaryKind.Divergent: return Color.FromArgb(40, 110, 230);
+                case PlateBoundaryKind.Transform: return Color.FromArgb(235, 200, 60);
+            }
+            return plate.DisplayInfo.DisplayColor;
+        }
+
         public static Color GetColor(WorldBlock Block, MapContext MapContext)
         {
             if (MapContext == MapContext.Elevation) return ElevationColor(Block);
+            if (MapContext == MapContext.Plates) return PlateColor(Block);
 
             //
             //if (null != Block.Status.Sea) return Color.DarkBlue;
@@ -102,6 +141,13 @@ namespace LoreGen.WorldDisplay
                     return Block.Status.Region.DisplayInfo.DisplayColor;
                 //else
                     //MapContext = MapContext.General;
+            }
+
+            if (MapContext == MapContext.Features)
+            {
+                // The finest feature covering the block, or a muted land colour where there is none
+                var feature = FeatureToShow(Block);
+                return feature != null ? feature.DisplayInfo.DisplayColor : Color.FromArgb(150, 165, 140);
             }
 
             if (MapContext == MapContext.General)
@@ -143,6 +189,6 @@ namespace LoreGen.WorldDisplay
     }
     public enum MapContext
     {
-        General, Continents, Regions, Biomes, Terrains, TerrainTiles, Elevation, Temperature, Moisture
+        General, Continents, Regions, Biomes, Terrains, TerrainTiles, Elevation, Temperature, Moisture, Features, Plates
     }
 }

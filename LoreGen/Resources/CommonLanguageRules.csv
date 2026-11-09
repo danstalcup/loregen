@@ -6,6 +6,8 @@ DescriptiveScaleContinent,0.5,Multiplier on the descriptive share when naming co
 DescriptiveScaleRegion,1,Multiplier on the descriptive share when naming regions
 DescriptiveScaleSea,1.3,Multiplier on the descriptive share when naming seas
 DescriptiveScaleOcean,1.8,Multiplier on the descriptive share when naming oceans
+DescriptiveScaleMountainRange,1.2,Multiplier on the descriptive share when naming mountain ranges
+DescriptiveScaleDesert,1.2,Multiplier on the descriptive share when naming deserts
 SecondaryFlavorProbability,0.75,Probability a language blends in a second flavour
 SecondaryWeightMin,0.15,Lowest share of pieces taken from the second flavour
 SecondaryWeightMax,0.45,Highest share of pieces taken from the second flavour

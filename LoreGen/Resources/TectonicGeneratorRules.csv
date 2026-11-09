@@ -1,0 +1,29 @@
+# Key,Value,Description  -- plate settings for the tectonic world generator; rows may appear in any order.
+# Everything after the elevation (sea level, climate, features, regions, fine detail) uses NoiseGeneratorRules.csv.
+# Elevations here are in arbitrary units: ocean floor is 0 and continental crust ContinentalBase; only their order matters.
+Plates,0,Exact number of plates (0 chooses at random between PlatesMin and PlatesMax)
+PlatesMin,7,Number of plates (min)
+PlatesMax,14,Number of plates (max)
+PlateSizeVariety,0.5,How much plates differ in size (0 is all about the same; 1 is very uneven)
+PlateBoundaryRoughness,2,How much plate boundaries wander rather than run straight
+ContinentalShare,0.42,Share of the map covered by continental crust (some of it lies under shallow sea)
+ContinentalCoverMin,0.45,Share of a continental plate covered by its continent (min; the rest is ocean floor around it)
+ContinentalCoverMax,1,Share of a continental plate covered by its continent (max)
+DriftSpeedMin,0.3,Slowest plate drift (the fastest is 1)
+BoundaryThreshold,0.15,How fast plates must close or open across a boundary for it to count as convergent or divergent rather than transform
+ContinentalBase,0.5,Height of continental crust above the ocean floor
+CrustBlur,1,How far (in blocks) the edge of continental crust is smoothed into a slope
+CollisionUplift,0.8,Height of mountains where two continents collide
+CollisionWidth,1.6,Width of collision mountain belts (in blocks)
+SubductionUplift,0.6,Height of mountains where ocean floor dives under a continent
+SubductionWidth,1.1,Width of those mountain belts (in blocks)
+SubductionInland,1,How far inland of the boundary those mountains peak (in blocks)
+TrenchDepth,0.3,Depth of ocean trenches where ocean floor dives under another plate
+IslandArcUplift,0.5,Height of island arcs where ocean floor dives under ocean floor
+RidgeHeight,0.15,Height of mid-ocean ridges where ocean floor pulls apart
+RiftDepth,0.35,Depth of rift valleys where a continent pulls apart (deep rifts become seas)
+UpliftReach,4,Farthest any boundary effect reaches from the boundary (in blocks)
+TerrainNoise,0.14,How much noise is added to the plate-built height (shapes coasts and lesser hills)
+TerrainNoiseFrequency,4,Size of that noise (higher is smaller features)
+TerrainNoiseOctaves,5,Layers of that noise
+TerrainNoiseWarp,0.5,How much that noise is bent into winding shapes

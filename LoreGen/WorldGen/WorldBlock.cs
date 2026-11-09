@@ -214,6 +214,31 @@ namespace LoreGen.WorldGen
         }
 
         /// <summary>
+        /// The world this block is part of (found from the top-level world block).
+        /// </summary>
+        public World World
+        {
+            get
+            {
+                WorldBlock root = this;
+                while (root.ParentBlock != null) root = root.ParentBlock;
+                return root.Entity as World;
+            }
+        }
+
+        /// <summary>
+        /// This block's ancestor at the given depth, or this block itself if it is at that depth.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The depth is negative or deeper than this block</exception>
+        public WorldBlock AncestorAt(int depth)
+        {
+            if (depth < 0 || depth > Depth) throw new ArgumentOutOfRangeException("depth", "A block at depth " + Depth + " has no ancestor at depth " + depth + ".");
+            WorldBlock block = this;
+            while (block.Depth > depth) block = block.ParentBlock;
+            return block;
+        }
+
+        /// <summary>
         /// Provides a list containing the IDs of this block and all of the parent blocks. This set of values is unique to this block.
         /// </summary>
         /// <returns>A list of ID values of blocks, starting with the parent-most block and ending with this block</returns>
@@ -511,6 +536,11 @@ namespace LoreGen.WorldGen
         public WorldBlockWaterStatus WaterStatus;
 
         /// <summary>
+        /// The tectonic plate this block lies on, for generators that model plates (null for those that don't).
+        /// </summary>
+        public TectonicPlate Plate;
+
+        /// <summary>
         /// Returns a copy of this status
         /// </summary>
         /// <returns>Copy of this status</returns>
@@ -527,6 +557,7 @@ namespace LoreGen.WorldGen
                 Elevation = this.Elevation,
                 Temperature = this.Temperature,
                 Moisture = this.Moisture,
+                Plate = this.Plate,
                 RegionBoundariesHaveBeenSmoothed = false
             };
         }        

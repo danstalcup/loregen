@@ -12,7 +12,7 @@ namespace LoreGen.WorldGen.Generators
     /// Region centres are spread out across the continent. Each region then spreads outward in a race where every step
     /// has a cost, and a block goes to whichever region reaches it most cheaply. Steps are expensive across slopes, onto
     /// high ground and across changes of temperature or moisture, so regions fill valleys and plains first and meet at
-    /// ridges and climate transitions, rather than at arbitrary lines. A little random unevenness keeps borders from
+    /// ridges, climate transitions and the edges of geographic features, rather than at arbitrary lines. A little random unevenness keeps borders from
     /// being too regular. Regions that end up very small are merged into a neighbour.
     ///
     /// Every block is reached by following a chain of blocks from the region that won it, so each region is connected.
@@ -24,7 +24,10 @@ namespace LoreGen.WorldGen.Generators
         /// </summary>
         /// <param name="blocks">All the continent's blocks; they must be connected</param>
         /// <param name="count">Number of regions, between 1 and the number of blocks</param>
-        public static List<List<WorldBlock>> Partition(List<WorldBlock> blocks, int count, NoiseGeneratorRules rules, Rnd rnd)
+        /// <param name="featureSignatures">Optional: for each block, a value saying which features cover it (blocks on two
+        /// sides of a feature's edge have different values). Crossing from one value to another costs RegionFeatureWeight.</param>
+        public static List<List<WorldBlock>> Partition(List<WorldBlock> blocks, int count, NoiseGeneratorRules rules, Rnd rnd,
+            IReadOnlyDictionary<WorldBlock, int> featureSignatures = null)
         {
             List<WorldBlock> seeds = ChooseSeeds(blocks, count, rules.RegionSeedCandidates, rnd);
 
@@ -49,7 +52,7 @@ namespace LoreGen.WorldGen.Generators
                 foreach (WorldBlock next in item.Block.SurroundingBlocksAsList())
                 {
                     if (!inside.Contains(next) || claimed.Contains(next)) continue;
-                    queue.Enqueue((next, item.Group), (priority.Cost + StepCost(item.Block, next, jitter[next], rules), order++));
+                    queue.Enqueue((next, item.Group), (priority.Cost + StepCost(item.Block, next, jitter[next], rules, featureSignatures), order++));
                 }
             }
 
@@ -101,13 +104,14 @@ namespace LoreGen.WorldGen.Generators
         }
 
         // Cost of a region spreading from one block to the next
-        private static double StepCost(WorldBlock from, WorldBlock to, double jitter, NoiseGeneratorRules rules)
+        private static double StepCost(WorldBlock from, WorldBlock to, double jitter, NoiseGeneratorRules rules, IReadOnlyDictionary<WorldBlock, int> featureSignatures)
         {
+            double featureEdge = featureSignatures != null && featureSignatures[from] != featureSignatures[to] ? rules.RegionFeatureWeight : 0.0;
             WorldBlockStatus a = from.Status, b = to.Status;
             double slope = Math.Abs(a.Elevation.Value - b.Elevation.Value);
             double climateChange = Math.Abs(a.Temperature.Value - b.Temperature.Value) + Math.Abs(a.Moisture.Value - b.Moisture.Value);
             return 1.0 + rules.RegionSlopeWeight * slope + rules.RegionHeightWeight * b.Elevation.Value
-                       + rules.RegionClimateWeight * climateChange + jitter;
+                       + rules.RegionClimateWeight * climateChange + featureEdge + jitter;
         }
 
         /// <summary>

@@ -18,6 +18,7 @@
             <dt>Grid size</dt><dd>@root.Width &times; @root.Height blocks</dd>
             <dt>Continents</dt><dd>@world.Continents.Count</dd>
             <dt>Oceans</dt><dd>@world.Oceans.Count</dd>
+            <dt>Features</dt><dd>@world.Features.Count</dd>
         </dl>
     </section>
     <section class="card">
@@ -33,6 +34,51 @@
         </table>
     </section>
 </div>
+
+@if (world.Features.Count > 0)
+{
+    <section class="card">
+        <h3>Geographic features</h3>
+        <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Scope</th><th>Part of</th><th>Continent</th><th class="num">Blocks</th><th class="num">Pieces</th></tr></thead>
+            <tbody>
+                @foreach (var f in world.Features)
+                {
+                    <tr>
+                        <td>@f.Name</td>
+                        <td>@f.Type.Name</td>
+                        <td>@f.Scope</td>
+                        <td>@f.Parent?.Name</td>
+                        <td>@string.Join(", ", f.Footprint.Blocks.Select(b => b.Status.Continent?.Name).Where(n => n != null).Distinct())</td>
+                        <td class="num">@f.Footprint.Count</td>
+                        <td class="num">@f.Footprint.Pieces().Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@if (world.Plates.Count > 0)
+{
+    <section class="card">
+        <h3>Tectonic plates</h3>
+        <table>
+            <thead><tr><th>Name</th><th>Crust</th><th>Drifting</th><th class="num">Blocks</th></tr></thead>
+            <tbody>
+                @foreach (var p in world.Plates)
+                {
+                    <tr>
+                        <td>@p.Name</td>
+                        <td>@(p.Continental ? "Continental" : "Oceanic")</td>
+                        <td>@p.Heading</td>
+                        <td class="num">@p.Blocks.Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
 
 @foreach (var c in world.Continents)
 {

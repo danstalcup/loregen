@@ -63,6 +63,25 @@ namespace LoreGen.WorldGen.Generators
         public int RegionBorderDetail;
         public double RegionBorderWarp;
         public double RegionBorderFrequency;
+        public double RegionFeatureWeight;
+        public int MountainRanges;
+        public double MountainElevationFrom;
+        public int MountainRangeMinBlocks;
+        public int MountainRangeGap;
+        public double MountainPassShare;
+        public int FeatureDetail;
+        public double FeatureEdgeStrength;
+        public double FeatureEdgeFrequency;
+        public double MountainRelief;
+        public double MountainReliefFrequency;
+        public int Deserts;
+        public double DesertMoistureTo;
+        public double DesertTemperatureFrom;
+        public int DesertMinBlocks;
+        public int SubRanges;
+        public double SubRangeShare;
+        public int SubRangeMinBlocks;
+        public int SubRangesPerRange;
 
         public const string Filename = "NoiseGeneratorRules.csv";
 
@@ -131,6 +150,25 @@ namespace LoreGen.WorldGen.Generators
             rules.RegionBorderDetail = r.I("RegionBorderDetail");
             rules.RegionBorderWarp = r.D("RegionBorderWarp");
             rules.RegionBorderFrequency = r.D("RegionBorderFrequency");
+            rules.RegionFeatureWeight = r.D("RegionFeatureWeight");
+            rules.MountainRanges = r.I("MountainRanges");
+            rules.MountainElevationFrom = r.D("MountainElevationFrom");
+            rules.MountainRangeMinBlocks = r.I("MountainRangeMinBlocks");
+            rules.MountainRangeGap = r.I("MountainRangeGap");
+            rules.MountainPassShare = r.D("MountainPassShare");
+            rules.FeatureDetail = r.I("FeatureDetail");
+            rules.FeatureEdgeStrength = r.D("FeatureEdgeStrength");
+            rules.FeatureEdgeFrequency = r.D("FeatureEdgeFrequency");
+            rules.MountainRelief = r.D("MountainRelief");
+            rules.MountainReliefFrequency = r.D("MountainReliefFrequency");
+            rules.Deserts = r.I("Deserts");
+            rules.DesertMoistureTo = r.D("DesertMoistureTo");
+            rules.DesertTemperatureFrom = r.D("DesertTemperatureFrom");
+            rules.DesertMinBlocks = r.I("DesertMinBlocks");
+            rules.SubRanges = r.I("SubRanges");
+            rules.SubRangeShare = r.D("SubRangeShare");
+            rules.SubRangeMinBlocks = r.I("SubRangeMinBlocks");
+            rules.SubRangesPerRange = r.I("SubRangesPerRange");
             r.Finish();
 
             Require(rules.LandFractionMin > 0 && rules.LandFractionMin <= rules.LandFractionMax && rules.LandFractionMax < 1,
@@ -177,6 +215,25 @@ namespace LoreGen.WorldGen.Generators
             Require(rules.RegionBorderDetail == 0 || rules.RegionBorderDetail == 1, "RegionBorderDetail must be 0 or 1");
             Require(rules.RegionBorderWarp >= 0 && rules.RegionBorderWarp <= 0.5, "RegionBorderWarp must be between 0 and 0.5");
             Require(rules.RegionBorderFrequency > 0, "RegionBorderFrequency must be greater than 0");
+            Require(rules.RegionFeatureWeight >= 0, "RegionFeatureWeight must not be negative");
+            Require(rules.MountainRanges == 0 || rules.MountainRanges == 1, "MountainRanges must be 0 or 1");
+            Require(rules.MountainElevationFrom > 0 && rules.MountainElevationFrom <= 1, "MountainElevationFrom must be greater than 0 and at most 1");
+            Require(rules.MountainRangeMinBlocks >= 1, "MountainRangeMinBlocks must be at least 1");
+            Require(rules.MountainRangeGap >= 0 && rules.MountainRangeGap <= 5, "MountainRangeGap must be between 0 and 5");
+            Require(rules.MountainPassShare >= 0 && rules.MountainPassShare <= 1, "MountainPassShare must be between 0 and 1");
+            Require(rules.FeatureDetail == 0 || rules.FeatureDetail == 1, "FeatureDetail must be 0 or 1");
+            Require(rules.FeatureEdgeStrength >= 0 && rules.FeatureEdgeStrength < 0.5, "FeatureEdgeStrength must be at least 0 and below 0.5");
+            Require(rules.FeatureEdgeFrequency > 0, "FeatureEdgeFrequency must be greater than 0");
+            Require(rules.MountainRelief >= 0 && rules.MountainRelief <= 0.5, "MountainRelief must be between 0 and 0.5");
+            Require(rules.MountainReliefFrequency > 0, "MountainReliefFrequency must be greater than 0");
+            Require(rules.Deserts == 0 || rules.Deserts == 1, "Deserts must be 0 or 1");
+            Require(rules.DesertMoistureTo >= 0 && rules.DesertMoistureTo <= 1, "DesertMoistureTo must be between 0 and 1");
+            Require(rules.DesertTemperatureFrom >= 0 && rules.DesertTemperatureFrom <= 1, "DesertTemperatureFrom must be between 0 and 1");
+            Require(rules.DesertMinBlocks >= 1, "DesertMinBlocks must be at least 1");
+            Require(rules.SubRanges == 0 || rules.SubRanges == 1, "SubRanges must be 0 or 1");
+            Require(rules.SubRangeShare > 0 && rules.SubRangeShare <= 1, "SubRangeShare must be greater than 0 and at most 1");
+            Require(rules.SubRangeMinBlocks >= 1, "SubRangeMinBlocks must be at least 1");
+            Require(rules.SubRangesPerRange >= 1, "SubRangesPerRange must be at least 1");
             return rules;
         }
 

@@ -34,6 +34,44 @@ namespace LoreGen.WorldGen
         public WorldBlock WorldBlock;
 
         /// <summary>
+        /// The plates of the world's crust, for generators that model plate tectonics (empty for those that don't).
+        /// </summary>
+        public List<TectonicPlate> Plates = new List<TectonicPlate>();
+
+        private readonly List<Features.GeographicFeature> features = new List<Features.GeographicFeature>();
+        private Features.FeatureIndex featureIndex;
+
+        /// <summary>
+        /// The world's geographic features (mountain ranges, deserts, lakes...), in the order they were added. A world may
+        /// have none. Add features with <see cref="AddFeature"/>.
+        /// </summary>
+        public IReadOnlyList<Features.GeographicFeature> Features { get { return features; } }
+
+        /// <summary>
+        /// Adds a geographic feature to the world.
+        /// </summary>
+        /// <exception cref="ArgumentException">The feature belongs to another world or was already added</exception>
+        public void AddFeature(Features.GeographicFeature feature)
+        {
+            if (feature == null) throw new ArgumentNullException("feature");
+            if (feature.World != this) throw new ArgumentException("That feature belongs to another world.", "feature");
+            if (features.Contains(feature)) throw new ArgumentException("That feature was already added.", "feature");
+            features.Add(feature);
+            featureIndex = null;
+        }
+
+        /// <summary>
+        /// The features covering a block, at any depth, in the order they were added. For a block coarser than a feature's
+        /// scope, a feature counts if any of it lies inside the block (see <see cref="Features.FeatureFootprint.Contains"/>).
+        /// </summary>
+        public IReadOnlyList<Features.GeographicFeature> FeaturesAt(WorldBlock block)
+        {
+            if (block == null || features.Count == 0) return Array.Empty<Features.GeographicFeature>();
+            if (featureIndex == null) featureIndex = new Features.FeatureIndex(features);
+            return featureIndex.At(block);
+        }
+
+        /// <summary>
         /// Id of the world generator that produced this world (see IWorldGenerator.Id). Set by SimEngine.
         /// </summary>
         public string GeneratorId { get; internal set; }

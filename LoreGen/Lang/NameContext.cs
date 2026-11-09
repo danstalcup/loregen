@@ -19,7 +19,11 @@ namespace LoreGen.Lang
         /// <summary>A sea belonging to a continent.</summary>
         Sea,
         /// <summary>An ocean.</summary>
-        Ocean
+        Ocean,
+        /// <summary>A mountain range.</summary>
+        MountainRange,
+        /// <summary>A desert.</summary>
+        Desert
     }
 
     /// <summary>
