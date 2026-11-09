@@ -1,4 +1,4 @@
-Last updated: 4/9/16
+﻿Last updated: 4/9/16
 
 WorldRules.csv
 
@@ -34,8 +34,46 @@ IDs of letter sounds in this phonetic vocalbulary [separated by ,s]
 
 LanguageRules.csv
 
-This file contains the probabilities used when generating new words in new languages.
+This file contains the probabilities used when generating new words in new languages (PhoneticLanguage).
 Same key-based format as WorldRules.csv; keys match the fields of the LanguageRules struct, e.g. LongRimeProbability.
+
+
+CommonNameFlavors.csv
+
+This file contains the naming flavours that CommonLanguage blends: families of naming traditions such as Latinate.
+Format for each row:
+Flavor name [,]
+Slot: Root, Middle, Ending, LandEnding, RegionEnding, WaterEnding or LangEnding [,]
+Pieces for that slot [separated by ,s]
+Every flavour needs one row for every slot. Blank lines and lines starting with # are ignored.
+
+
+CommonNameTemplates.csv
+
+This file contains the templates CommonLanguage builds names from, such as "The Sea of {SeaNoun}".
+Format for each row:
+Kind: Language, World, Continent, Region, Sea or Ocean [,]
+Style: Proper or Descriptive [,]
+Weight (how often it is chosen relative to others of the same kind and style) [,]
+Template
+The comments at the top of the file list the tokens. Every kind needs a Proper template that uses no {Dir}, {DirAdj}
+or {Parent}, so that a name can always be made.
+
+
+CommonNameVocabulary.csv
+
+This file contains the English words for CommonLanguage's descriptive names, and which biomes count as which kind of land.
+Format for each row:
+List (Adj, AdjC, LandAdj, SeaAdj, SeaNoun, Feature, FeatureC or BiomeKeyword) [,]
+Key: Any, or a biome category such as Wetland [,]
+Words [separated by ,s]
+A BiomeKeyword row lists words that put a biome in that category when found in its name; the first matching row wins.
+
+
+CommonLanguageRules.csv
+
+This file contains the settings for CommonLanguage: how often names are descriptive, how flavours are blended, and
+how long words may be. Same key-based format as WorldRules.csv; each row's description says what it does.
 
 ClimateTypes.csv
 

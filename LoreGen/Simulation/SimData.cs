@@ -38,6 +38,12 @@ namespace LoreGen.Simulation
         public LanguageRules LanguageRules;
 
         /// <summary>
+        /// Flavours, templates, vocabulary and rules for <see cref="CommonLanguage"/>, processed from
+        /// "CommonNameFlavors.csv", "CommonNameTemplates.csv", "CommonNameVocabulary.csv" and "CommonLanguageRules.csv"
+        /// </summary>
+        public CommonNameData CommonNames;
+
+        /// <summary>
         /// Collection of world generation rules, processed from "WorldRules.csv"
         /// </summary>
         public WorldRules WorldRules;
@@ -140,6 +146,7 @@ namespace LoreGen.Simulation
             InitializeLetterSounds();
             InitializePhoneticInventories();
             InitializeLanguageRules();
+            InitializeCommonNames();
             InitializeWorldRules();
             InitializeEdgePatterns();
             InitializeClimateTypes();
@@ -201,6 +208,18 @@ namespace LoreGen.Simulation
                 PhoneticInventory inventory = new PhoneticInventory(letters,inventoryData[0]);
                 PhoneticInventories.Add(inventory);
             }
+        }
+
+        /// <summary>
+        /// Loads in the data for <see cref="CommonLanguage"/>
+        /// </summary>
+        public void InitializeCommonNames()
+        {
+            CommonNames = new CommonNameData(
+                ReadDataLines("CommonNameFlavors.csv"),
+                ReadDataLines("CommonNameTemplates.csv"),
+                ReadDataLines("CommonNameVocabulary.csv"),
+                LoadRules("CommonLanguageRules.csv"));
         }
 
         /// <summary>

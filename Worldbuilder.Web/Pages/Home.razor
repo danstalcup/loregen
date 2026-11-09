@@ -1,6 +1,7 @@
 @page "/"
 @using Worldbuilder.Web.Components
 @using Worldbuilder.Web.Services
+@using LoreGen.Lang
 @implements IDisposable
 @inject WorldSession Session
 
@@ -11,7 +12,17 @@
         <h1>Worldbuilder</h1>
         <span class="muted">LoreGen v0.12</span>
     </div>
-    <form class="seed" @onsubmit="GenerateFromSeed" @onsubmit:preventDefault>
+    <nav class="tabs main-tabs" role="tablist" aria-label="Sections">
+        @foreach (var (key, label) in Sections)
+        {
+            <button role="tab" aria-selected="@(section == key)" class="@(section == key ? "tab active" : "tab")" @onclick="() => section = key">@label</button>
+        }
+    </nav>
+</header>
+
+@if (section == "worldbuilder")
+{
+    <form class="seed card" @onsubmit="GenerateFromSeed" @onsubmit:preventDefault>
         <label>Generator
             <select value="@generatorInput" @onchange="OnGeneratorChanged" title="@CurrentDescription">
                 @foreach (var g in Session.Generators)
@@ -20,49 +31,74 @@
                 }
             </select>
         </label>
+        <label>Names
+            <select @bind="languageStyleInput" title="How places are named">
+                <option value="@LanguageStyle.Common" title="Names like those in fantasy and historical fiction">Common</option>
+                <option value="@LanguageStyle.Phonetic" title="Names built sound by sound from random phonetic rules">Phonetic</option>
+            </select>
+        </label>
         <label>Seed <input type="number" @bind="seedInput" @bind:event="oninput" /></label>
         <button type="submit" class="btn" disabled="@busy">Generate</button>
         <button type="button" class="btn primary" disabled="@busy" @onclick="GenerateRandom">@(busy ? "Generating…" : "New world")</button>
     </form>
-</header>
 
-<details class="options-panel card">
-    <summary>Options@(settingsInput.Count > 0 ? $" ({settingsInput.Count} changed)" : "")</summary>
-    <OptionsPanel Options="@Session.OptionsFor(generatorInput)" Values="@settingsInput" OnChange="@(() => { })" />
-</details>
+    <details class="options-panel card">
+        <summary>Options@(settingsInput.Count > 0 ? $" ({settingsInput.Count} changed)" : "")</summary>
+        <OptionsPanel Options="@Session.OptionsFor(generatorInput)" Values="@settingsInput" OnChange="@(() => { })" />
+    </details>
 
-@if (error != null)
+    @if (error != null)
+    {
+        <p class="error" role="alert">@error</p>
+    }
+
+    <nav class="tabs sub-tabs" role="tablist" aria-label="World views">
+        @foreach (var (key, label) in WorldTabs)
+        {
+            <button role="tab" aria-selected="@(worldTab == key)" class="@(worldTab == key ? "tab active" : "tab")" @onclick="() => worldTab = key">@label</button>
+        }
+    </nav>
+
+    <div class="tab-body">
+        @switch (worldTab)
+        {
+            case "map": <MapTab /> break;
+            case "info": <InfoTab /> break;
+        }
+    </div>
+}
+else
 {
-    <p class="error" role="alert">@error</p>
+    <p class="muted">Tools and reference material that don't depend on the world you've generated.</p>
+
+    <nav class="tabs sub-tabs" role="tablist" aria-label="Reference topics">
+        @foreach (var (key, label) in ReferenceTabs)
+        {
+            <button role="tab" aria-selected="@(referenceTab == key)" class="@(referenceTab == key ? "tab active" : "tab")" @onclick="() => referenceTab = key">@label</button>
+        }
+    </nav>
+
+    <div class="tab-body">
+        @switch (referenceTab)
+        {
+            case "language": <LanguageTab /> break;
+            case "data": <DataTab /> break;
+        }
+    </div>
 }
 
-<nav class="tabs" role="tablist">
-    @foreach (var (key, label) in Tabs)
-    {
-        <button role="tab" aria-selected="@(tab == key)" class="@(tab == key ? "tab active" : "tab")" @onclick="() => tab = key">@label</button>
-    }
-</nav>
-
-<div class="tab-body">
-    @switch (tab)
-    {
-        case "map": <MapTab /> break;
-        case "info": <InfoTab /> break;
-        case "language": <LanguageTab /> break;
-        case "data": <DataTab /> break;
-    }
-</div>
-
 @code {
-    private static readonly (string, string)[] Tabs =
-    {
-        ("map", "Map"), ("info", "World info"), ("language", "Language generator"), ("data", "Raw data")
-    };
+    private static readonly (string, string)[] Sections = { ("worldbuilder", "Worldbuilder"), ("reference", "Reference") };
+    private static readonly (string, string)[] WorldTabs = { ("map", "Map"), ("info", "World info") };
+    private static readonly (string, string)[] ReferenceTabs = { ("language", "Language generator"), ("data", "Raw data") };
 
-    private string tab = "map";
+    private string section = "worldbuilder";
+    private string worldTab = "map";
+    private string referenceTab = "language";
     private int seedInput;
     private string generatorInput;
     private Dictionary<string, double> settingsInput = new();
+    private LanguageStyle languageStyleInput;
     private bool busy;
     private string error;
 
@@ -71,6 +107,7 @@
         seedInput = Session.Seed;
         generatorInput = Session.GeneratorId;
         settingsInput = new Dictionary<string, double>(Session.Settings);
+        languageStyleInput = Session.LanguageStyle;
         Session.Changed += OnChanged;
     }
 
@@ -90,8 +127,8 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private Task GenerateFromSeed() => Run(() => Session.Generate(seedInput, generatorInput, settingsInput));
-    private Task GenerateRandom() => Run(() => Session.GenerateRandom(generatorInput, settingsInput));
+    private Task GenerateFromSeed() => Run(() => Session.Generate(seedInput, generatorInput, settingsInput, languageStyleInput));
+    private Task GenerateRandom() => Run(() => Session.GenerateRandom(generatorInput, settingsInput, languageStyleInput));
 
     private async Task Run(Action generate)
     {

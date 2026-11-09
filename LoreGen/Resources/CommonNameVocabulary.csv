@@ -1,0 +1,41 @@
+# Words for CommonLanguage's descriptive names: List,Key,item,item,...
+# Key is "Any" for lists that do not depend on the land, or a biome category for Feature and FeatureC.
+# Feature words stand alone ("The Ashen Wastes"); FeatureC and AdjC words are joined into one word ("Greymoor").
+#
+# BiomeKeyword rows map biomes to categories: a biome belongs to the first category with a keyword found in its name
+# (ignoring case). Biomes that match nothing use the "Any" lists.
+
+BiomeKeyword,Frozen,polar,glaci,blizzard,ice,snow,tundra
+BiomeKeyword,Wetland,marsh,swamp,bog,mangrove
+BiomeKeyword,Jungle,jungle,rainforest,monsoon
+BiomeKeyword,Highland,mountain,montane,cliffs,alpine
+BiomeKeyword,Desert,desert,dunes,waste,xeric
+BiomeKeyword,Forest,forest,taiga,sclerophyll
+BiomeKeyword,River,riparian,river
+BiomeKeyword,Grassland,plains,steppe,prairie,savannah,shrubland
+
+Adj,Any,Ashen,Barren,Black,Broken,Burning,Cold,Crimson,Drowned,Elder,Emerald,Endless,Fallen,Forgotten,Frozen,Gilded,Golden,Grey,Hallowed,Haunted,Hidden,High,Iron,Lonely,Lost,Pale,Red,Restless,Scarlet,Shattered,Shivering,Silent,Silver,Sorrowing,Sundered,Sunlit,Thorned,Twilight,Weeping,Whispering,White,Wild,Withered
+AdjC,Any,Ash,Black,Bleak,Bright,Cold,Dark,Deep,Elder,Ember,Fair,Frost,Gold,Green,Grey,High,Hollow,Iron,Long,Mist,Oak,Raven,Red,Salt,Shadow,Silver,Stone,Storm,Sun,Thorn,White,Wild,Wolf,Wyrm
+LandAdj,Any,Ashen,Broken,Burning,Distant,Elder,Endless,Forgotten,Frozen,Golden,Hallowed,Hidden,Iron,Lost,Shrouded,Silent,Sundered,Sunlit,Twilight,Verdant,Wild
+SeaAdj,Any,Amber,Bitter,Black,Burning,Cerulean,Churning,Dark,Drowned,Emerald,Endless,Frozen,Glass,Grey,Hollow,Iron,Jade,Pale,Restless,Sapphire,Shivering,Silent,Silver,Sleeping,Sunken,Twilight,Weeping,Whispering
+SeaNoun,Any,Bones,Dawn,Dusk,Echoes,Embers,Ghosts,Glass,Kings,Laments,Lanterns,Mists,Pearls,Salt,Serpents,Silence,Sorrows,Stars,Storms,Teeth,Tides,Whispers,Wrecks
+
+Feature,Any,Reaches,Marches,Lands,Hollows,Vales,Holds
+Feature,Forest,Wood,Woods,Weald,Forest,Thickets,Groves
+Feature,Jungle,Jungle,Tangle,Green,Canopy,Wilds
+Feature,Wetland,Fens,Marshes,Mires,Bogs,Sloughs
+Feature,Desert,Wastes,Sands,Barrens,Dunes,Expanse
+Feature,Grassland,Plains,Downs,Fields,Steppe,Meadows,Leas
+Feature,Highland,Peaks,Heights,Crags,Highlands,Spires,Fells
+Feature,Frozen,Wastes,Barrens,Snows,Icefields,Tundra,Frostlands
+Feature,River,Vale,Fords,Banks,Riverlands,Delta,Shallows
+
+FeatureC,Any,land,reach,fall,march,mark,hold,wold,vale,hollow
+FeatureC,Forest,wood,holt,hurst,weald,grove,thorn
+FeatureC,Jungle,wood,tangle,green,grove,vine
+FeatureC,Wetland,fen,marsh,mire,moss,wash,bog
+FeatureC,Desert,sand,waste,dune,scar,drift
+FeatureC,Grassland,field,mead,lea,down,vale,wold
+FeatureC,Highland,crag,fell,peak,tor,ridge,spire,cairn
+FeatureC,Frozen,rime,frost,wind,snow,hold
+FeatureC,River,ford,mouth,bank,brook,water,wash

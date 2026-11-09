@@ -22,6 +22,12 @@ namespace LoreGen.Simulation
         /// </summary>
         public Rnd Rnd;
         /// <summary>
+        /// Random number generator for languages and names, seeded from <see cref="Rnd"/>'s seed. Keeping naming on its own
+        /// stream means the shape of a world does not depend on how its places are named: the same seed gives the same
+        /// land whichever <see cref="SimEngineConfiguration.LanguageStyle"/> is used.
+        /// </summary>
+        public Rnd NameRnd;
+        /// <summary>
         /// World simulated
         /// </summary>
         public World World;
@@ -101,6 +107,7 @@ namespace LoreGen.Simulation
             {
                 Rnd = new Rnd();
             }
+            NameRnd = new Rnd(unchecked(Rnd.Seed * 486187739 + 0x4E414D45));
             Generators = WorldGeneratorRegistry.CreateDefault();
             SimData = new SimData(this);
             SimData.Initialize();
@@ -114,12 +121,14 @@ namespace LoreGen.Simulation
         public void GenerateWorld()
         {
             IWorldGenerator generator = WorldGenerator ?? Generators.Get(Configuration.GeneratorId);
+            Language.Names.Clear();
             World generated = generator.Generate(this);
             if (generated == null)
                 throw new InvalidOperationException("World generator '" + generator.Id + "' returned no world.");
             generated.GeneratorId = generator.Id;
             generated.GeneratorVersion = generator.Version;
             generated.GeneratorSettings = new Dictionary<string, double>(Configuration.GeneratorSettings, StringComparer.OrdinalIgnoreCase);
+            generated.LanguageStyle = Configuration.LanguageStyle;
             World = generated;
         }
         
@@ -148,13 +157,47 @@ namespace LoreGen.Simulation
             this.SimEngine = SimEngine;
         }
         /// <summary>
-        /// Returns a random language with a random phonetic vocabulary and random rules
+        /// Names given out in the current world. Cleared whenever a world is generated.
+        /// </summary>
+        public NameRegistry Names { get; } = new NameRegistry();
+
+        /// <summary>
+        /// Returns a random language in the style set by <see cref="SimEngineConfiguration.LanguageStyle"/>.
         /// </summary>
         /// <returns>A randomly generated language</returns>
-        public Language GetRandomLanguage()
+        public ILanguage GetRandomLanguage()
         {
-            return Language.RandomLanguageWithPhoneticInventory(ListR<PhoneticInventory>.RandomFromList(SimEngine.SimData.PhoneticInventories, SimEngine.Rnd), SimEngine);
-        }        
+            return GetRandomLanguage(SimEngine.Configuration.LanguageStyle);
+        }
+
+        /// <summary>
+        /// Returns a random language in the given style.
+        /// </summary>
+        public ILanguage GetRandomLanguage(LanguageStyle style)
+        {
+            switch (style)
+            {
+                case LanguageStyle.Phonetic: return GetRandomPhoneticLanguage();
+                case LanguageStyle.Common: return GetRandomCommonLanguage();
+            }
+            throw new ArgumentOutOfRangeException("style", style, "Unknown language style.");
+        }
+
+        /// <summary>
+        /// Returns a random language with a random phonetic vocabulary and random rules
+        /// </summary>
+        public PhoneticLanguage GetRandomPhoneticLanguage()
+        {
+            return PhoneticLanguage.RandomLanguageWithPhoneticInventory(ListR<PhoneticInventory>.RandomFromList(Data.PhoneticInventories, SimEngine.NameRnd), SimEngine);
+        }
+
+        /// <summary>
+        /// Returns a random blend of the naming flavours in "CommonNameFlavors.csv"
+        /// </summary>
+        public CommonLanguage GetRandomCommonLanguage()
+        {
+            return CommonLanguage.Random(SimEngine);
+        }
     }
 
     public class SimEngineConfiguration
@@ -194,6 +237,11 @@ namespace LoreGen.Simulation
         /// config file, write them as "setting.Name=value". Names are not case-sensitive.
         /// </summary>
         public Dictionary<string, double> GeneratorSettings = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// How the world's places are named ("languagestyle" in the config file): Common (the default) or Phonetic.
+        /// </summary>
+        public LanguageStyle LanguageStyle = LanguageStyle.Common;
 
         /// <summary>
         /// File path of the configuration file
@@ -254,6 +302,10 @@ namespace LoreGen.Simulation
                     if (ConfigLineData[0].Trim().ToLower() == "generatormode")
                     {
                         GeneratorId = ConfigLineData[1].Trim();
+                    }
+                    if (ConfigLineData[0].Trim().ToLower() == "languagestyle")
+                    {
+                        LanguageStyle = (LanguageStyle)Enum.Parse(typeof(LanguageStyle), ConfigLineData[1].Trim(), true);
                     }
                     if (ConfigLineData[0].Trim().ToLower() == "presetseed")
                     {

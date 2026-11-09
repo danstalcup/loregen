@@ -149,7 +149,7 @@ namespace LoreGen.Tests
         {
             var engine = new SimEngine(5);
             var lang = engine.Language.GetRandomLanguage();
-            Assert.False(string.IsNullOrWhiteSpace(lang.GetName()));
+            Assert.False(string.IsNullOrWhiteSpace(lang.GetName(LoreGen.Lang.NameKind.Region)));
         }
     }
 }

@@ -28,7 +28,7 @@ namespace LoreGen.WorldGen.Generators
             get { return "The original generator: continents are carved from a randomly partitioned grid, then eroded and divided into regions."; }
         }
 
-        public string Version { get { return "1"; } }
+        public string Version { get { return "2"; } }
 
         public World Generate(SimEngine engine)
         {

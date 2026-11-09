@@ -29,7 +29,7 @@ namespace LoreGen.WorldGen
 
         public Biome Biome;
 
-        public Language Language; // Add multiple languages per region
+        public ILanguage Language; // Add multiple languages per region
 
 
         public Region(Continent Continent, WorldBlockArea RegionArea, Biome Biome = null)
@@ -39,11 +39,16 @@ namespace LoreGen.WorldGen
             this.RegionArea.Entity = this;
             this.WorldEntityType = WorldEntityType.Region;
             this.Continent = Continent;
-            this.Language = Continent.RootLanguage.Copy().Skew();
-            this.Name = this.Language.GetName();
+            this.Language = Continent.RootLanguage.CreateDialect();
             Continent.Regions.Add(this);
             if (Biome != null) this.Biome = Biome;
             else SelectBiome();
+            this.Name = this.Language.GetName(new NameContext(NameKind.Region)
+            {
+                Biome = this.Biome,
+                ParentName = Continent.Name,
+                Direction = NameHints.DirectionWithin(RegionArea.Blocks(), Continent.ContinentArea?.Blocks() ?? Continent.ContinentBlock?.BlocksAsGrid().Cast<WorldBlock>())
+            });
             foreach (WorldBlock wb in RegionArea.Blocks())
             {
                 wb.Status.Region = this;
@@ -177,7 +182,7 @@ namespace LoreGen.WorldGen
             {
                 block.Status.Sea = this;
             }
-            Name = Continent.RootLanguage.GetName();
+            Name = Continent.RootLanguage.GetName(NameKind.Sea);
             this.WorldEntityType = WorldGen.WorldEntityType.Sea;
         }
     }

@@ -51,6 +51,16 @@ namespace LoreGen.WorldGen
         public IReadOnlyDictionary<string, double> GeneratorSettings { get; internal set; } = new Dictionary<string, double>();
 
         /// <summary>
+        /// How the places in this world were named.
+        /// </summary>
+        public Lang.LanguageStyle LanguageStyle { get; internal set; }
+
+        /// <summary>
+        /// World-wide language, used to name the oceans and the world itself.
+        /// </summary>
+        public Lang.ILanguage Language;
+
+        /// <summary>
         /// Just does basic initialization. To generate a world, use SimEngine.GenerateWorld
         /// </summary>
         /// <param name="SimEngine">Sim engine</param>
@@ -61,6 +71,8 @@ namespace LoreGen.WorldGen
             DisplayInfo = new WorldDisplay.WorldEntityDisplayInfo();
             Oceans = new List<Ocean>();
             Continents = new List<Continent>();
+            Language = SimEngine.Language.GetRandomLanguage();
+            Name = Language.GetName(Lang.NameKind.World);
         }
     }
 

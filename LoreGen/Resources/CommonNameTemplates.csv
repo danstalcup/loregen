@@ -1,0 +1,57 @@
+# Name templates for CommonLanguage: Kind,Style,Weight,Template
+# Kind: Language, World, Continent, Region, Sea or Ocean. Style: Proper (built from the flavour's sounds) or
+# Descriptive (an English description, as names are "translated" in fiction). Each language mixes the two styles in its
+# own proportion; within a style a template is chosen by weight.
+#
+# Template tokens:
+#   {Root} {Middle} {Ending} {LandEnding} {RegionEnding} {WaterEnding} {LangEnding}  pieces from the language's flavours
+#   {Adj} {AdjC} {LandAdj} {SeaAdj} {SeaNoun}  words from CommonNameVocabulary.csv
+#   {Feature} {FeatureC}  land features suited to the biome (falls back to the "Any" list)
+#   {Dir} {DirAdj}  "North" / "Northern"; only used when the place lies clearly to one side
+#   {Parent}  the parent's name (a region's continent); only used when it is a single word
+# A '+' joins two pieces into one word, smoothing the seam ("Valda" + "ia" = "Valdia"). Other text is copied as is.
+
+Language,Proper,6,{Root}+{LangEnding}
+Language,Proper,1,Old {Root}+{LangEnding}
+Language,Proper,1,High {Root}+{LangEnding}
+
+World,Proper,4,{Root}+{LandEnding}
+World,Proper,2,{Root}+{Middle}+{LandEnding}
+
+Continent,Proper,6,{Root}+{LandEnding}
+Continent,Proper,2,{Root}+{Middle}+{LandEnding}
+Continent,Proper,1,{Root}+{Ending}
+Continent,Descriptive,2,The {LandAdj} Lands
+Continent,Descriptive,1,The {LandAdj} Reach
+Continent,Descriptive,2,{AdjC}+{FeatureC}
+
+Region,Proper,5,{Root}+{RegionEnding}
+Region,Proper,3,{Root}+{Ending}
+Region,Proper,2,{Root}+{Middle}+{RegionEnding}
+Region,Proper,1,The {Root}+{Ending} Marches
+Region,Proper,1,{Dir} {Parent}
+Region,Descriptive,4,{AdjC}+{FeatureC}
+Region,Descriptive,3,The {Adj} {Feature}
+Region,Descriptive,1,The {Feature} of {Root}+{Ending}
+Region,Descriptive,1,The {DirAdj} {Feature}
+
+Sea,Proper,3,{Root}+{WaterEnding}
+Sea,Proper,2,The {Root}+{WaterEnding} Sea
+Sea,Proper,2,The Sea of {Root}+{Ending}
+Sea,Proper,2,The Bay of {Root}+{Ending}
+Sea,Proper,1,The Gulf of {Root}+{Ending}
+Sea,Proper,2,The {Root}+{LangEnding} Sea
+Sea,Proper,1,{Root}+{Ending} Sound
+Sea,Descriptive,3,The {SeaAdj} Sea
+Sea,Descriptive,2,The Sea of {SeaNoun}
+Sea,Descriptive,2,The Bay of {SeaNoun}
+Sea,Descriptive,1,{AdjC}+water
+Sea,Descriptive,1,The {SeaAdj} Gulf
+
+Ocean,Proper,3,The {Root}+{LangEnding} Ocean
+Ocean,Proper,2,The {Root}+{WaterEnding} Ocean
+Ocean,Proper,1,The Sea of {Root}+{Ending}
+Ocean,Descriptive,3,The {SeaAdj} Ocean
+Ocean,Descriptive,2,The Sea of {SeaNoun}
+Ocean,Descriptive,4,The {DirAdj} Ocean
+Ocean,Descriptive,1,The {SeaAdj} Deep

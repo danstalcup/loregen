@@ -19,7 +19,7 @@ namespace LoreGen.WorldGen
         /// <summary>
         /// Root language of this continent, used to generate languages in its.
         /// </summary>
-        public Language RootLanguage;
+        public ILanguage RootLanguage;
         /// <summary>
         /// Block representing this region
         /// </summary>
@@ -67,7 +67,7 @@ namespace LoreGen.WorldGen
             this.World = World;
             World.Continents.Add(this);
             RootLanguage = SimEngine.Language.GetRandomLanguage();
-            Name = RootLanguage.GetName(1);
+            Name = RootLanguage.GetName(NameKind.Continent);
             this.ContinentBlock = ContinentBlock;
             WorldEntityType = WorldEntityType.Continent;
             Regions = new List<Region>();
@@ -139,7 +139,7 @@ namespace LoreGen.WorldGen
             this.World = World;
             World.Continents.Add(this);
             RootLanguage = SimEngine.Language.GetRandomLanguage();
-            Name = RootLanguage.GetName(1);            
+            Name = RootLanguage.GetName(NameKind.Continent);
             WorldEntityType = WorldEntityType.Continent;
             Regions = new List<Region>();
             Seas = new List<Sea>();            
@@ -335,7 +335,10 @@ namespace LoreGen.WorldGen
             }
             WorldEntityType = WorldGen.WorldEntityType.Ocean;
             World.Oceans.Add(this);
-            Name = World.SimEngine.Language.GetRandomLanguage().GetName();
+            Name = World.Language.GetName(new NameContext(NameKind.Ocean)
+            {
+                Direction = NameHints.DirectionWithinWorld(OceanArea.Blocks(), World)
+            });
         }                
 
         public void AddBlock(WorldBlock Block)

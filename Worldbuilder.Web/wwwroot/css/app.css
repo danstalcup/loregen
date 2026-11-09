@@ -74,6 +74,10 @@ input[type="number"] { width: 110px; }
     padding: 8px 14px; font: inherit; color: var(--muted); cursor: pointer; white-space: nowrap;
 }
 .tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+.main-tabs { border-bottom: none; margin-bottom: 0; }
+.main-tabs .tab { font-size: 1.05rem; }
+.sub-tabs .tab { font-size: 0.93rem; padding: 6px 12px; }
+form.seed.card { margin-bottom: 12px; padding: 10px 12px; }
 
 /* cards + layout */
 .card {

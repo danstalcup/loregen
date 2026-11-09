@@ -12,7 +12,10 @@ public class WorldSession
     public SimEngine Engine { get; private set; }
     public int Seed { get; private set; }
     public MapView Map { get; private set; }
-    public Language TestLanguage { get; set; }
+    public ILanguage TestLanguage { get; set; }
+
+    /// <summary>How the current world's places were named.</summary>
+    public LanguageStyle LanguageStyle { get; private set; } = LanguageStyle.Common;
 
     /// <summary>Id of the generator that produced the current world.</summary>
     public string GeneratorId { get; private set; } = WorldGeneratorRegistry.DefaultId;
@@ -50,27 +53,31 @@ public class WorldSession
     }
 
     /// <summary>
-    /// Generates a brand new world from the given seed, using the given generator and settings (or the current ones).
+    /// Generates a brand new world from the given seed, using the given generator, settings and language style (or the
+    /// current ones).
     /// </summary>
-    public void Generate(int seed, string generatorId = null, IReadOnlyDictionary<string, double> settings = null)
+    public void Generate(int seed, string generatorId = null, IReadOnlyDictionary<string, double> settings = null, LanguageStyle? languageStyle = null)
     {
         generatorId ??= GeneratorId;
         settings ??= Settings;
+        var style = languageStyle ?? LanguageStyle;
         var engine = new SimEngine(seed);
         engine.Configuration.GeneratorId = generatorId;
+        engine.Configuration.LanguageStyle = style;
         foreach (var setting in settings) engine.Configuration.GeneratorSettings[setting.Key] = setting.Value;
         engine.GenerateWorld(); // if this throws, the previous world, seed, generator and settings stay in place
         Seed = seed;
         GeneratorId = generatorId;
         Settings = new Dictionary<string, double>(settings);
+        LanguageStyle = style;
         Engine = engine;
         TestLanguage = null;
         Map = new MapView(this);
         Changed?.Invoke();
     }
 
-    public void GenerateRandom(string generatorId = null, IReadOnlyDictionary<string, double> settings = null) =>
-        Generate(Random.Shared.Next(1, 1_000_000), generatorId, settings);
+    public void GenerateRandom(string generatorId = null, IReadOnlyDictionary<string, double> settings = null, LanguageStyle? languageStyle = null) =>
+        Generate(Random.Shared.Next(1, 1_000_000), generatorId, settings, languageStyle);
 
-    public Language GetTestLanguage() => TestLanguage ??= Engine.Language.GetRandomLanguage();
+    public ILanguage GetTestLanguage() => TestLanguage ??= Engine.Language.GetRandomLanguage();
 }

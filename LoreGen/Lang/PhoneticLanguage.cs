@@ -10,9 +10,11 @@ using LoreGen.Randomizer;
 namespace LoreGen.Lang
 {
     /// <summary>
-    /// A simulated language based off of a real phonetic vocabulary, but with unique behavior patterns for word generation.
+    /// A simulated language built sound by sound from a real phonetic inventory, with its own random rules for how
+    /// syllables, words and names are put together. Its names sound foreign and unfamiliar; see
+    /// <see cref="CommonLanguage"/> for names that read like those in fantasy and historical fiction.
     /// </summary>
-    public class Language
+    public class PhoneticLanguage : ILanguage
     {
 
         SimEngine Engine;
@@ -61,7 +63,7 @@ namespace LoreGen.Lang
         /// <summary>
         /// Name of the simulated language
         /// </summary>
-        public string LanguageName;
+        public string LanguageName { get; private set; }
 
         /// <summary>
         /// Returns a string showing all of the characteristics of the language
@@ -101,7 +103,7 @@ namespace LoreGen.Lang
         /// Returns a language with the same phonetic vocabulary but different behavior
         /// </summary>
         /// <returns></returns>
-        public Language RandomCopy()
+        public PhoneticLanguage RandomCopy()
         {
             return RandomLanguageWithPhoneticInventory(this.PhoneticInventory, this.Engine);
         }
@@ -110,9 +112,9 @@ namespace LoreGen.Lang
         /// Returns an exact copy of the language
         /// </summary>
         /// <returns>A copy of the language</returns>
-        public Language Copy()
+        public PhoneticLanguage Copy()
         {
-            Language newLang = new Language();
+            PhoneticLanguage newLang = new PhoneticLanguage();
             newLang.PhoneticInventory = PhoneticInventory;
 
             newLang.CanHaveLongRime = CanHaveLongRime;
@@ -146,9 +148,9 @@ namespace LoreGen.Lang
 
             newLang.ProbFirstConsonantMissing = ProbFirstConsonantMissing;
 
-            newLang.LanguageName = GetName(1);
-
             newLang.Engine = Engine;
+
+            newLang.LanguageName = newLang.GetName(NameKind.Language);
 
             return newLang;
 
@@ -159,10 +161,10 @@ namespace LoreGen.Lang
         /// </summary>
         /// <param name="numElementsToSkew">The number of behaviors to change; -1 = a random number of behaviors</param>
         /// <returns>The resulting language</returns>
-        public Language Skew(int numElementsToSkew=-1)
+        public PhoneticLanguage Skew(int numElementsToSkew=-1)
         {
 
-            Rnd rnd = Engine.Rnd;
+            Rnd rnd = Engine.NameRnd;
 
             if (numElementsToSkew == -1)
                 numElementsToSkew = rnd.Unweighted(1, Rules.MaxSkewedElements);
@@ -261,13 +263,13 @@ namespace LoreGen.Lang
         /// <param name="phoneticInventory">The phonetic vocabulary to use</param>
         /// <param name="engine">Simulation engine</param>
         /// <returns>A language with the same phonetic vocabulary</returns>
-        public static Language RandomLanguageWithPhoneticInventory(PhoneticInventory phoneticInventory, SimEngine engine)
+        public static PhoneticLanguage RandomLanguageWithPhoneticInventory(PhoneticInventory phoneticInventory, SimEngine engine)
         {
-            Language newLang = new Language();            
+            PhoneticLanguage newLang = new PhoneticLanguage();            
             newLang.Engine = engine;
             newLang.PhoneticInventory = phoneticInventory;
 
-            Rnd rnd = newLang.Engine.Rnd;
+            Rnd rnd = newLang.Engine.NameRnd;
 
             newLang.CanHaveLongRime = false;
             if (rnd.R01() < newLang.Rules.LongRimeProbability)
@@ -320,20 +322,36 @@ namespace LoreGen.Lang
             newLang.ExoticnessMean = rnd.Unweighted(newLang.Rules.ExoticnessMeanMin, newLang.Rules.ExoticnessMeanMax);
             newLang.ExoticnessStdDev = rnd.Unweighted(newLang.Rules.ExoticnessStdDevMin, newLang.Rules.ExoticnessStdDevMax);            
 
-            newLang.LanguageName = newLang.GetName(1);
+            newLang.LanguageName = newLang.GetName(NameKind.Language);
 
             return newLang;
 
         }
 
         /// <summary>
-        /// Generates a name using the rules of the language
+        /// A regional variant: the same phonetic inventory with some of the rules changed.
         /// </summary>
-        /// <param name="numWords">Number of words in the name (by default it randomly chooses)</param>
-        /// <returns>A name in the language</returns>
-        public string GetName(int numWords=0)
+        public ILanguage CreateDialect()
         {
-            Rnd rnd = Engine.Rnd;
+            return Copy().Skew();
+        }
+
+        /// <summary>
+        /// Generates a name using the rules of the language. Continents and languages get one-word names; everything else
+        /// gets the language's usual number of words. Names are not repeated within a world where that can be avoided.
+        /// </summary>
+        /// <param name="context">What is being named</param>
+        /// <returns>A name in the language</returns>
+        public string GetName(NameContext context)
+        {
+            int numWords = 0;
+            if (context.Kind == NameKind.Continent || context.Kind == NameKind.Language) numWords = 1;
+            return Engine.Language.Names.Unique(() => BuildName(numWords));
+        }
+
+        private string BuildName(int numWords)
+        {
+            Rnd rnd = Engine.NameRnd;
             string name = "";
 
             if (numWords == 0)
@@ -346,7 +364,7 @@ namespace LoreGen.Lang
 
             for (int i = 0; i < numWords; i++)
             {
-                words.Add(GetWord());
+                words.Add(MakeWord());
             }            
 
             bool firstWord = true;
@@ -420,15 +438,19 @@ namespace LoreGen.Lang
         }
 
         /// <summary>
-        /// Returns a world using the rules of the language
+        /// Returns a word using the rules of the language. The context does not change how words are made.
         /// </summary>
-        /// <param name="debug">Set to true for testing purposes only</param>
+        /// <param name="context">What the word is for</param>
         /// <returns>A word in the given language</returns>
-        public string GetWord(bool debug=false)
+        public string GetWord(NameContext context)
         {
-            Rnd rnd = Engine.Rnd;
-            String word = "";
-            String wordDebug = "";
+            return MakeWord();
+        }
+
+        private string MakeWord()
+        {
+            Rnd rnd = Engine.NameRnd;
+            string word = "";
 
             int numsyll = rnd.NormalAsInt(SyllablesMean, SyllablesStdDev);
 
@@ -436,14 +458,7 @@ namespace LoreGen.Lang
 
             for (int i = 0; i < numsyll; i++)
             {
-                String syl = GetSyllable(i == 0);
-                word += syl;
-                wordDebug += syl + " ";
-            }
-            if (debug)
-            {
-                word += "\nNumber of Syllables: " + numsyll + "\n";
-                word += wordDebug + "\n";
+                word += GetSyllable(i == 0);
             }
 
             return word;
@@ -456,7 +471,7 @@ namespace LoreGen.Lang
         /// <returns>A syllable in the language</returns>
         public string GetSyllable(bool firstSyllable=false)
         {
-            Rnd rnd = Engine.Rnd;
+            Rnd rnd = Engine.NameRnd;
             List<LetterSound> syll = new List<LetterSound>();
             bool skipOnset = false;
 

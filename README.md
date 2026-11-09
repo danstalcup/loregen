@@ -2,7 +2,7 @@
 
 LoreGen generates fictional worlds: continents, seas and oceans, regions, biomes, terrain, and a distinct
 procedurally generated language for each continent and region (so every place gets a name that sounds like it
-belongs there). Worldbuilder is a browser app for exploring the results.
+belongs there, such as "Thurwold", "Zandabad" or "the Sea of Storms"). Worldbuilder is a browser app for exploring the results.
 
 Worlds are reproducible: the same seed produces the same world, no matter how many other engines are running
 or what language/region the machine is set to.
@@ -64,7 +64,7 @@ foreach (var continent in engine.World.Continents)
     Console.WriteLine($"{continent.Name}: {continent.Regions.Count} regions");
 
 var language = engine.Language.GetRandomLanguage();
-Console.WriteLine(language.GetName());   // e.g. a place name in that language
+Console.WriteLine(language.GetName(NameKind.Region));   // e.g. "Aldermere" or "the Ashen Fens"
 ```
 
 `SimEngine` is the entry point. It owns the random number generator, the loaded data (`SimData`), and the generated
@@ -80,8 +80,29 @@ Console.WriteLine(language.GetName());   // e.g. a place name in that language
    patterns in `EdgePatterns.csv`.
 4. Each continent is divided into regions. A region's biome depends on its latitude, and its terrain is drawn
    from weighted patterns in the data files.
-5. Every continent has a root language. Each region gets its own copy of it, shifted slightly, which names the
+5. Every continent has a root language. Each region gets a dialect of it (`CreateDialect`), which names the
    region. Changing one region's language doesn't affect the others.
+
+## Languages and names
+
+Every language implements [`ILanguage`](LoreGen/Lang/ILanguage.cs): `GetName` and `GetWord` take a
+[`NameContext`](LoreGen/Lang/NameContext.cs), which says what is being named (`NameKind.Continent`, `Region`, `Sea`,
+`Ocean`, `World` or `Language`) and can carry optional hints: the biome, which side of its parent the place lies on,
+and the parent's name. A bare `NameKind` converts to a context with no hints. LoreGen ships two kinds of language:
+
+- **`CommonLanguage`** (the default): names that read like those in fantasy and historical fiction. Each language
+  blends one or two *flavours* (AngloNorse, Latinate, Celtic, Hellenic, Slavic, Persianate, AfroAsiatic,
+  SinoTibetan). It uses only part of each flavour and favours some pieces, so two continents from the same flavour
+  still sound different. Each language also has its own mix of proper names ("Valoria") and descriptive ones ("The
+  Sea of Storms", "Greymoor"), with more descriptive names for oceans and fewer for continents. Flavours, templates and
+  vocabulary are all data: see `CommonName*.csv` and `CommonLanguageRules.csv` in [`LoreGen/Resources`](LoreGen/Resources).
+- **`PhoneticLanguage`**: the original generator, which builds names sound by sound from a real phonetic inventory
+  and random rules. Its names sound foreign and unfamiliar.
+
+Choose with `engine.Configuration.LanguageStyle` (`LanguageStyle.Common` or `LanguageStyle.Phonetic`), with
+`languagestyle=Phonetic` in `loregen.config`, or with the Names drop-down in Worldbuilder. Languages and names draw
+from their own random stream, so a seed gives the same land whichever style you pick. Names aren't repeated within
+a world.
 
 ## World generators
 

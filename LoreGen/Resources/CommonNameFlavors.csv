@@ -1,0 +1,70 @@
+# Naming flavours for CommonLanguage: Flavor,Slot,item,item,...
+# Each flavour is an evocative blend of a family of real naming traditions, not an imitation of any one language.
+# Every flavour needs every slot. Roots are capitalised; everything else is lower case and is joined onto a root.
+# Root: start of a name. Middle: optional link between root and ending.
+# Ending: general place ending. LandEnding: continents and worlds. RegionEnding: regions.
+# WaterEnding: seas and oceans. LangEnding: languages and adjectives ("Valdish", "the Caelic Sea").
+
+AngloNorse,Root,Ald,Ash,Bram,Bran,Brom,Cold,Dun,Eld,Elm,Gar,Grim,Hal,Har,Hart,Hroth,Gund,Ing,Kel,Ket,Lang,Lind,Mar,Nor,Orm,Os,Rag,Rav,Red,Sig,Skar,Stan,Sten,Thorn,Thur,Tor,Ulf,Ved,Vig,Wend,Wester,Whit,Wil,Wulf,Yar
+AngloNorse,Middle,e,en,er,ing,el
+AngloNorse,Ending,ton,by,thorpe,ham,stead,wick,ford,ley,worth,mere,dale,holm,wold,gard,vik,stad
+AngloNorse,LandEnding,land,mark,heim,gard,rike,reach
+AngloNorse,RegionEnding,shire,mark,dale,wold,march,fell,moor,wick,ham,ford,by
+AngloNorse,WaterEnding,mere,sund,fjord,water,haven,vik
+AngloNorse,LangEnding,ish,ic,sk,ian,en
+
+Latinate,Root,Alb,Ambr,Ard,Aur,Bell,Cael,Cal,Cass,Cor,Corv,Dom,Fab,Fer,Flav,Lav,Lent,Luc,Mar,Max,Merc,Mont,Nov,Oct,Ost,Pal,Pell,Prim,Quin,Rem,Sab,Sal,Sev,Sol,Tav,Ter,Tib,Ulp,Val,Varr,Vel,Ver,Vin
+Latinate,Middle,a,e,i,en,ar,or,er,in
+Latinate,Ending,a,ia,ium,um,ona,ano,ino,essa,ara,enza,iano,ello
+Latinate,LandEnding,ia,ara,oria,ica,ania,ium
+Latinate,RegionEnding,ia,ona,ano,ena,ium,ensis,ura,ella
+Latinate,WaterEnding,mare,ina,ara,ium
+Latinate,LangEnding,ian,ese,an,ine,ic
+
+Celtic,Root,Aber,Ard,Bal,Bel,Bryn,Cad,Cael,Carn,Cor,Cul,Dal,Dol,Dun,Ess,Fal,Glen,Gwen,Inver,Kil,Kin,Lis,Llan,Mael,Mor,Nev,Pen,Rhos,Ros,Tal,Tir,Tre
+Celtic,Middle,a,e,en,an,ach,wy
+Celtic,Ending,wyn,more,ach,dun,lin,mor,wen,ock,an,ow,ey,eith,gal
+Celtic,LandEnding,ain,wen,ia,ach,ys
+Celtic,RegionEnding,ach,mor,lin,wen,gal,ock,ey
+Celtic,WaterEnding,lyn,mor,lin,ain
+Celtic,LangEnding,ic,aeg,ach,ish
+
+Hellenic,Root,Aeg,Ach,Andr,Arc,Cyr,Del,Eph,Hel,Ion,Kall,Kor,Kyth,Lyk,Lys,Mel,Myr,Nax,Nik,Ol,Pel,Phil,Pyr,Rhod,Sam,Ser,Styr,Thal,Ther,Thes,Xan,Zak
+Hellenic,Middle,o,a,e,i,on,ar,os,er
+Hellenic,Ending,os,on,is,ia,ea,ene,ika,ados,ope,ion
+Hellenic,LandEnding,ia,is,ea,ike,ene,ados
+Hellenic,RegionEnding,ia,is,os,ene,ika,ion,ope
+Hellenic,WaterEnding,pontos,os,ea,is,ene
+Hellenic,LangEnding,ic,ian,ean
+
+Slavic,Root,Bel,Bor,Brod,Cher,Drag,Dub,Gor,Grad,Hrad,Kam,Kar,Kos,Kras,Lis,Lub,Mal,Mir,Nov,Ostr,Pere,Pol,Rad,Ros,Sar,Slav,Sob,Stan,Svet,Tor,Tver,Uz,Vel,Vit,Vlad,Volk,Yar,Zar,Zel
+Slavic,Middle,o,e,a,ov,en,in
+Slavic,Ending,grad,ov,ovo,ava,ets,ino,ica,sk,ek,ny,itsa,ograd
+Slavic,LandEnding,ia,ava,ovia,ania,ina,ovina
+Slavic,RegionEnding,ovo,ava,ets,ica,sk,ina,ograd,any
+Slavic,WaterEnding,more,ka,ava,ina
+Slavic,LangEnding,ian,ski,ic,ka
+
+Persianate,Root,Ab,Ar,Ard,Bah,Bam,Dar,Esf,Far,Gol,Gur,Hor,Jah,Kar,Kas,Ker,Khor,Kir,Mar,Meh,Nar,Nish,Par,Ram,Sar,Shah,Shir,Tab,Tus,Yaz,Zand,Zar
+Persianate,Middle,a,e,i,an,ar,ab
+Persianate,Ending,abad,stan,shahr,an,gerd,kand,esh,ab,ar,iz,sar
+Persianate,LandEnding,stan,an,istan,zamin,avar,ia
+Persianate,RegionEnding,abad,gerd,kand,shahr,stan,an,sar
+Persianate,WaterEnding,darya,ab,aban,sar
+Persianate,LangEnding,i,ian,ani
+
+AfroAsiatic,Root,Akh,Amaz,Ash,Bab,Bet,Dam,Dir,Gez,Ham,Har,Ib,Jaz,Kad,Kem,Kesh,Mel,Mer,Nab,Qad,Qar,Ras,Sab,Sid,Tad,Tam,Tan,Tar,Tin,Ugr,Wad,Zeb
+AfroAsiatic,Middle,a,i,u,an,ar,et
+AfroAsiatic,Ending,et,ash,ah,ir,at,ut,ar,oun,ine,esh,iyya,ra
+AfroAsiatic,LandEnding,ia,et,iyya,ar,ira,an
+AfroAsiatic,RegionEnding,et,ah,oun,ira,ar,at,ine,esh
+AfroAsiatic,WaterEnding,yam,ar,ah,at
+AfroAsiatic,LangEnding,ic,i,it,iya
+
+SinoTibetan,Root,Bai,Dar,Dzong,Gyan,Han,Hua,Jin,Kham,Lan,Lhat,Lho,Ling,Lu,Mei,Myit,Ngar,Nyen,Pyin,Qin,Sang,Shig,Shu,Song,Tong,Tsang,Wu,Xi,Yun,Zhao
+SinoTibetan,Middle,la,ri,an
+SinoTibetan,Ending,zhou,shan,ling,he,ning,tse,gyal,kar,kyi,myo,dong,jiang,pa
+SinoTibetan,LandEnding,guo,kham,yul,ling,zhou,yu
+SinoTibetan,RegionEnding,zhou,shan,ling,tse,dzong,kar,ning,pa
+SinoTibetan,WaterEnding,hai,tso,jiang,he
+SinoTibetan,LangEnding,kad,yu,hua
