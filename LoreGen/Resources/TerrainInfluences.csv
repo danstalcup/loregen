@@ -1,0 +1,22 @@
+# How features and plate boundaries change the terrain on them (used by generators that model elevation and climate).
+# Influence,ReliefAdd,ReliefMin,ReliefMax,WetMin,WetMax,TreesMin,TreesMax,Moisture,Description
+# Influence: a feature type Id from FeatureTypes.csv, or Plate:Convergent, Plate:Divergent or Plate:Transform.
+# Each place's terrain has a target relief (0 flat to 4 peaks, from its height), wetness (0 dry to 1 marsh, from how much
+#   water it holds) and tree cover (0 open to 1 forest, from how wet and warm it is). An influence adds ReliefAdd to the
+#   relief, then keeps the relief, wetness and trees within their Min and Max (blank for no limit), and shifts the
+#   moisture its climate is judged by. The plate boundary applies first, then features from largest to smallest scope,
+#   so a part (a peak, an oasis) has the last word over the feature it is part of.
+# Description: may contain commas.
+
+Plate:Convergent,0.75,,,,,,,,Where plates push together the land is young and rugged.
+Plate:Divergent,0.5,,,,,,,,Where plates pull apart the land breaks into scarps and rift valleys.
+MountainRange,0.5,2,,,0.2,,,,A mountain range is rugged throughout and drains too fast to be marshy.
+Subrange,,3,,,0,,,,A subrange's crest is cliffs and peaks.
+Massif,,3,,,0,,,,A massif is a knot of cliffs and peaks.
+Peak,,4,,,0,,0,,A peak is bare rock above the tree line.
+Pass,,2,3,,0,,,,A pass is a saddle: rugged but not a summit.
+Desert,,,,,0.1,,0.25,-0.05,A desert has little standing water and few trees.
+Erg,,1.5,2,,0,,0,-0.08,An erg is a sea of dunes.
+SaltFlat,,,0.5,,0,,0,-0.08,A salt flat is a dead-level crust of salt.
+Oasis,,,0.5,0.9,,,,,An oasis is a wet hollow where ground water comes near the surface.
+River,,,2,0.45,,0.3,,,A large river's banks are a wet valley floor, lined with trees where anything grows.

@@ -1,10 +1,10 @@
-Flats,1,Flat terrain populated by grasses,0
-Hills,2,Slightly sloped terrain,2
-Cliffs,3,Jagged sloped terrain reaching medium elevation,3
-Peaks,4,Sloped terrain with reaching high elevation,4
-Marsh,5,Flat lowland terrain with wet or submerged ground,0
-Pond,6,Flat terrain with many small and medium water bodies,0
-Thickets,7,Flat terrain populated by shrubs and ferns,1
-Woodland,8,Mostly flat terrain with trees,1
-Forest,9,Mostly flat terrain very dense with trees,1
-Wooded Slopes,10,Sloped terrain with trees,2
+Flats,1,Flat terrain populated by grasses,0,0,0
+Hills,2,Slightly sloped terrain,2,0,0
+Cliffs,3,Jagged sloped terrain reaching medium elevation,3,0,0
+Peaks,4,Sloped terrain with reaching high elevation,4,0,0
+Marsh,5,Flat lowland terrain with wet or submerged ground,0,1,0.2
+Pond,6,Flat terrain with many small and medium water bodies,0,0.7,0
+Thickets,7,Flat terrain populated by shrubs and ferns,1,0,0.35
+Woodland,8,Mostly flat terrain with trees,1,0,0.65
+Forest,9,Mostly flat terrain very dense with trees,1,0,1
+Wooded Slopes,10,Sloped terrain with trees,2,0,0.7

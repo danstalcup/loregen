@@ -92,7 +92,7 @@ namespace LoreGen.Tests
         {
             for (int seed = 1; seed <= 15; seed++)
             {
-                var root = Generate(seed, ("RegionBorderDetail", "0"), ("FeatureDetail", "0")).World.WorldBlock;
+                var root = Generate(seed, ("RegionBorderDetail", "0"), ("FeatureDetail", "0"), ("Hydrology", "0")).World.WorldBlock;
                 for (int x = 0; x < root.Width; x++)
                 {
                     for (int y = 0; y < root.Height; y++)
@@ -121,8 +121,9 @@ namespace LoreGen.Tests
         {
             for (int seed = 1; seed <= 10; seed++)
             {
-                var with = Generate(seed).World;
-                var without = Generate(seed, ("CoastDetail", "0"), ("RegionBorderDetail", "0"), ("FeatureDetail", "0")).World;
+                // Hydrology changes the coarse world too (river and lake water shape the terrain), so it is off in both
+                var with = Generate(seed, ("Hydrology", "0")).World;
+                var without = Generate(seed, ("CoastDetail", "0"), ("RegionBorderDetail", "0"), ("FeatureDetail", "0"), ("Hydrology", "0")).World;
 
                 Assert.All(without.WorldBlock.ChildBlocksAsList(), b => Assert.Null(b.ChildBlocks));
                 Assert.Contains(with.WorldBlock.ChildBlocksAsList(), b => b.ChildBlocks != null);
@@ -169,7 +170,7 @@ namespace LoreGen.Tests
                         water[x, y] = !land[x, y];
                     }
                 AssertEveryRegionTouches(GridLabeling.Label(land), fine, true, "seed " + seed + ": fine land with no coarse land");
-                // No stray lakes: every body of fine water touches a coarse water block
+                // No stray water: every body of fine water touches a coarse water block, or is a lake
                 AssertEveryRegionTouches(GridLabeling.Label(water), fine, false, "seed " + seed + ": fine water with no coarse water");
             }
         }
@@ -179,7 +180,7 @@ namespace LoreGen.Tests
             var anchored = new bool[labels.Count];
             for (int x = 0; x < fine.Width; x++)
                 for (int y = 0; y < fine.Height; y++)
-                    if (labels.Labels[x, y] >= 0 && fine.CoarseLand[x, y] == land) anchored[labels.Labels[x, y]] = true;
+                    if (labels.Labels[x, y] >= 0 && (fine.CoarseLand[x, y] == land || (!land && fine.Status[x, y].Lake != null))) anchored[labels.Labels[x, y]] = true;
             Assert.True(anchored.All(a => a), message);
         }
 
@@ -235,7 +236,7 @@ namespace LoreGen.Tests
                         if (s.WaterStatus == WorldBlockWaterStatus.Water)
                         {
                             Assert.True(s.Elevation < 0);
-                            Assert.True(s.Ocean != null || s.Sea != null, "seed " + seed + ": water sub-block that is neither ocean nor sea");
+                            Assert.True(s.Ocean != null || s.Sea != null || s.Lake != null, "seed " + seed + ": water sub-block that is neither ocean, sea nor lake");
                             Assert.Null(s.Continent);
                             Assert.Null(s.Region);
                             Assert.Null(s.Terrain);
@@ -261,7 +262,7 @@ namespace LoreGen.Tests
         {
             for (int seed = 1; seed <= 12; seed++)
             {
-                var root = Generate(seed, ("CoastDetail", "0"), ("FeatureDetail", "0")).World.WorldBlock;
+                var root = Generate(seed, ("CoastDetail", "0"), ("FeatureDetail", "0"), ("Hydrology", "0")).World.WorldBlock;
                 int bordered = 0;
                 for (int x = 0; x < root.Width; x++)
                 {
@@ -289,12 +290,12 @@ namespace LoreGen.Tests
         [Fact]
         public void RegionBordersWindInsteadOfFollowingBlockEdges()
         {
-            Func<string, double> sharePulledAcross = warp =>
+            Func<(string, string)[], double> sharePulledAcross = rules =>
             {
                 long total = 0, differing = 0;
                 for (int seed = 1; seed <= 12; seed++)
                 {
-                    var root = Generate(seed, ("RegionBorderWarp", warp)).World.WorldBlock;
+                    var root = Generate(seed, rules).World.WorldBlock;
                     foreach (var block in root.ChildBlocksAsList().Where(b => b.ChildBlocks != null && b.Status.WaterStatus != WorldBlockWaterStatus.Water))
                         foreach (var sub in block.ChildBlocksAsList().Where(s => s.Status.WaterStatus != WorldBlockWaterStatus.Water))
                         {
@@ -305,13 +306,44 @@ namespace LoreGen.Tests
                 return differing / (double)total;
             };
 
-            // With no warp, borders follow block edges. (A few sub-blocks still change hands: a small piece that a coastal
-            // inlet cuts off from its region is given to the neighbouring region it touches.)
-            double straight = sharePulledAcross("0");
-            double wound = sharePulledAcross("0.2");
+            // Without winding borders, borders follow block edges. (A few sub-blocks still change hands: a small piece that a
+            // coastal inlet cuts off from its region is given to the neighbouring region it touches.)
+            double straight = sharePulledAcross(new[] { ("RegionBorderDetail", "0") });
+            double wound = sharePulledAcross(new (string, string)[0]);
             Assert.True(straight < 0.01, "straight borders still moved " + straight);
-            Assert.InRange(wound, 0.01, 0.4);                    // with warp, a real share crosses over, but borders stay near where they were
-            Assert.True(wound > straight * 5, "warp " + wound + " vs none " + straight);
+            Assert.InRange(wound, 0.01, 0.4);                    // a real share crosses over, but borders stay near where they were
+            Assert.True(wound > straight * 5, "winding " + wound + " vs none " + straight);
+        }
+
+        [Fact]
+        public void FineRegionBordersFollowTheFineTerrain()
+        {
+            // Within blocks that a border runs through, the landscape changes more often across the border than inside a
+            // region, and more so when borders are drawn to follow it
+            Func<string, double> contrast = weight =>
+            {
+                long border = 0, borderChange = 0, inner = 0, innerChange = 0;
+                for (int seed = 1; seed <= 10; seed++)
+                {
+                    var fine = new FineMap(Generate(seed, ("RegionTerrainWeight", weight)).World);
+                    for (int x = 0; x + 1 < fine.Width; x++)
+                        for (int y = 0; y + 1 < fine.Height; y++)
+                        {
+                            if (!fine.IsLand(x, y) || fine.Status[x, y].Terrain == null) continue;
+                            foreach (var (nx, ny) in new[] { (x + 1, y), (x, y + 1) })
+                            {
+                                if (!fine.IsLand(nx, ny) || fine.Status[nx, ny].Terrain == null || !fine.InDetailBlock[x, y] || !fine.InDetailBlock[nx, ny]) continue;
+                                bool change = RegionPartitioner.Landscape(fine.Status[x, y].Terrain) != RegionPartitioner.Landscape(fine.Status[nx, ny].Terrain);
+                                if (!ReferenceEquals(fine.Status[x, y].Region, fine.Status[nx, ny].Region)) { border++; if (change) borderChange++; }
+                                else { inner++; if (change) innerChange++; }
+                            }
+                        }
+                }
+                return (borderChange / (double)border) / (innerChange / (double)inner);
+            };
+            double following = contrast("4"), ignoring = contrast("0");
+            Assert.True(following > 1.3, "landscape changes only " + following.ToString("0.00") + "x as often across borders");
+            Assert.True(following > ignoring + 0.2, following.ToString("0.00") + " following the terrain vs " + ignoring.ToString("0.00") + " ignoring it");
         }
 
         [Fact]

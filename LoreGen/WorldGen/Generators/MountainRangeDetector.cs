@@ -48,8 +48,7 @@ namespace LoreGen.WorldGen.Generators
                 if (group.Count < rules.MountainRangeMinBlocks) continue;
 
                 Continent continent = group[0].Status.Continent;
-                GeographicFeature range = new GeographicFeature(world, type, FeatureScope.Continental, group,
-                    GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]));
+                GeographicFeature range = new GeographicFeature(world, type, group, GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]));
                 range.SetSpine(FeatureGeometry.Spine(group, reach));
                 // Below the top level, the range's edge follows the fine elevation's contours
                 range.Refiner = new ElevationEdgeRefiner(rules.MountainElevationFrom);

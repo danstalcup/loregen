@@ -21,7 +21,7 @@ namespace LoreGen.Tests.Features
         private static readonly FeatureType Blob = new FeatureType
         {
             Id = "TestBlob", Name = "Test blob", Category = FeatureCategory.Desert, Shape = FeatureShape.Blob,
-            Scopes = new[] { FeatureScope.Continental }, NameKind = NameKind.Desert
+            Scope = FeatureScope.Continental, NameKind = NameKind.Desert
         };
 
         private static WorldBlock Top(World world, int x, int y) { return world.WorldBlock.ChildBlocks[x, y]; }
@@ -38,7 +38,7 @@ namespace LoreGen.Tests.Features
             for (int y = y0; y < y0 + size; y++)
                 for (int x = x0; x < x0 + size; x++)
                     blocks.Add(Top(world, x, y));
-            return new GeographicFeature(world, Blob, FeatureScope.Continental, blocks, 99) { Refiner = refiner };
+            return new GeographicFeature(world, Blob, blocks, 99) { Refiner = refiner };
         }
 
         private static IEnumerable<GeographicFeature> Of(World world, string typeId, FeatureScope scope)
@@ -158,7 +158,7 @@ namespace LoreGen.Tests.Features
             foreach (int seed in Seeds.Take(3))
             {
                 World world = NoiseTestWorlds.Generate(seed).World;
-                foreach (GeographicFeature feature in world.Features.Where(f => f.Scope == FeatureScope.Continental))
+                foreach (GeographicFeature feature in world.Features.Where(f => f.Scope == FeatureScope.Continental && f.Type.Category != FeatureCategory.Water))
                 {
                     var needDetail = feature.Type.Category == FeatureCategory.Mountain ? feature.Footprint.Blocks : feature.Footprint.Edge();
                     Assert.All(needDetail, b => Assert.NotNull(b.ChildBlocks));
@@ -171,7 +171,8 @@ namespace LoreGen.Tests.Features
         {
             string Surface(string relief)
             {
-                World world = NoiseTestWorlds.Generate(4, ("MountainRelief", relief)).World;
+                // Without lakes, which are carved into the relieved ground and so do depend on it
+                World world = NoiseTestWorlds.Generate(4, ("MountainRelief", relief), ("Hydrology", "0")).World;
                 return string.Concat(world.WorldBlock.ChildBlocksAsList(true).Select(b => (int)b.Status.WaterStatus));
             }
             Assert.Equal(Surface("0"), Surface("0.5"));
@@ -194,7 +195,7 @@ namespace LoreGen.Tests.Features
         [Fact]
         public void WithoutFeatureDetailThereAreNoSubRanges()
         {
-            World world = NoiseTestWorlds.Generate(2, ("FeatureDetail", "0"), ("CoastDetail", "0"), ("RegionBorderDetail", "0")).World;
+            World world = NoiseTestWorlds.Generate(2, ("FeatureDetail", "0"), ("CoastDetail", "0"), ("RegionBorderDetail", "0"), ("Hydrology", "0")).World;
             Assert.All(world.WorldBlock.ChildBlocksAsList(), b => Assert.Null(b.ChildBlocks));
             Assert.DoesNotContain(world.Features, f => f.Scope == FeatureScope.Regional);
             Assert.NotEmpty(world.Features);
@@ -260,12 +261,14 @@ namespace LoreGen.Tests.Features
                 NoiseGeneratorRules rules = NoiseGeneratorRules.Load(engine.SimData);
                 foreach (GeographicFeature range in Of(engine.World, MountainRangeDetector.TypeId, FeatureScope.Continental))
                 {
-                    Assert.True(range.Children.Count <= rules.SubRangesPerRange);
-                    foreach (GeographicFeature sub in range.Children)
+                    List<GeographicFeature> crests = range.Children.Where(c => c.Type.Shape != FeatureShape.Point).ToList();
+                    Assert.True(crests.Count <= rules.SubRangesPerRange);
+                    foreach (GeographicFeature sub in crests)
                     {
                         found++;
                         Assert.Same(range, sub.Parent);
                         Assert.Equal(FeatureScope.Regional, sub.Scope);
+                        Assert.Contains(sub.Type.Id, new[] { SubRangeDetector.SubrangeTypeId, SubRangeDetector.MassifTypeId });
                         Assert.Contains(sub, engine.World.Features);
                         Assert.True(sub.Footprint.Count >= rules.SubRangeMinBlocks);
                         Assert.Single(sub.Footprint.Pieces());
@@ -276,6 +279,8 @@ namespace LoreGen.Tests.Features
                             Assert.True(range.Contains(block), range.Name + " does not contain its crest " + sub.Name);
                             Assert.True(block.Status.Elevation >= rules.MountainElevationFrom);
                         }
+                        if (sub.Type.Shape == FeatureShape.Blob) Assert.Empty(sub.Spine);
+                        else Assert.True(sub.Spine.Count * sub.Spine.Count >= rules.SubrangeElongationFrom * sub.Footprint.Count, sub.Name + " is too compact for a subrange");
                         for (int i = 1; i < sub.Spine.Count; i++)
                         {
                             var a = FeatureGeometry.Coord(sub.Spine[i - 1]);
@@ -289,11 +294,211 @@ namespace LoreGen.Tests.Features
         }
 
         [Fact]
+        public void CrestsAreSubrangesOrMassifsByShape()
+        {
+            var types = new HashSet<string>();
+            foreach (int seed in Seeds)
+                foreach (GeographicFeature part in NoiseTestWorlds.Generate(seed).World.Features.Where(IsCrest))
+                    types.Add(part.Type.Id);
+            Assert.Equal(new[] { SubRangeDetector.MassifTypeId, SubRangeDetector.SubrangeTypeId }, types.OrderBy(t => t));
+
+            World allLong = NoiseTestWorlds.Generate(2, ("SubrangeElongationFrom", "0")).World;
+            Assert.All(allLong.Features.Where(IsCrest), f => Assert.Equal(SubRangeDetector.SubrangeTypeId, f.Type.Id));
+            World allCompact = NoiseTestWorlds.Generate(2, ("SubrangeElongationFrom", "1000000")).World;
+            Assert.All(allCompact.Features.Where(IsCrest), f => Assert.Equal(SubRangeDetector.MassifTypeId, f.Type.Id));
+            Assert.Contains(allCompact.Features, IsCrest);
+        }
+
+        // A mountain range's crests: its subranges and massifs (not its peaks and passes)
+        private static bool IsCrest(GeographicFeature f)
+        {
+            return f.Type.Category == FeatureCategory.Mountain && f.Scope == FeatureScope.Regional && f.Type.Shape != FeatureShape.Point;
+        }
+
+        [Fact]
         public void SubRangesCanBeSwitchedOff()
         {
             World world = NoiseTestWorlds.Generate(1, ("SubRanges", "0")).World;
-            Assert.DoesNotContain(world.Features, f => f.Scope == FeatureScope.Regional);
-            Assert.All(world.Features, f => Assert.Empty(f.Children));
+            Assert.DoesNotContain(world.Features, IsCrest);
+            Assert.Contains(world.Features, f => f.Type.Id == PeakPassDetector.PeakTypeId); // peaks don't depend on crests
+        }
+
+        // ---- Peaks and passes ---------------------------------------------------------------
+
+        [Fact]
+        public void PeaksAndPassesArePointsWithinTheirRange()
+        {
+            int peaks = 0, passes = 0;
+            foreach (int seed in Seeds)
+            {
+                SimEngine engine = NoiseTestWorlds.Generate(seed);
+                NoiseGeneratorRules rules = NoiseGeneratorRules.Load(engine.SimData);
+                foreach (GeographicFeature range in Of(engine.World, MountainRangeDetector.TypeId, FeatureScope.Continental))
+                {
+                    List<GeographicFeature> rangePeaks = range.Children.Where(c => c.Type.Id == PeakPassDetector.PeakTypeId).ToList();
+                    List<GeographicFeature> rangePasses = range.Children.Where(c => c.Type.Id == PeakPassDetector.PassTypeId).ToList();
+                    Assert.True(rangePeaks.Count <= rules.PeaksPerRange);
+                    Assert.True(rangePasses.Count <= rules.PassesPerRange);
+                    peaks += rangePeaks.Count;
+                    passes += rangePasses.Count;
+
+                    foreach (GeographicFeature point in rangePeaks.Concat(rangePasses))
+                    {
+                        Assert.Equal(FeatureShape.Point, point.Type.Shape);
+                        Assert.Equal(FeatureScope.Regional, point.Scope);
+                        Assert.Equal(1, point.Footprint.Count);
+                        WorldBlock cell = point.Footprint.Blocks.Single();
+                        Assert.Equal(new[] { cell }, point.Spine);
+                        Assert.True(range.Footprint.IsMember(cell.ParentBlock), point.Name + " lies outside " + range.Name);
+                        Assert.NotEqual(WorldBlockWaterStatus.Water, cell.Status.WaterStatus);
+                        Assert.False(string.IsNullOrWhiteSpace(point.Name));
+                    }
+                    Assert.Equal(rangePeaks.Count, rangePeaks.Select(p => p.Footprint.Blocks.Single()).Distinct().Count());
+                    Assert.Equal(rangePasses.Count, rangePasses.Select(p => p.Footprint.Blocks.Single()).Distinct().Count());
+
+                    // A peak is the highest point around it, and every pass is lower than the range's highest peak
+                    foreach (GeographicFeature peak in rangePeaks)
+                    {
+                        WorldBlock cell = peak.Footprint.Blocks.Single();
+                        foreach (WorldBlock other in range.Footprint.Blocks.SelectMany(b => b.ChildBlocksAsList()))
+                        {
+                            var a = FeatureGeometry.Coord(cell);
+                            var b = FeatureGeometry.Coord(other);
+                            if (Math.Abs(a.X - b.X) <= 1 && Math.Abs(a.Y - b.Y) <= 1)
+                                Assert.True(other.Status.Elevation <= cell.Status.Elevation, peak.Name + " is not a summit");
+                        }
+                    }
+                    if (rangePeaks.Count > 0)
+                    {
+                        double top = rangePeaks.Max(p => p.Footprint.Blocks.Single().Status.Elevation.Value);
+                        Assert.All(rangePasses, p => Assert.True(p.Footprint.Blocks.Single().Status.Elevation.Value + rules.PeakProminenceFrom <= top + 1e-9));
+                    }
+                }
+            }
+            Assert.True(peaks > 0, "no peaks in any test world");
+            Assert.True(passes > 0, "no passes in any test world");
+        }
+
+        [Fact]
+        public void PeakCountsFollowTheSettings()
+        {
+            World none = NoiseTestWorlds.Generate(1, ("PeaksPerRange", "0"), ("PassesPerRange", "0")).World;
+            Assert.DoesNotContain(none.Features, f => f.Type.Id == PeakPassDetector.PeakTypeId || f.Type.Id == PeakPassDetector.PassTypeId);
+
+            World one = NoiseTestWorlds.Generate(1, ("PeaksPerRange", "1"), ("PassesPerRange", "0")).World;
+            foreach (GeographicFeature range in Of(one, MountainRangeDetector.TypeId, FeatureScope.Continental))
+            {
+                GeographicFeature peak = range.Children.SingleOrDefault(c => c.Type.Id == PeakPassDetector.PeakTypeId);
+                if (peak == null) continue;
+                // The only peak is the range's summit
+                double top = range.Footprint.Blocks.SelectMany(b => b.ChildBlocksAsList())
+                    .Where(c => c.Status.WaterStatus != WorldBlockWaterStatus.Water).Max(c => c.Status.Elevation.Value);
+                Assert.Equal(top, peak.Footprint.Blocks.Single().Status.Elevation.Value);
+            }
+        }
+
+        // ---- Desert parts ---------------------------------------------------------------------
+
+        [Fact]
+        public void DesertPartsLieWithinTheirDesert()
+        {
+            var types = new HashSet<string>();
+            foreach (int seed in Seeds)
+            {
+                SimEngine engine = NoiseTestWorlds.Generate(seed);
+                NoiseGeneratorRules rules = NoiseGeneratorRules.Load(engine.SimData);
+                foreach (GeographicFeature desert in Of(engine.World, DesertDetector.TypeId, FeatureScope.Continental))
+                {
+                    Assert.True(desert.Children.Count(c => c.Type.Id == DesertPartDetector.ErgTypeId) <= rules.ErgsPerDesert);
+                    Assert.True(desert.Children.Count(c => c.Type.Id == DesertPartDetector.SaltFlatTypeId) <= rules.SaltFlatsPerDesert);
+                    Assert.True(desert.Children.Count(c => c.Type.Id == DesertPartDetector.OasisTypeId) <= rules.OasesPerDesert);
+                    foreach (GeographicFeature part in desert.Children)
+                    {
+                        types.Add(part.Type.Id);
+                        Assert.Equal(FeatureScope.Regional, part.Scope);
+                        Assert.Equal(FeatureCategory.Desert, part.Type.Category);
+                        Assert.Contains(part, engine.World.Features);
+                        Assert.Single(part.Footprint.Pieces());
+                        Assert.False(string.IsNullOrWhiteSpace(part.Name));
+                        foreach (WorldBlock cell in part.Footprint.Blocks)
+                        {
+                            Assert.True(desert.Contains(cell), part.Name + " lies outside " + desert.Name);
+                            Assert.NotEqual(WorldBlockWaterStatus.Water, cell.Status.WaterStatus);
+                            Assert.True(cell.Status.Elevation < rules.MountainElevationFrom, part.Name + " lies on a mountain");
+                        }
+                        if (part.Type.Id == DesertPartDetector.SaltFlatTypeId) Assert.True(part.Footprint.Count >= rules.SaltFlatMinBlocks);
+                        if (part.Type.Id == DesertPartDetector.ErgTypeId) Assert.True(part.Footprint.Count >= rules.ErgMinBlocks);
+                        if (part.Type.Id == DesertPartDetector.OasisTypeId) Assert.Equal(1, part.Footprint.Count);
+                    }
+
+                    // Ergs never cover salt flats
+                    var flats = new HashSet<WorldBlock>(desert.Children.Where(c => c.Type.Id == DesertPartDetector.SaltFlatTypeId).SelectMany(c => c.Footprint.Blocks));
+                    Assert.All(desert.Children.Where(c => c.Type.Id == DesertPartDetector.ErgTypeId).SelectMany(c => c.Footprint.Blocks), b => Assert.DoesNotContain(b, flats));
+                }
+            }
+            Assert.Equal(new[] { DesertPartDetector.ErgTypeId, DesertPartDetector.OasisTypeId, DesertPartDetector.SaltFlatTypeId }, types.OrderBy(t => t));
+        }
+
+        [Fact]
+        public void SaltFlatsAndOasesLieInHollows()
+        {
+            foreach (int seed in Seeds)
+            {
+                SimEngine engine = NoiseTestWorlds.Generate(seed);
+                foreach (GeographicFeature part in engine.World.Features.Where(f => f.Type.Id == DesertPartDetector.SaltFlatTypeId || f.Type.Id == DesertPartDetector.OasisTypeId))
+                {
+                    // Every cell has a neighbour no lower than it, and the ground around the hollow rises above its floor
+                    WorldBlock lowest = part.Footprint.Blocks.OrderBy(b => b.Status.Elevation.Value).First();
+                    var at = FeatureGeometry.Coord(lowest);
+                    List<WorldBlock> around = part.Parent.Footprint.Blocks.SelectMany(b => b.ChildBlocksAsList())
+                        .Where(c => { var p = FeatureGeometry.Coord(c); return Math.Abs(p.X - at.X) <= 1 && Math.Abs(p.Y - at.Y) <= 1 && c != lowest; }).ToList();
+                    Assert.All(around, c => Assert.True(c.Status.Elevation >= lowest.Status.Elevation, part.Name + " is not in a hollow"));
+                }
+            }
+        }
+
+        [Fact]
+        public void BasinDepthIsHowFarBelowTheSpillLevel()
+        {
+            // A 5x5 patch: a rim at 0.5 with a notch at 0.3, around a floor at 0.1 and 0.2
+            SimEngine engine = new SimEngine(1);
+            World world = new World(engine);
+            WorldGridBuilder.InitializeWorldBlock(world);
+            WorldBlock top = world.WorldBlock.ChildBlocks[0, 0];
+            top.InitializeChildBlocks();
+            double[,] heights =
+            {
+                { 0.5, 0.5, 0.5, 0.5, 0.5 },
+                { 0.5, 0.1, 0.2, 0.1, 0.5 },
+                { 0.5, 0.2, 0.4, 0.2, 0.3 },
+                { 0.5, 0.1, 0.2, 0.1, 0.5 },
+                { 0.5, 0.5, 0.5, 0.5, 0.5 },
+            };
+            List<WorldBlock> cells = new List<WorldBlock>();
+            for (int y = 0; y < 5; y++)
+                for (int x = 0; x < 5; x++)
+                {
+                    top.ChildBlocks[x, y].Status.Elevation = heights[y, x];
+                    cells.Add(top.ChildBlocks[x, y]);
+                }
+
+            Dictionary<WorldBlock, double> depth = DesertPartDetector.BasinDepths(cells);
+            Assert.Equal(0.0, depth[top.ChildBlocks[0, 0]]);
+            Assert.Equal(0.0, depth[top.ChildBlocks[4, 2]]); // the notch is on the edge, where water spills out
+            Assert.Equal(0.2, depth[top.ChildBlocks[1, 1]], 9); // fills to the notch at 0.3
+            Assert.Equal(0.1, depth[top.ChildBlocks[2, 1]], 9);
+            Assert.Equal(0.0, depth[top.ChildBlocks[2, 2]]); // the middle rises above the spill level
+        }
+
+        [Fact]
+        public void DesertPartsCanBeSwitchedOff()
+        {
+            SimEngine on = NoiseTestWorlds.Generate(1);
+            SimEngine off = NoiseTestWorlds.Generate(1, ("DesertParts", "0"));
+            Assert.All(off.World.Features.Where(f => f.Type.Id == DesertDetector.TypeId), d => Assert.Empty(d.Children));
+            // The deserts themselves are unchanged
+            Assert.Equal(on.World.Features.Where(f => f.Type.Id == DesertDetector.TypeId).Select(f => f.Footprint.Count),
+                off.World.Features.Where(f => f.Type.Id == DesertDetector.TypeId).Select(f => f.Footprint.Count));
         }
 
         [Fact]

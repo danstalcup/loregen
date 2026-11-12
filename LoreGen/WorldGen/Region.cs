@@ -168,6 +168,11 @@ namespace LoreGen.WorldGen
         /// </summary>
         public WorldBlockArea SeaBlock;
         /// <summary>
+        /// The sea as a geographic feature (with its bays and straits as parts), if the world's generator finds water
+        /// features; otherwise null.
+        /// </summary>
+        public Features.GeographicFeature Feature;
+        /// <summary>
         /// Constructor for the sea. Sea is added to the Continent's collection of Seas.
         /// </summary>
         /// <param name="Continent">Continent the sea resides in</param>

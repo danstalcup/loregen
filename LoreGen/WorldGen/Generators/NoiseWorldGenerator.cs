@@ -40,7 +40,7 @@ namespace LoreGen.WorldGen.Generators
             get { return "Land is shaped by an elevation map of fractal noise, so continents have natural coastlines, peninsulas, islands and inland seas."; }
         }
 
-        public string Version { get { return "7"; } }
+        public string Version { get { return "9"; } }
 
         public IReadOnlyList<GeneratorOption> GetOptions(SimData data)
         {
@@ -62,6 +62,11 @@ namespace LoreGen.WorldGen.Generators
 
         public World Generate(SimEngine engine)
         {
+            return Plan(engine).RunAll();
+        }
+
+        public WorldBuildPlan Plan(SimEngine engine)
+        {
             NoiseGeneratorRules rules = NoiseGeneratorRules.Load(engine.SimData, engine.Configuration.GeneratorSettings);
             Rnd rnd = engine.Rnd;
 
@@ -70,9 +75,16 @@ namespace LoreGen.WorldGen.Generators
             int width = world.WorldBlock.Width, height = world.WorldBlock.Height;
 
             // The elevation field; everything after that is shared with the other elevation-based generators
-            double landFraction = ElevationWorldBuilder.ChooseLandFraction(rules, rnd);
-            Heightmap field = BuildField(engine, rules, width, height);
-            return ElevationWorldBuilder.Build(engine, world, rules, field, landFraction);
+            WorldBuildPlan plan = new WorldBuildPlan();
+            double landFraction = 0;
+            Heightmap field = null;
+            plan.Add("Elevation", () =>
+            {
+                landFraction = ElevationWorldBuilder.ChooseLandFraction(rules, rnd);
+                field = BuildField(engine, rules, width, height);
+            }, 3);
+            ElevationWorldBuilder.AddSteps(plan, engine, world, rules, () => field, () => landFraction);
+            return plan;
         }
 
         // ---- Elevation ------------------------------------------------------------------------

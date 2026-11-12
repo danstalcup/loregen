@@ -199,7 +199,7 @@ namespace LoreGen.Tests
         [Fact]
         public void TurningOffDetailRemovesSubBlocks()
         {
-            var world = Generate(5, ("CoastDetail", 0), ("RegionBorderDetail", 0), ("FeatureDetail", 0)).World;
+            var world = Generate(5, ("CoastDetail", 0), ("RegionBorderDetail", 0), ("FeatureDetail", 0), ("Hydrology", 0)).World;
             Assert.All(world.WorldBlock.ChildBlocksAsList(), b => Assert.Null(b.ChildBlocks));
         }
 

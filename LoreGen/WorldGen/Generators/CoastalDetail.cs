@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using LoreGen.Features;
 using LoreGen.Noise;
@@ -14,7 +15,7 @@ namespace LoreGen.WorldGen.Generators
     /// Only blocks that can contain a coastline, a region border or a feature's edge get a grid of sub-blocks: those with
     /// both land and water somewhere in the 3x3 blocks around them, land blocks with more than one region in the 3x3
     /// around them, and land blocks on or beside the edge of a geographic feature (and every block of a mountain range,
-    /// so its crests can be found). Interior land and open ocean stay as single blocks.
+    /// so its crests can be found, and of a desert when its parts are to be found). Interior land and open ocean stay as single blocks.
     ///
     /// Within those blocks the fine elevation is the coarse elevation smoothly interpolated across block boundaries,
     /// plus fractal wiggle that fades out away from the coast. It is one function of position over the whole world,
@@ -24,7 +25,8 @@ namespace LoreGen.WorldGen.Generators
     /// sub-blocks are dropped.
     ///
     /// High ground gets ridged relief on top, fading in from half the mountain height, which gives mountain ranges their
-    /// crests. It never turns land into water or water into land.
+    /// crests, and desert ground gets gentle rises and hollows (so it has basins). Neither turns land into water or water into
+    /// land.
     ///
     /// Region borders are made to wind: each sub-block goes to the region of the nearest land block centre after its
     /// position has been nudged by smooth noise, and a final pass keeps every region in one piece.
@@ -36,7 +38,7 @@ namespace LoreGen.WorldGen.Generators
         // Sub-blocks per side. WorldBlock builds 10x10 grids; this is checked when they are created.
         private const int SubBlocksPerSide = 10;
 
-        public static void Apply(SimEngine engine, World world, NoiseGeneratorRules rules, bool[,] land, double[,] elevation, TerrainPicker terrain)
+        public static void Apply(SimEngine engine, World world, NoiseGeneratorRules rules, bool[,] land, double[,] elevation, HydrologyModel hydrology = null)
         {
             WorldBlock[,] grid = world.WorldBlock.ChildBlocks;
             int width = world.WorldBlock.Width, height = world.WorldBlock.Height;
@@ -47,7 +49,7 @@ namespace LoreGen.WorldGen.Generators
             bool[,] coastal = new bool[width, height];
             bool[,] regionMixed = new bool[width, height];
             bool[,] needsDetail = new bool[width, height];
-            bool[,] featureDetail = rules.FeatureDetail != 0 ? FeatureDetailBlocks(world, land) : new bool[width, height];
+            bool[,] featureDetail = rules.FeatureDetail != 0 ? FeatureDetailBlocks(world, rules, land) : new bool[width, height];
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
@@ -68,7 +70,8 @@ namespace LoreGen.WorldGen.Generators
                         }
                     }
                     coastal[x, y] = rules.CoastDetail != 0 && anyLand && anyWater;
-                    needsDetail[x, y] = coastal[x, y] || (rules.RegionBorderDetail != 0 && land[x, y] && regionMixed[x, y]) || featureDetail[x, y];
+                    needsDetail[x, y] = coastal[x, y] || (rules.RegionBorderDetail != 0 && land[x, y] && regionMixed[x, y]) || featureDetail[x, y]
+                        || (hydrology != null && hydrology.DetailBlocks[x, y] && land[x, y]);
                 }
             }
 
@@ -84,6 +87,21 @@ namespace LoreGen.WorldGen.Generators
             FractalNoise ridges = new FractalNoise(new SimplexNoise(engine.Rnd.Unweighted(int.MaxValue)),
                 4, rules.MountainReliefFrequency, 2.0, 0.5);
             double reliefFrom = rules.MountainElevationFrom * 0.5, reliefFull = rules.MountainElevationFrom;
+
+            // Gentle rises and hollows on desert ground, fading out across the desert's edge. The noise seed comes from the
+            // world seed rather than a draw, so worlds without deserts, or with desert detail off, are unchanged.
+            double[,] desertWeight = new double[width, height];
+            bool anyDesert = false;
+            if (rules.FeatureDetail != 0 && rules.DesertParts != 0 && rules.DesertRelief > 0)
+            {
+                foreach (GeographicFeature feature in world.Features)
+                {
+                    if (feature.Scope != FeatureScope.Continental || feature.Type.Category != FeatureCategory.Desert) continue;
+                    foreach (WorldBlock block in feature.Footprint.Blocks) { desertWeight[block.X, block.Y] = 1; anyDesert = true; }
+                }
+            }
+            FractalNoise dunes = new FractalNoise(new SimplexNoise(unchecked(engine.Rnd.Seed * 92821 + 4519)),
+                3, rules.DesertReliefFrequency, 2.0, 0.5);
 
             for (int fx = 0; fx < fineWidth; fx++)
             {
@@ -112,6 +130,12 @@ namespace LoreGen.WorldGen.Generators
                             double fade = Smoothstep(reliefFrom, reliefFull, smooth);
                             if (fade > 0) e = Math.Min(1.0, Math.Max(Epsilon, e + rules.MountainRelief * fade * ridges.Ridged(px + 0.5, py + 0.5)));
                         }
+                        if (e > 0 && anyDesert)
+                        {
+                            // Desert rises and hollows; land stays land
+                            double weight = Interpolate(desertWeight, px, py, width, height);
+                            if (weight > 0) e = Math.Min(1.0, Math.Max(Epsilon, e + rules.DesertRelief * weight * dunes.Fbm(px + 0.5, py + 0.5)));
+                        }
                     }
                     fineLand[fx, fy] = e > 0;
                     fineElevation[fx, fy] = e;
@@ -126,6 +150,12 @@ namespace LoreGen.WorldGen.Generators
             // must never touch, so cut any such contact (the weaker cell becomes water) and drop whatever that strands.
             if (SeparateContinents(grid, land, fineLand, fineElevation, n))
                 DropUnanchored(fineLand, fineElevation, land, n, true, rules.DetailMinIsletCells);
+
+            // Lakes: hollows the hydrology filled become fine water up to the lake's level
+            bool[,] fineLake = new bool[fineWidth, fineHeight];
+            if (hydrology != null)
+                foreach (LakeBasin basin in hydrology.Basins)
+                    if (basin.HasLake) CarveLake(basin, needsDetail, fineLand, fineElevation, fineLake, n, rules.LakeMinBlocks, rules.DetailMinIsletCells, wiggle);
 
             // 4. Which region each piece of fine land belongs to. Region borders wind: a sub-block goes to the region of the
             // land block whose centre is nearest after the sub-block's position is nudged by smooth noise.
@@ -179,16 +209,19 @@ namespace LoreGen.WorldGen.Generators
                                 WorldBlockStatus owner = Nearest(grid, land, true, bx, by, i, j, n).Status;
                                 status.Continent = owner.Continent;
                                 status.Region = fineRegion[fx, fy];
-                                status.Terrain = terrain.Pick(status.Region.Biome, status.Elevation.Value);
+                                // For now the terrain of the land it belongs to; TerrainModel.ApplyFine chooses its own once
+                                // every feature is known
+                                status.Terrain = owner.Terrain;
                                 status.Ocean = null;
                                 status.Sea = null;
                             }
                             else
                             {
                                 // Belongs to the nearest coarse water (this block itself, if it is water)
-                                WorldBlockStatus owner = Nearest(grid, land, false, bx, by, i, j, n).Status;
-                                status.Ocean = owner.Ocean;
-                                status.Sea = owner.Sea;
+                                // Lake water belongs to no ocean or sea
+                                WorldBlockStatus owner = fineLake[fx, fy] ? null : Nearest(grid, land, false, bx, by, i, j, n).Status;
+                                status.Ocean = owner?.Ocean;
+                                status.Sea = owner?.Sea;
                                 status.Continent = null;
                                 status.Region = null;
                                 status.Terrain = null;
@@ -200,10 +233,11 @@ namespace LoreGen.WorldGen.Generators
         }
 
         /// <summary>
-        /// Land blocks that need sub-blocks for the world's features: every block of a mountain range (for its crests), the
+        /// Land blocks that need sub-blocks for the world's features: every block of a mountain range (for its crests) and of a
+        /// desert (for its ergs, salt flats and oases) when desert parts are on, the
         /// edge blocks of other features, and the blocks beside any feature's edge (where its outline can spread).
         /// </summary>
-        private static bool[,] FeatureDetailBlocks(World world, bool[,] land)
+        private static bool[,] FeatureDetailBlocks(World world, NoiseGeneratorRules rules, bool[,] land)
         {
             int width = land.GetLength(0), height = land.GetLength(1);
             bool[,] detail = new bool[width, height];
@@ -214,13 +248,139 @@ namespace LoreGen.WorldGen.Generators
                 foreach (WorldBlock block in feature.Footprint.Blocks)
                 {
                     bool edge = feature.Footprint.IsEdge(block);
-                    if (edge || feature.Type.Category == FeatureCategory.Mountain) mark(block);
+                    if (edge || WholeFeatureNeedsDetail(feature, rules)) mark(block);
                     if (!edge) continue;
                     foreach (WorldBlock beside in block.SurroundingBlocksAsList())
                         if (!feature.Footprint.IsMember(beside)) mark(beside);
                 }
             }
             return detail;
+        }
+
+        /// <summary>
+        /// Makes a lake in the fine land of its hollow: starting from the lowest sub-block of the hollow's lowest block, it
+        /// spreads (across sides) into whichever neighbouring sub-block comes next by height, nearness to the start and the
+        /// coastline noise, so it fills the bottom of the hollow first in a rounded, ragged-shored shape, until it covers its
+        /// target area. It stays within the hollow's blocks and those around them, and off the sea (never within two
+        /// sub-blocks of other water). A lake smaller than the minimum is left dry. Specks of land it cuts off go under too.
+        /// Records the cells on the basin.
+        /// </summary>
+        private static void CarveLake(LakeBasin basin, bool[,] needsDetail, bool[,] fineLand, double[,] fineElevation, bool[,] fineLake, int n, int minimum, int isletMinimum, FractalNoise wiggle)
+        {
+            int fineWidth = fineLand.GetLength(0), fineHeight = fineLand.GetLength(1);
+            int width = needsDetail.GetLength(0), height = needsDetail.GetLength(1);
+            if (basin.TargetCells < minimum || !needsDetail[basin.Lowest.X, basin.Lowest.Y]) return;
+            HashSet<(int, int)> area = new HashSet<(int, int)>();
+            foreach ((int X, int Y) b in basin.Blocks)
+                for (int dx = -1; dx <= 1; dx++)
+                    for (int dy = -1; dy <= 1; dy++)
+                    {
+                        int x = b.X + dx, y = b.Y + dy;
+                        if (x >= 0 && y >= 0 && x < width && y < height && needsDetail[x, y]) area.Add((x, y));
+                    }
+
+            Func<int, int, bool> allowed = (fx, fy) =>
+            {
+                if (fx < 0 || fy < 0 || fx >= fineWidth || fy >= fineHeight || !fineLand[fx, fy] || !area.Contains((fx / n, fy / n))) return false;
+                for (int dx = -2; dx <= 2; dx++)
+                    for (int dy = -2; dy <= 2; dy++)
+                    {
+                        int x = fx + dx, y = fy + dy;
+                        if (x >= 0 && y >= 0 && x < fineWidth && y < fineHeight && !fineLand[x, y] && !fineLake[x, y]) return false;
+                    }
+                return true;
+            };
+
+            // Start from the lowest allowed sub-block of the lowest block
+            (int X, int Y) start = (-1, -1);
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                {
+                    int fx = basin.Lowest.X * n + i, fy = basin.Lowest.Y * n + j;
+                    if (allowed(fx, fy) && (start.X < 0 || fineElevation[fx, fy] < fineElevation[start.X, start.Y])) start = (fx, fy);
+                }
+            if (start.X < 0) return;
+
+            // Spread lowest-first. Heights count as a share of the hollow's depth, so shallow and deep hollows fill alike.
+            double depth = Math.Max(1e-6, basin.Rim - basin.Floor);
+            Func<int, int, double> cost = (fx, fy) =>
+            {
+                double px = (fx + 0.5) / n, py = (fy + 0.5) / n;
+                double distance = Math.Sqrt((fx - start.X) * (fx - start.X) + (fy - start.Y) * (fy - start.Y));
+                return (fineElevation[fx, fy] - basin.Floor) / depth + 0.06 * distance + 0.6 * wiggle.Fbm(px + 0.5, py + 0.5);
+            };
+            List<(int X, int Y)> cells = new List<(int, int)>();
+            HashSet<(int, int)> seen = new HashSet<(int, int)> { start };
+            PriorityQueue<(int X, int Y), (double, int)> frontier = new PriorityQueue<(int, int), (double, int)>();
+            frontier.Enqueue(start, (0.0, start.Y * fineWidth + start.X));
+            int[] sx = { 1, -1, 0, 0 }, sy = { 0, 0, 1, -1 };
+            while (frontier.Count > 0 && cells.Count < basin.TargetCells)
+            {
+                (int X, int Y) c = frontier.Dequeue();
+                cells.Add(c);
+                for (int d = 0; d < 4; d++)
+                {
+                    (int X, int Y) next = (c.X + sx[d], c.Y + sy[d]);
+                    if (seen.Add(next) && allowed(next.X, next.Y)) frontier.Enqueue(next, (cost(next.X, next.Y), next.Y * fineWidth + next.X));
+                }
+            }
+            if (cells.Count < minimum) return;
+
+            // Land the lake cuts off into a speck too small to be an islet goes under the water too
+            HashSet<(int, int)> lake = new HashSet<(int, int)>(cells);
+            foreach ((int X, int Y) c in cells.ToList())
+                for (int d = 0; d < 4; d++)
+                {
+                    (int X, int Y) next = (c.X + sx[d], c.Y + sy[d]);
+                    if (next.X < 0 || next.Y < 0 || next.X >= fineWidth || next.Y >= fineHeight || !fineLand[next.X, next.Y] || lake.Contains(next)) continue;
+                    List<(int X, int Y)> speck = SmallPiece(fineLand, lake, next, isletMinimum);
+                    if (speck == null) continue;
+                    foreach ((int X, int Y) s in speck) if (lake.Add(s)) cells.Add(s);
+                }
+
+            foreach ((int X, int Y) c in cells)
+            {
+                fineLand[c.X, c.Y] = false;
+                fineLake[c.X, c.Y] = true;
+                fineElevation[c.X, c.Y] = -Epsilon;
+            }
+            basin.Cells = cells.OrderBy(c => c.Y).ThenBy(c => c.X).ToList();
+        }
+
+        // The piece of fine land (connected at the sides, not counting the lake being made) that a cell is in, if it has fewer
+        // than `limit` cells; otherwise null
+        private static List<(int X, int Y)> SmallPiece(bool[,] fineLand, HashSet<(int, int)> lake, (int X, int Y) start, int limit)
+        {
+            int fineWidth = fineLand.GetLength(0), fineHeight = fineLand.GetLength(1);
+            List<(int X, int Y)> piece = new List<(int, int)>();
+            HashSet<(int, int)> seen = new HashSet<(int, int)> { start };
+            Queue<(int X, int Y)> queue = new Queue<(int, int)>();
+            queue.Enqueue(start);
+            int[] sx = { 1, -1, 0, 0 }, sy = { 0, 0, 1, -1 };
+            while (queue.Count > 0)
+            {
+                (int X, int Y) c = queue.Dequeue();
+                piece.Add(c);
+                if (piece.Count >= limit) return null;
+                for (int d = 0; d < 4; d++)
+                {
+                    (int X, int Y) next = (c.X + sx[d], c.Y + sy[d]);
+                    if (next.X < 0 || next.Y < 0 || next.X >= fineWidth || next.Y >= fineHeight || !fineLand[next.X, next.Y] || lake.Contains(next)) continue;
+                    if (seen.Add(next)) queue.Enqueue(next);
+                }
+            }
+            return piece;
+        }
+
+        // Features whose parts are found in the fine detail need sub-blocks throughout, not just at their edges
+        private static bool WholeFeatureNeedsDetail(GeographicFeature feature, NoiseGeneratorRules rules)
+        {
+            switch (feature.Type.Category)
+            {
+                case FeatureCategory.Mountain: return true;
+                case FeatureCategory.Desert: return rules.DesertParts != 0;
+                default: return false;
+            }
         }
 
         private static double Smoothstep(double from, double to, double x)
@@ -266,7 +426,7 @@ namespace LoreGen.WorldGen.Generators
         /// its largest piece stays; each other piece is given to the neighbouring region it touches most. (A piece with no
         /// neighbouring region, cut off by water, is left alone.)
         /// </summary>
-        private static void KeepRegionsConnected(Region[,] fineRegion)
+        internal static void KeepRegionsConnected(Region[,] fineRegion)
         {
             int width = fineRegion.GetLength(0), height = fineRegion.GetLength(1);
             int[] dx = { 1, -1, 0, 0 }, dy = { 0, 0, 1, -1 };

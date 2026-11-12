@@ -116,7 +116,10 @@ namespace LoreGen.Tests
                 Assert.False(string.IsNullOrWhiteSpace(feature.Name), "feature without a name");
                 Assert.Same(world, feature.World);
                 Assert.NotNull(feature.Type);
-                Assert.Contains(feature.Scope, feature.Type.Scopes);
+                Assert.Equal(feature.Type.Scope, feature.Scope);
+                if (feature.Type.ParentTypes.Count > 0)
+                    Assert.True(feature.Parent != null && feature.Type.IsPartOf(feature.Parent.Type), what + " is not part of a " + feature.Type.ParentType.Name.ToLowerInvariant());
+                Assert.All(feature.Children, c => Assert.Same(feature, c.Parent));
                 Assert.NotNull(feature.DisplayInfo);
                 Assert.True(feature.Footprint.Count > 0, what + " covers no blocks");
                 Assert.Equal(feature.Footprint.Count, feature.Footprint.Blocks.Distinct().Count());
@@ -289,6 +292,44 @@ namespace LoreGen.Tests
 
             Assert.Equal(Describe(one.World), Describe(again.World));
             Assert.Equal(Describe(Generate(id, 12).World), Describe(two.World));
+        }
+
+        [Theory]
+        [MemberData(nameof(GeneratorIds))]
+        public void StepByStepGivesTheSameWorld(string id)
+        {
+            var engine = new SimEngine(17);
+            engine.Configuration.GeneratorId = id;
+            WorldGeneration generation = engine.BeginWorldGeneration();
+            Assert.True(generation.StepCount >= 1);
+            Assert.All(generation.StepNames, name => Assert.False(string.IsNullOrWhiteSpace(name)));
+
+            int runs = 0;
+            while (!generation.IsComplete)
+            {
+                Assert.Null(engine.World); // the world appears only once the last step has run
+                Assert.Equal(runs, generation.CompletedSteps);
+                Assert.Equal(generation.StepNames[runs], generation.NextStep);
+                generation.RunNextStep();
+                runs++;
+            }
+            Assert.Equal(generation.StepCount, runs);
+            Assert.Equal(1.0, generation.Fraction);
+            Assert.Null(generation.NextStep);
+            Assert.False(generation.RunNextStep());
+            Assert.Equal(id, engine.World.GeneratorId);
+            Assert.Equal(Describe(Generate(id, 17).World), Describe(engine.World));
+        }
+
+        [Theory]
+        [MemberData(nameof(GeneratorIds))]
+        public void AnAbandonedStepByStepGenerationLeavesTheOldWorld(string id)
+        {
+            var engine = Generate(id, 23);
+            World before = engine.World;
+            WorldGeneration generation = engine.BeginWorldGeneration();
+            if (generation.StepCount > 1) generation.RunNextStep();
+            Assert.Same(before, engine.World);
         }
 
         /// <summary>

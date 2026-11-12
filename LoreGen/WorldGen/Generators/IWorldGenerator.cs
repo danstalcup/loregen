@@ -72,6 +72,17 @@ namespace LoreGen.WorldGen.Generators
         }
 
         /// <summary>
+        /// The steps that generate a world, for callers that run them one at a time to show progress (see
+        /// <see cref="Simulation.WorldGeneration"/>). Running every step must give the same world as <see cref="Generate"/>.
+        /// The default is a single step that calls Generate; split the work into named steps to report progress in more
+        /// detail. Settings may be checked here, before any step runs.
+        /// </summary>
+        WorldBuildPlan Plan(SimEngine engine)
+        {
+            return WorldBuildPlan.Single("Generating the world", () => Generate(engine));
+        }
+
+        /// <summary>
         /// Generates a complete world.
         /// </summary>
         /// <param name="engine">The engine providing the random number generator, data and settings</param>

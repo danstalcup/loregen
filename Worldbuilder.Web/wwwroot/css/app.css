@@ -177,3 +177,31 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
 .option .reset { grid-column: 2; grid-row: 1 / span 2; background: none; border: 1px solid transparent; cursor: pointer; font-size: 1.1em; color: inherit; border-radius: 4px; }
 .option .reset:disabled { visibility: hidden; }
 .option.changed label { font-weight: 600; }
+
+/* World generation progress */
+.world-body { position: relative; min-height: 320px; }
+.world-view.dimmed { opacity: 0.35; filter: saturate(0.6); pointer-events: none; transition: opacity 0.2s; }
+.progress-overlay { position: absolute; inset: 24px 0 auto; display: flex; justify-content: center; pointer-events: none; z-index: 5; }
+.progress-overlay > * { pointer-events: auto; }
+.progress-inline { display: flex; justify-content: center; padding-top: 24px; }
+.progress-card { width: min(560px, 100%); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); }
+.progress-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.progress-head h3 { margin: 0 0 2px; }
+.progress-bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.15s ease-out; }
+.progress-now { margin: 10px 0 8px; }
+.step-list { list-style: none; margin: 0; padding: 0; columns: 2 220px; column-gap: 20px; font-size: 0.88rem; }
+.step-list li { display: flex; gap: 6px; align-items: baseline; padding: 1px 0; break-inside: avoid; }
+.step-list .step-mark { width: 1em; flex: none; text-align: center; }
+.step-list .step-name { flex: 1; min-width: 0; }
+.step-list .step-time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.step-list li.todo { color: var(--muted); }
+.step-list li.done .step-mark { color: var(--accent); }
+.step-list li.now { font-weight: 600; }
+.step-list li.now .step-mark { color: var(--accent); animation: step-pulse 1s ease-in-out infinite; }
+@keyframes step-pulse { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) {
+    .step-list li.now .step-mark { animation: none; }
+    .progress-fill, .world-view.dimmed { transition: none; }
+}
+.generation-log summary .muted { font-weight: normal; }

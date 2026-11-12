@@ -23,7 +23,31 @@ namespace LoreGen.Lang
         /// <summary>A mountain range.</summary>
         MountainRange,
         /// <summary>A desert.</summary>
-        Desert
+        Desert,
+        /// <summary>A subrange: a long crest within a mountain range.</summary>
+        Subrange,
+        /// <summary>A massif: a compact knot of peaks within a mountain range.</summary>
+        Massif,
+        /// <summary>A peak: a summit of a mountain range.</summary>
+        Peak,
+        /// <summary>A pass: the lowest way over a mountain range between two of its peaks.</summary>
+        Pass,
+        /// <summary>An erg: a sea of sand dunes within a desert.</summary>
+        Erg,
+        /// <summary>A salt flat: a dry, salt-crusted basin floor within a desert.</summary>
+        SaltFlat,
+        /// <summary>An oasis: a hollow in a desert where ground water comes near the surface.</summary>
+        Oasis,
+        /// <summary>A bay: water of an ocean or sea that land wraps around.</summary>
+        Bay,
+        /// <summary>A strait: a narrow passage of water between two pieces of land.</summary>
+        Strait,
+        /// <summary>A lake.</summary>
+        Lake,
+        /// <summary>A salt lake: a lake with no outflow.</summary>
+        SaltLake,
+        /// <summary>A large river.</summary>
+        River
     }
 
     /// <summary>

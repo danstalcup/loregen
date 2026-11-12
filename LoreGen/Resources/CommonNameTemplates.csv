@@ -1,5 +1,5 @@
 # Name templates for CommonLanguage: Kind,Style,Weight,Template
-# Kind: Language, World, Continent, Region, Sea, Ocean, MountainRange or Desert. Style: Proper (built from the flavour's sounds) or
+# Kind: Language, World, Continent, Region, Sea, Ocean, MountainRange, Desert, Subrange, Massif, Peak, Pass, Erg, SaltFlat, Oasis, Bay, Strait, Lake, SaltLake or River. Style: Proper (built from the flavour's sounds) or
 # Descriptive (an English description, as names are "translated" in fiction). Each language mixes the two styles in its
 # own proportion; within a style a template is chosen by weight.
 #
@@ -80,3 +80,104 @@ Desert,Descriptive,2,The {Adj} Desert
 Desert,Descriptive,1,The {AdjC}+sand Expanse
 Desert,Descriptive,1,The {DirAdj} Desert
 Desert,Descriptive,1,The Wastes of {Parent}
+
+Subrange,Proper,4,The {Root}+{Ending} Ridge
+Subrange,Proper,3,The Sierra {Root}+{Ending}
+Subrange,Proper,2,The {Root}+{Ending} Crest
+Subrange,Proper,1,{Root}+{Ending} Spine
+Subrange,Proper,1,The {Dir} {Root}+{Ending}
+Subrange,Descriptive,3,The {Adj} Ridge
+Subrange,Descriptive,2,The {Adj} Saw
+Subrange,Descriptive,2,The {AdjC}+back Ridge
+Subrange,Descriptive,1,The {Adj} Sierra
+Subrange,Descriptive,1,The {DirAdj} Crest
+
+Massif,Proper,4,The {Root}+{Ending} Massif
+Massif,Proper,3,Mount {Root}+{Ending}
+Massif,Proper,2,The {Root}+{Ending} Heights
+Massif,Proper,1,The {Root}+{LangEnding} Knot
+Massif,Descriptive,3,The {Adj} Massif
+Massif,Descriptive,2,The {Adj} Crown
+Massif,Descriptive,1,The {AdjC}+horn Massif
+Massif,Descriptive,1,The {Adj} Throne
+
+Peak,Proper,4,Mount {Root}+{Ending}
+Peak,Proper,3,{Root}+{Ending} Peak
+Peak,Proper,2,The {Root}+{Ending} Horn
+Peak,Proper,1,{Root}+{LangEnding} Spire
+Peak,Descriptive,3,The {Adj} Peak
+Peak,Descriptive,2,The {Adj} Spire
+Peak,Descriptive,2,{AdjC}+horn
+Peak,Descriptive,1,The {Adj} Tooth
+
+Pass,Proper,4,The {Root}+{Ending} Pass
+Pass,Proper,2,The Col of {Root}+{Ending}
+Pass,Proper,2,{Root}+{Ending} Gap
+Pass,Proper,1,The {Root}+{LangEnding} Saddle
+Pass,Descriptive,3,The {Adj} Pass
+Pass,Descriptive,2,The {Adj} Gate
+Pass,Descriptive,1,The {Adj} Notch
+Pass,Descriptive,1,The {Adj} Way
+
+Erg,Proper,4,The {Root}+{Ending} Erg
+Erg,Proper,2,The {Root}+{Ending} Sands
+Erg,Proper,1,The Great {Root}+{Ending} Erg
+Erg,Descriptive,3,The {Adj} Sands
+Erg,Descriptive,2,The {Adj} Dunes
+Erg,Proper,1,The Sand Sea of {Root}+{Ending}
+Erg,Descriptive,1,The {DirAdj} Sands
+
+Oasis,Proper,4,{Root}+{Ending} Oasis
+Oasis,Proper,3,The Oasis of {Root}+{Ending}
+Oasis,Proper,2,{Root}+{Ending} Wells
+Oasis,Proper,1,The {Root}+{LangEnding} Springs
+Oasis,Descriptive,3,The {Adj} Wells
+Oasis,Descriptive,2,The {Adj} Spring
+Oasis,Descriptive,1,The {Adj} Palms
+
+SaltFlat,Proper,4,The {Root}+{Ending} Flats
+SaltFlat,Proper,2,The {Root}+{Ending} Pan
+SaltFlat,Proper,1,The {Root}+{LangEnding} Salt
+SaltFlat,Descriptive,3,The {Adj} Flats
+SaltFlat,Descriptive,2,The {Adj} Pan
+SaltFlat,Descriptive,1,The {AdjC} Salt
+
+Bay,Proper,4,The Bay of {Root}+{Ending}
+Bay,Proper,3,{Root}+{Ending} Bay
+Bay,Proper,2,The Gulf of {Root}+{Ending}
+Bay,Proper,1,The {Root}+{WaterEnding} Bight
+Bay,Descriptive,3,The {Adj} Bay
+Bay,Descriptive,2,The Bay of {AdjC} Waters
+Bay,Descriptive,1,The {DirAdj} Gulf
+Bay,Descriptive,1,{AdjC}+water Bay
+
+Strait,Proper,4,The {Root}+{Ending} Strait
+Strait,Proper,3,The Straits of {Root}+{Ending}
+Strait,Proper,2,The {Root}+{WaterEnding} Narrows
+Strait,Proper,1,The {Root}+{Ending} Sound
+Strait,Descriptive,3,The {Adj} Narrows
+Strait,Descriptive,2,The {Adj} Strait
+Strait,Descriptive,1,The {Adj} Sound
+
+Lake,Proper,4,Lake {Root}+{Ending}
+Lake,Proper,3,Lake {Root}+{WaterEnding}
+Lake,Proper,2,The {Root}+{Ending} Water
+Lake,Proper,1,{Root}+{Ending} Mere
+Lake,Descriptive,3,The {Adj} Lake
+Lake,Descriptive,2,{AdjC}+water
+Lake,Descriptive,1,The {Adj} Mere
+
+SaltLake,Proper,4,The {Root}+{Ending} Salt Lake
+SaltLake,Proper,2,Lake {Root}+{Ending}
+SaltLake,Proper,1,The Bitter Water of {Root}+{Ending}
+SaltLake,Descriptive,3,The {Adj} Salt Lake
+SaltLake,Descriptive,2,The Bitter Lake
+SaltLake,Descriptive,1,The {Adj} Brine
+
+River,Proper,5,The {Root}+{WaterEnding}
+River,Proper,4,The {Root}+{Ending} River
+River,Proper,2,The River {Root}+{Ending}
+River,Proper,1,The {Root}+{LangEnding}
+River,Descriptive,3,The {Adj} River
+River,Descriptive,2,The {AdjC}+water
+River,Descriptive,1,The {Adj} Flood

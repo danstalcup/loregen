@@ -39,7 +39,7 @@ namespace LoreGen.WorldGen.Generators
             get { return "Land is shaped by drifting plates: continents ride on them, and mountain belts, island arcs and rift seas form where plates meet."; }
         }
 
-        public string Version { get { return "1"; } }
+        public string Version { get { return "3"; } }
 
         /// <summary>
         /// Settings in NoiseGeneratorRules.csv that only shape the noise generator's land, so this generator rejects them.
@@ -71,6 +71,11 @@ namespace LoreGen.WorldGen.Generators
 
         public World Generate(SimEngine engine)
         {
+            return Plan(engine).RunAll();
+        }
+
+        public WorldBuildPlan Plan(SimEngine engine)
+        {
             // Each setting goes to the rules file that has it
             RulesFile plateFile = engine.SimData.LoadRules(TectonicGeneratorRules.Filename);
             Dictionary<string, double> plateSettings = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -88,11 +93,26 @@ namespace LoreGen.WorldGen.Generators
 
             World world = new World(engine);
             WorldGridBuilder.InitializeWorldBlock(world);
-            WorldBlock[,] grid = world.WorldBlock.ChildBlocks;
             int width = world.WorldBlock.Width, height = world.WorldBlock.Height;
 
-            double landFraction = ElevationWorldBuilder.ChooseLandFraction(rules, rnd);
-            PlateModel model = PlateModel.Build(rnd, plateRules, rules.EdgeBorder, width, height);
+            WorldBuildPlan plan = new WorldBuildPlan();
+            double landFraction = 0;
+            PlateModel model = null;
+            plan.Add("Tectonic plates", () =>
+            {
+                landFraction = ElevationWorldBuilder.ChooseLandFraction(rules, rnd);
+                model = PlateModel.Build(rnd, plateRules, rules.EdgeBorder, width, height);
+                AddPlates(world, model, rnd);
+            }, 4);
+            ElevationWorldBuilder.AddSteps(plan, engine, world, rules, () => model.Field, () => landFraction);
+            plan.Add("Naming plates", () => NamePlates(world));
+            return plan;
+        }
+
+        private static void AddPlates(World world, PlateModel model, Rnd rnd)
+        {
+            WorldBlock[,] grid = world.WorldBlock.ChildBlocks;
+            int width = world.WorldBlock.Width, height = world.WorldBlock.Height;
 
             // The plates go on the world first, so sub-blocks made later inherit them
             for (int i = 0; i < model.Count; i++)
@@ -115,10 +135,6 @@ namespace LoreGen.WorldGen.Generators
                 }
                 world.Plates.Add(plate);
             }
-
-            ElevationWorldBuilder.Build(engine, world, rules, model.Field, landFraction);
-            NamePlates(world);
-            return world;
         }
 
         /// <summary>

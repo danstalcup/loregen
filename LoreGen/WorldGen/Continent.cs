@@ -320,7 +320,13 @@ namespace LoreGen.WorldGen
 
     public class Ocean : WorldEntity
     {                
-        public WorldBlockArea OceanArea;        
+        public WorldBlockArea OceanArea;
+
+        /// <summary>
+        /// The ocean as a geographic feature (with its bays and straits as parts), if the world's generator finds water
+        /// features; otherwise null.
+        /// </summary>
+        public Features.GeographicFeature Feature;
         
         public Ocean(World World, WorldBlockArea OceanArea)
         {

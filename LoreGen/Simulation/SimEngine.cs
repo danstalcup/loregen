@@ -122,7 +122,26 @@ namespace LoreGen.Simulation
         {
             IWorldGenerator generator = WorldGenerator ?? Generators.Get(Configuration.GeneratorId);
             Language.Names.Clear();
-            World generated = generator.Generate(this);
+            Finish(generator, generator.Generate(this));
+        }
+
+        /// <summary>
+        /// Starts generating a world with the generator named in the configuration (or <see cref="WorldGenerator"/> if set),
+        /// to be run one step at a time with <see cref="WorldGeneration.RunNextStep"/>. Gives the same world as
+        /// <see cref="GenerateWorld"/>. <see cref="World"/> changes only once the last step has run.
+        /// </summary>
+        public WorldGeneration BeginWorldGeneration()
+        {
+            IWorldGenerator generator = WorldGenerator ?? Generators.Get(Configuration.GeneratorId);
+            Language.Names.Clear();
+            WorldBuildPlan plan = generator.Plan(this);
+            if (plan == null)
+                throw new InvalidOperationException("World generator '" + generator.Id + "' returned no plan.");
+            return new WorldGeneration(plan, world => Finish(generator, world));
+        }
+
+        private void Finish(IWorldGenerator generator, World generated)
+        {
             if (generated == null)
                 throw new InvalidOperationException("World generator '" + generator.Id + "' returned no world.");
             generated.GeneratorId = generator.Id;

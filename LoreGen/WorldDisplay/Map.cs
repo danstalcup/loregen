@@ -110,8 +110,26 @@ namespace LoreGen.WorldDisplay
             return plate.DisplayInfo.DisplayColor;
         }
 
+        /// <summary>
+        /// Whether a block is part of a large river. Rivers are defined on the second level of blocks, so top-level blocks
+        /// never count (a river is far narrower than one).
+        /// </summary>
+        public static bool IsRiver(WorldBlock Block)
+        {
+            if (Block == null || Block.Depth < 2 || Block.Status.WaterStatus == WorldBlockWaterStatus.Water) return false;
+            var features = Block.World?.FeaturesAt(Block);
+            if (features == null) return false;
+            foreach (var feature in features)
+                if (feature.Type.Category == Features.FeatureCategory.Water && feature.Type.Shape == Features.FeatureShape.Linear && feature.Parent == null) return true;
+            return false;
+        }
+
+        private static readonly Color RiverColor = Color.FromArgb(45, 105, 205);
+
         public static Color GetColor(WorldBlock Block, MapContext MapContext)
         {
+            // Rivers show on every view except those of features and plates, which have their own colours
+            if (MapContext != MapContext.Features && MapContext != MapContext.Plates && IsRiver(Block)) return RiverColor;
             if (MapContext == MapContext.Elevation) return ElevationColor(Block);
             if (MapContext == MapContext.Plates) return PlateColor(Block);
 

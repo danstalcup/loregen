@@ -27,7 +27,9 @@ namespace LoreGen.WorldGen.Generators
     ///
     /// Moisture blends broad random patterns, nearness to water, and a latitude pattern (wet at the equator, dry in the
     /// subtropics, wet again in the mid-latitudes and dry at the poles), less of it where it is cold, plus a little extra on
-    /// high ground. It is then stretched so the driest land in each world is about 0 and the wettest about 1 (the 2nd and
+    /// high ground. Land in the lee of high ground gets less (a rain shadow): winds blow from the east in the tropics and
+    /// near the poles and from the west in the mid-latitudes, and air that has crossed mountains on its way from the sea
+    /// has rained out on their windward side. It is then stretched so the driest land in each world is about 0 and the wettest about 1 (the 2nd and
     /// 98th percentiles map to 0 and 1), so every world has a full range of moisture to work with.
     /// </summary>
     internal static class ClimateModel
@@ -40,6 +42,7 @@ namespace LoreGen.WorldGen.Generators
             FractalNoise moistureNoise = new FractalNoise(new SimplexNoise(rnd.Unweighted(int.MaxValue)), rules.ClimateOctaves, rules.ClimateFrequency);
 
             int[,] distanceToWater = DistanceToWater(land);
+            double[,] shadow = RainShadow(land, elevation, rules.RainShadowReach);
             double weightSum = rules.MoistureNoiseWeight + rules.MoistureCoastWeight + rules.MoistureLatitudeWeight;
             double aspect = (double)width / height;
 
@@ -69,6 +72,7 @@ namespace LoreGen.WorldGen.Generators
                         + rules.MoistureLatitudeWeight * latitudeWetness) / weightSum;
                     raw *= 1.0 - rules.MoistureColdPenalty * (1.0 - field.Temperature[x, y]); // cold air holds little moisture
                     raw += rules.MoistureElevationGain * altitude;
+                    raw *= 1.0 - rules.RainShadow * shadow[x, y];
                     rawMoisture[x, y] = raw;
                     landMoisture.Add(raw);
                 }
@@ -84,6 +88,44 @@ namespace LoreGen.WorldGen.Generators
                     field.Moisture[x, y] = !land[x, y] ? 1.0 : range > 0 ? Clamp01((rawMoisture[x, y] - lowest) / range) : 0.5;
 
             return field;
+        }
+
+        /// <summary>
+        /// The prevailing wind's direction along x at a row: -1 where it blows toward the west (it comes from the east: the
+        /// tropical trade winds and the polar easterlies), +1 where it blows toward the east (the mid-latitude westerlies).
+        /// </summary>
+        public static int WindTowardX(int y, int height)
+        {
+            double v = (y + 0.5) / height;
+            double degrees = Math.Abs(2.0 * v - 1.0) * 90.0;
+            return degrees >= 30.0 && degrees < 60.0 ? 1 : -1;
+        }
+
+        /// <summary>
+        /// How deep in a rain shadow each land block lies, 0 to 1: how far the highest land the wind has crossed since it
+        /// last left water, within `reach` blocks upwind, rises above the block itself.
+        /// </summary>
+        internal static double[,] RainShadow(bool[,] land, double[,] elevation, int reach)
+        {
+            int width = land.GetLength(0), height = land.GetLength(1);
+            double[,] shadow = new double[width, height];
+            for (int y = 0; y < height; y++)
+            {
+                int upwind = -WindTowardX(y, height);
+                for (int x = 0; x < width; x++)
+                {
+                    if (!land[x, y]) continue;
+                    double barrier = 0.0;
+                    for (int k = 1; k <= reach; k++)
+                    {
+                        int ux = x + upwind * k;
+                        if (ux < 0 || ux >= width || !land[ux, y]) break; // the air picked up moisture over water
+                        barrier = Math.Max(barrier, elevation[ux, y]);
+                    }
+                    shadow[x, y] = Clamp01(barrier - Math.Max(0.0, elevation[x, y]));
+                }
+            }
+            return shadow;
         }
 
         /// <summary>

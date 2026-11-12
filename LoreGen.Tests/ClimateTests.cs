@@ -432,28 +432,36 @@ namespace LoreGen.Tests
         }
 
         [Fact]
-        public void TerrainStillComesFromTheRegionsBiome()
+        public void RegionBiomesFitTheTerrainInThem()
         {
-            var world = Generate(4).World;
-            foreach (var region in world.Continents.SelectMany(c => c.Regions))
+            // Terrain is chosen first and each region's biome is chosen to fit it, so most of a region's terrain is in its
+            // biome's usual mix, and more of it than when the biome only follows the average climate
+            Func<string, double> fit = weight =>
             {
-                var allowed = new HashSet<Terrain>(region.Biome.TerrainPattern.GetAllElements());
-                Assert.All(region.RegionArea.BlocksList, b => Assert.Contains(b.Status.Terrain, allowed));
-            }
+                long inMix = 0, all = 0;
+                for (int seed = 1; seed <= 8; seed++)
+                    foreach (var region in Generate(seed, ("BiomeTerrainWeight", weight)).World.Continents.SelectMany(c => c.Regions))
+                    {
+                        var usual = new HashSet<Terrain>(region.Biome.TerrainPattern.GetAllElements());
+                        foreach (var b in region.RegionArea.BlocksList) { all++; if (usual.Contains(b.Status.Terrain)) inMix++; }
+                    }
+                return inMix / (double)all;
+            };
+            double with = fit("4"), without = fit("0");
+            Assert.True(with > 0.5, "only " + with.ToString("P0") + " of terrain is in its region's biome");
+            Assert.True(with > without + 0.05, with.ToString("P0") + " with the terrain weight vs " + without.ToString("P0") + " without");
         }
 
         [Fact]
-        public void SubBlockTerrainFollowsTheirOwnHeight()
+        public void EveryLandSubBlockHasTerrainOfItsOwn()
         {
             var world = Generate(6).World;
-            var allowedByRegion = new Dictionary<Region, HashSet<Terrain>>();
-            foreach (var block in world.WorldBlock.ChildBlocksAsList().Where(b => b.ChildBlocks != null))
-                foreach (var sub in block.ChildBlocksAsList().Where(s => s.Status.WaterStatus != WorldBlockWaterStatus.Water))
-                {
-                    var region = sub.Status.Region;
-                    if (!allowedByRegion.ContainsKey(region)) allowedByRegion[region] = new HashSet<Terrain>(region.Biome.TerrainPattern.GetAllElements());
-                    Assert.Contains(sub.Status.Terrain, allowedByRegion[region]);
-                }
+            var subs = world.WorldBlock.ChildBlocksAsList().Where(b => b.ChildBlocks != null)
+                .SelectMany(b => b.ChildBlocksAsList()).Where(s => s.Status.WaterStatus != WorldBlockWaterStatus.Water).ToList();
+            Assert.NotEmpty(subs);
+            Assert.All(subs, s => Assert.NotNull(s.Status.Terrain));
+            // Sub-blocks get their own terrain, not just their block's
+            Assert.Contains(subs, s => !ReferenceEquals(s.Status.Terrain, s.ParentBlock.Status.Terrain));
         }
 
         // ---- Settings -------------------------------------------------------------------------

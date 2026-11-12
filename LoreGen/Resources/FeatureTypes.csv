@@ -1,11 +1,29 @@
-# Kinds of geographic feature: Id,Name,Category,Shape,Scopes,NameKind,Description
+# Kinds of geographic feature: Id,Name,Category,Shape,Scope,Parent,NameKind,Description
 # Id: used by the code that finds features (must not change once used). Name: shown to people.
 # Category: Mountain, Water, Desert, Forest, Plain, Valley, Volcanic, Ice or Wetland.
 # Shape: Point (a single spot), Linear (a long chain with a spine, such as a range or river) or Blob (a rounded area).
-# Scopes: the scopes a feature of this type may have, separated by '|': Continental (top-level blocks, ~1000 km),
-#   Regional (~100 km), Local (~10 km) or Minor (~1 km). Each feature has exactly one.
+# Scope: the size of every feature of this type, as the block depth its shape is defined at: Continental (top-level
+#   blocks, ~1000 km), Regional (~100 km), Local (~10 km) or Minor (~1 km). A feature of a different size is a
+#   different type.
+# Parent: the Id of the type this type is part of (of a larger scope), several Ids separated by '|' if it can be part of
+#   any of them, or empty if it stands on its own. Every feature of the type is then part of (a child of) a feature of
+#   one of the parent types.
 # NameKind: the kind of name features of this type get (a NameKind with templates in CommonNameTemplates.csv).
 # Description: may contain commas.
 
-MountainRange,Mountain range,Mountain,Linear,Continental|Regional,MountainRange,A long chain of high ground, which may be broken by passes.
-Desert,Desert,Desert,Blob,Continental,Desert,A great expanse of hot or temperate land with little rain.
+MountainRange,Mountain range,Mountain,Linear,Continental,,MountainRange,A long chain of high ground, which may be broken by passes.
+Subrange,Subrange,Mountain,Linear,Regional,MountainRange,Subrange,A long crest within a mountain range: one of the chains of peaks it is made of.
+Massif,Massif,Mountain,Blob,Regional,MountainRange,Massif,A compact knot of peaks within a mountain range, as broad as it is long.
+Peak,Peak,Mountain,Point,Regional,MountainRange,Peak,A summit of a mountain range that stands well clear of the ground around it.
+Pass,Pass,Mountain,Point,Regional,MountainRange,Pass,The lowest way over a mountain range between two of its peaks: a saddle on the crest.
+Desert,Desert,Desert,Blob,Continental,,Desert,A great expanse of hot or temperate land with little rain.
+Erg,Erg,Desert,Blob,Regional,Desert,Erg,A sea of sand dunes within a desert.
+SaltFlat,Salt flat,Desert,Blob,Regional,Desert,SaltFlat,A broad basin floor within a desert with no outlet, where rare rains pool and dry to a crust of salt.
+Oasis,Oasis,Desert,Point,Regional,Desert,Oasis,A small hollow within a desert where ground water comes near the surface.
+Ocean,Ocean,Water,Blob,Continental,,Ocean,One of the great waters between the continents.
+Sea,Sea,Water,Blob,Continental,,Sea,A large body of water enclosed by a continent.
+Bay,Bay,Water,Blob,Regional,Ocean|Sea,Bay,Water of an ocean or sea that land wraps around on most sides.
+Strait,Strait,Water,Linear,Regional,Ocean|Sea,Strait,A narrow passage of water between two pieces of land.
+Lake,Lake,Water,Blob,Regional,,Lake,A body of fresh water filling a hollow in the land, with a river running out of it.
+SaltLake,Salt lake,Water,Blob,Regional,,SaltLake,A lake with no outflow, where the water that runs in is lost to the air and leaves its salt behind.
+River,River,Water,Linear,Regional,,River,A large river, from its source to the sea, a lake, or a larger river it joins.

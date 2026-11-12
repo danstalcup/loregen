@@ -121,6 +121,15 @@ namespace LoreGen.Simulation
         }
 
         /// <summary>
+        /// Reads a data file as lines (from the data folder, falling back to the embedded copy), for files with their own
+        /// layout that generators read themselves.
+        /// </summary>
+        public string[] LoadLines(string filename)
+        {
+            return ReadDataLines(filename);
+        }
+
+        /// <summary>
         /// Reads a data file as lines. Looks in the data folder on disk first (so data can be overridden),
         /// then falls back to the copy embedded in the LoreGen assembly.
         /// </summary>
@@ -419,7 +428,13 @@ namespace LoreGen.Simulation
             {
                 string[] line = climateTypeLine.Split(new char[] { ',' });
                 int id = ToI(line[1]);
-                ClimateTypes.Add(new ClimateType(line[0], id,line[2], line[3]));
+                ClimateType climateType = new ClimateType(line[0], id, line[2], line[3]);
+                if (line.Length > 5 && line[4].Trim().Length > 0 && line[5].Trim().Length > 0)
+                {
+                    climateType.IdealTemperature = ToD(line[4]);
+                    climateType.IdealMoisture = ToD(line[5]);
+                }
+                ClimateTypes.Add(climateType);
             }
 
         }
@@ -468,7 +483,10 @@ namespace LoreGen.Simulation
             foreach(string terrainTypeLine in terrainTypeLines)
             {
                 string[] line = terrainTypeLine.Split(new char[] { ',' });
-                TerrainTypes.Add(new TerrainType(ToI(line[1]), line[0], line[2], line.Length > 3 && line[3].Trim().Length > 0 ? ToI(line[3]) : TerrainType.DefaultRelief));
+                TerrainType terrainType = new TerrainType(ToI(line[1]), line[0], line[2], line.Length > 3 && line[3].Trim().Length > 0 ? ToI(line[3]) : TerrainType.DefaultRelief);
+                if (line.Length > 4 && line[4].Trim().Length > 0) terrainType.Wetness = ToD(line[4]);
+                if (line.Length > 5 && line[5].Trim().Length > 0) terrainType.Trees = ToD(line[5]);
+                TerrainTypes.Add(terrainType);
             }
         }
 

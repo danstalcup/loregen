@@ -15,16 +15,22 @@ namespace LoreGen.Tests.Features
     /// </summary>
     public class GeographicFeatureTests
     {
-        private static readonly FeatureType AnyScope = new FeatureType
+        private static readonly FeatureType Big = new FeatureType
         {
             Id = "TestBlob", Name = "Test blob", Category = FeatureCategory.Water, Shape = FeatureShape.Blob,
-            Scopes = new[] { FeatureScope.Continental, FeatureScope.Regional }, NameKind = NameKind.Sea
+            Scope = FeatureScope.Continental, NameKind = NameKind.Sea
+        };
+
+        private static readonly FeatureType Small = new FeatureType
+        {
+            Id = "TestPart", Name = "Test part", Category = FeatureCategory.Water, Shape = FeatureShape.Blob,
+            Scope = FeatureScope.Regional, ParentType = Big, NameKind = NameKind.Sea
         };
 
         private static readonly FeatureType Line = new FeatureType
         {
             Id = "TestLine", Name = "Test line", Category = FeatureCategory.Mountain, Shape = FeatureShape.Linear,
-            Scopes = new[] { FeatureScope.Continental }, NameKind = NameKind.MountainRange
+            Scope = FeatureScope.Continental, NameKind = NameKind.MountainRange
         };
 
         private static World NewWorld(int seed = 5)
@@ -72,7 +78,8 @@ namespace LoreGen.Tests.Features
             Assert.Equal("Mountain range", type.Name);
             Assert.Equal(FeatureCategory.Mountain, type.Category);
             Assert.Equal(FeatureShape.Linear, type.Shape);
-            Assert.Equal(new[] { FeatureScope.Continental, FeatureScope.Regional }, type.Scopes);
+            Assert.Equal(FeatureScope.Continental, type.Scope);
+            Assert.Null(type.ParentType);
             Assert.Equal(NameKind.MountainRange, type.NameKind);
             Assert.Contains("passes", type.Description); // descriptions may contain commas
         }
@@ -84,11 +91,13 @@ namespace LoreGen.Tests.Features
         }
 
         [Theory]
-        [InlineData("A,B,Mountain,Wiggly,Continental,MountainRange,x")]
-        [InlineData("A,B,Mountain,Linear,Galactic,MountainRange,x")]
-        [InlineData("A,B,Mountain,Linear,1,MountainRange,x")]
-        [InlineData("A,B,Mountain,Linear,Continental")]
-        [InlineData(",B,Mountain,Linear,Continental,MountainRange,x")]
+        [InlineData("A,B,Mountain,Wiggly,Continental,,MountainRange,x")]
+        [InlineData("A,B,Mountain,Linear,Galactic,,MountainRange,x")]
+        [InlineData("A,B,Mountain,Linear,1,,MountainRange,x")]
+        [InlineData("A,B,Mountain,Linear,Continental,MountainRange,x")]
+        [InlineData("A,B,Mountain,Linear,Continental|Regional,,MountainRange,x")]
+        [InlineData(",B,Mountain,Linear,Continental,,MountainRange,x")]
+        [InlineData("A,B,Mountain,Linear,Regional,Nope,MountainRange,x")]
         public void MalformedFeatureTypeRowsAreRejected(string row)
         {
             Assert.Throws<InvalidDataException>(() => FeatureType.Parse(new[] { row }));
@@ -99,16 +108,72 @@ namespace LoreGen.Tests.Features
         {
             Assert.Throws<InvalidDataException>(() => FeatureType.Parse(new[]
             {
-                "A,B,Mountain,Linear,Continental,MountainRange,x", "a,C,Water,Blob,Regional|Local,Sea,y"
+                "A,B,Mountain,Linear,Continental,,MountainRange,x", "a,C,Water,Blob,Regional,,Sea,y"
             }));
         }
 
         [Fact]
-        public void FeatureTypeRowsCanAllowSeveralScopes()
+        public void ParentTypesAreResolvedAndMustBeLarger()
         {
-            var types = FeatureType.Parse(new[] { "# comment", "", "Lake,Lake,Water,Blob,Regional|Local,Sea,A lake, inland." });
-            Assert.Equal(new[] { FeatureScope.Regional, FeatureScope.Local }, types.Single().Scopes);
-            Assert.Equal("A lake, inland.", types.Single().Description);
+            var types = FeatureType.Parse(new[] { "# comment", "", "Pond,Pond,Water,Blob,Local,Lake,Sea,A pond, in a lake.", "Lake,Lake,Water,Blob,Regional,,Sea,A lake, inland." });
+            Assert.Same(types[1], types[0].ParentType);
+            Assert.Null(types[1].ParentType);
+            Assert.Equal("A pond, in a lake.", types[0].Description);
+            Assert.Throws<InvalidDataException>(() => FeatureType.Parse(new[] { "Pond,Pond,Water,Blob,Regional,Lake,Sea,x", "Lake,Lake,Water,Blob,Regional,,Sea,y" }));
+        }
+
+        [Fact]
+        public void MountainRangePartsAreRegionalSubrangesAndMassifs()
+        {
+            var data = new SimEngine(1).SimData;
+            var range = data.FeatureType("MountainRange");
+            foreach (var part in new[] { data.FeatureType("Subrange"), data.FeatureType("Massif") })
+            {
+                Assert.Same(range, part.ParentType);
+                Assert.Equal(FeatureScope.Regional, part.Scope);
+                Assert.Equal(FeatureCategory.Mountain, part.Category);
+            }
+            Assert.Equal(FeatureShape.Linear, data.FeatureType("Subrange").Shape);
+            Assert.Equal(FeatureShape.Blob, data.FeatureType("Massif").Shape);
+        }
+
+        [Fact]
+        public void ATypeCanBePartOfSeveralTypes()
+        {
+            var types = FeatureType.Parse(new[]
+            {
+                "Ocean,Ocean,Water,Blob,Continental,,Ocean,o",
+                "Sea,Sea,Water,Blob,Continental,,Sea,s",
+                "Bay,Bay,Water,Blob,Regional,Ocean|Sea,Bay,b"
+            });
+            Assert.Equal(new[] { types[0], types[1] }, types[2].ParentTypes);
+            Assert.True(types[2].IsPartOf(types[0]));
+            Assert.True(types[2].IsPartOf(types[1]));
+            Assert.False(types[0].IsPartOf(types[1]));
+            Assert.Throws<InvalidDataException>(() => FeatureType.Parse(new[] { "Ocean,Ocean,Water,Blob,Continental,,Ocean,o", "Bay,Bay,Water,Blob,Regional,Ocean|Lagoon,Bay,b" }));
+
+            var data = new SimEngine(1).SimData;
+            Assert.True(data.FeatureType("Bay").IsPartOf(data.FeatureType("Ocean")));
+            Assert.True(data.FeatureType("Strait").IsPartOf(data.FeatureType("Sea")));
+            Assert.Empty(data.FeatureType("River").ParentTypes);
+        }
+
+        [Fact]
+        public void PeaksPassesAndDesertPartsAreRegionalParts()
+        {
+            var data = new SimEngine(1).SimData;
+            foreach (var (id, parent, shape) in new[]
+            {
+                ("Peak", "MountainRange", FeatureShape.Point), ("Pass", "MountainRange", FeatureShape.Point),
+                ("Erg", "Desert", FeatureShape.Blob), ("SaltFlat", "Desert", FeatureShape.Blob), ("Oasis", "Desert", FeatureShape.Point)
+            })
+            {
+                FeatureType type = data.FeatureType(id);
+                Assert.Same(data.FeatureType(parent), type.ParentType);
+                Assert.Equal(FeatureScope.Regional, type.Scope);
+                Assert.Equal(shape, type.Shape);
+                Assert.Equal(type.ParentType.Category, type.Category);
+            }
         }
 
         [Fact]
@@ -123,40 +188,44 @@ namespace LoreGen.Tests.Features
         // ---- Construction ---------------------------------------------------------------------
 
         [Fact]
-        public void FeatureMustUseAScopeItsTypeAllows()
+        public void FeatureBlocksMustBeAtItsTypesScope()
         {
             World world = NewWorld();
-            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, Line, FeatureScope.Regional, new[] { Child(Top(world, 2, 2)) }, 1));
+            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, Line, new[] { Child(Top(world, 2, 2)) }, 1));
+            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, Small, new[] { Top(world, 2, 2) }, 1));
+            Assert.Equal(FeatureScope.Regional, new GeographicFeature(world, Small, new[] { Child(Top(world, 2, 2)) }, 1).Scope);
         }
 
         [Fact]
         public void FootprintBlocksMustBeAtTheScopesDepthAndDistinct()
         {
             World world = NewWorld();
-            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, AnyScope, FeatureScope.Continental, new WorldBlock[0], 1));
-            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, AnyScope, FeatureScope.Continental, new[] { Child(Top(world, 2, 2)) }, 1));
-            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, AnyScope, FeatureScope.Continental, new[] { Top(world, 2, 2), Top(world, 2, 2) }, 1));
+            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, Big, new WorldBlock[0], 1));
+            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, Big, new[] { Child(Top(world, 2, 2)) }, 1));
+            Assert.Throws<ArgumentException>(() => new GeographicFeature(world, Big, new[] { Top(world, 2, 2), Top(world, 2, 2) }, 1));
         }
 
         [Fact]
         public void SpineMustLieInTheFootprint()
         {
             World world = NewWorld();
-            var feature = new GeographicFeature(world, Line, FeatureScope.Continental, Square(world, 3, 3, 2), 1);
+            var feature = new GeographicFeature(world, Line, Square(world, 3, 3, 2), 1);
             Assert.Throws<ArgumentException>(() => feature.SetSpine(new[] { Top(world, 9, 9) }));
             feature.SetSpine(new[] { Top(world, 3, 3), Top(world, 4, 4) });
             Assert.Equal(2, feature.Spine.Count);
         }
 
         [Fact]
-        public void ChildrenMustBeOfAFinerScopeAndHaveOneParent()
+        public void ChildrenMustBeOfAPartTypeAndHaveOneParent()
         {
             World world = NewWorld();
-            var big = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 3, 3, 2), 1);
-            var other = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 8, 8, 1), 2);
-            var small = new GeographicFeature(world, AnyScope, FeatureScope.Regional, new[] { Child(Top(world, 3, 3)) }, 3);
+            var big = new GeographicFeature(world, Big, Square(world, 3, 3, 2), 1);
+            var other = new GeographicFeature(world, Big, Square(world, 8, 8, 1), 2);
+            var small = new GeographicFeature(world, Small, new[] { Child(Top(world, 3, 3)) }, 3);
 
             Assert.Throws<ArgumentException>(() => big.AddChild(other));
+            var line = new GeographicFeature(world, Line, Square(world, 3, 3, 2), 4);
+            Assert.Throws<ArgumentException>(() => line.AddChild(small));   // not a part of that type
             big.AddChild(small);
             Assert.Same(big, small.Parent);
             Assert.Contains(small, big.Children);
@@ -168,7 +237,7 @@ namespace LoreGen.Tests.Features
         {
             World world = NewWorld(), otherWorld = NewWorld(6);
             int before = world.Features.Count;
-            var feature = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 3, 3, 1), 1);
+            var feature = new GeographicFeature(world, Big, Square(world, 3, 3, 1), 1);
             world.AddFeature(feature);
             Assert.Equal(before + 1, world.Features.Count);
             Assert.Throws<ArgumentException>(() => world.AddFeature(feature));
@@ -182,7 +251,7 @@ namespace LoreGen.Tests.Features
             Assert.Equal(GeographicFeature.SeedFor(7, Line, Top(world, 3, 4)), GeographicFeature.SeedFor(7, Line, Top(world, 3, 4)));
             Assert.NotEqual(GeographicFeature.SeedFor(7, Line, Top(world, 3, 4)), GeographicFeature.SeedFor(7, Line, Top(world, 4, 3)));
             Assert.NotEqual(GeographicFeature.SeedFor(7, Line, Top(world, 3, 4)), GeographicFeature.SeedFor(8, Line, Top(world, 3, 4)));
-            Assert.NotEqual(GeographicFeature.SeedFor(7, Line, Top(world, 3, 4)), GeographicFeature.SeedFor(7, AnyScope, Top(world, 3, 4)));
+            Assert.NotEqual(GeographicFeature.SeedFor(7, Line, Top(world, 3, 4)), GeographicFeature.SeedFor(7, Big, Top(world, 3, 4)));
         }
 
         // ---- Footprints and refinement --------------------------------------------------------
@@ -191,7 +260,7 @@ namespace LoreGen.Tests.Features
         public void FinerBlocksInheritMembershipByDefault()
         {
             World world = NewWorld();
-            var feature = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 5, 5, 3), 1);
+            var feature = new GeographicFeature(world, Big, Square(world, 5, 5, 3), 1);
 
             Assert.True(feature.Contains(Child(Top(world, 6, 6))));   // interior
             Assert.True(feature.Contains(Child(Top(world, 5, 5))));   // edge
@@ -205,7 +274,7 @@ namespace LoreGen.Tests.Features
         {
             World world = NewWorld();
             var refiner = new RecordingRefiner();
-            var feature = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 5, 5, 3), 1) { Refiner = refiner };
+            var feature = new GeographicFeature(world, Big, Square(world, 5, 5, 3), 1) { Refiner = refiner };
 
             WorldBlock interior = Child(Top(world, 6, 6)), edge = Child(Top(world, 5, 6)), beside = Child(Top(world, 4, 6)), far = Child(Top(world, 1, 1));
 
@@ -230,7 +299,7 @@ namespace LoreGen.Tests.Features
         {
             World world = NewWorld();
             WorldBlock parent = Top(world, 3, 3);
-            var feature = new GeographicFeature(world, AnyScope, FeatureScope.Regional, new[] { Child(parent, 2, 2) }, 1);
+            var feature = new GeographicFeature(world, Small, new[] { Child(parent, 2, 2) }, 1);
             Assert.True(feature.Contains(parent));
             Assert.False(feature.Contains(Top(world, 4, 3)));
         }
@@ -239,7 +308,7 @@ namespace LoreGen.Tests.Features
         public void FootprintsCanBeInSeveralPieces()
         {
             World world = NewWorld();
-            var feature = new GeographicFeature(world, AnyScope, FeatureScope.Continental,
+            var feature = new GeographicFeature(world, Big,
                 new[] { Top(world, 1, 1), Top(world, 2, 2), Top(world, 5, 5), Top(world, 4, 1) }, 1);
             var pieces = feature.Footprint.Pieces();
             Assert.Equal(3, pieces.Count);
@@ -252,7 +321,7 @@ namespace LoreGen.Tests.Features
         public void EdgeIsTheMemberBlocksWithAnOutsideNeighbour()
         {
             World world = NewWorld();
-            var feature = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 5, 5, 3), 1);
+            var feature = new GeographicFeature(world, Big, Square(world, 5, 5, 3), 1);
             Assert.Equal(8, feature.Footprint.Edge().Count);
             Assert.DoesNotContain(Top(world, 6, 6), feature.Footprint.Edge());
             Assert.True(feature.Footprint.IsBeside(Top(world, 4, 5)));
@@ -266,9 +335,9 @@ namespace LoreGen.Tests.Features
         {
             World world = NewWorld();
             var existing = world.Features.ToList();
-            var a = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 5, 5, 3), 1);
-            var b = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 6, 6, 3), 2);
-            var c = new GeographicFeature(world, AnyScope, FeatureScope.Regional, new[] { Child(Top(world, 6, 6), 1, 1) }, 3);
+            var a = new GeographicFeature(world, Big, Square(world, 5, 5, 3), 1);
+            var b = new GeographicFeature(world, Big, Square(world, 6, 6, 3), 2);
+            var c = new GeographicFeature(world, Small, new[] { Child(Top(world, 6, 6), 1, 1) }, 3);
             world.AddFeature(a);
             world.AddFeature(b);
             world.AddFeature(c);
@@ -288,7 +357,7 @@ namespace LoreGen.Tests.Features
         {
             World world = NewWorld();
             var existing = world.Features.ToList();
-            var feature = new GeographicFeature(world, AnyScope, FeatureScope.Continental, Square(world, 5, 5, 3), 1)
+            var feature = new GeographicFeature(world, Big, Square(world, 5, 5, 3), 1)
             {
                 Refiner = new RecordingRefiner { Answer = true }
             };

@@ -43,7 +43,7 @@ dotnet test
   general, continents, regions, biomes, terrains and geographic features (plus elevation, climate and tectonic plates,
   for generators that model them). "High detail" shows the finer coastline, border and feature-edge blocks.
 - **World info**: The seed, the oceans, the geographic features, the tectonic plates (if any), and a table of regions
-  (biome, language, size) for each continent.
+  (biome, language, size) for each continent. **Generation log** shows how long each step of the last generation took.
 - **Language generator**: Generate a random language, inspect its rules, and produce sample names and words.
 - **Raw data**: The climate, terrain and biome data the simulation loaded.
 
@@ -51,8 +51,10 @@ dotnet test
   (the classic generator has none). Changed options are highlighted, each has a reset button, and **Reset all** clears
   them. They apply the next time you press Generate or New world, and World info lists the ones a world was made with.
 
-Enter a seed and press **Generate** to recreate a world, or press **New world** for a random one. If a world fails
-to generate, the app shows an error and keeps the previous world.
+The app starts on the tectonic generator. Enter a seed and press **Generate** to recreate a world, or press **New world**
+for a random one. While a world generates, a progress card over the map shows each step as it runs and how long the
+finished ones took, and **Cancel** stops after the current step. If a world fails to generate or is cancelled, the app
+keeps the previous world (and shows an error if it failed).
 
 ## Using the library
 
@@ -68,6 +70,21 @@ foreach (var continent in engine.World.Continents)
 var language = engine.Language.GetRandomLanguage();
 Console.WriteLine(language.GetName(NameKind.Region));   // e.g. "Aldermere" or "the Ashen Fens"
 ```
+
+To show progress, generate one step at a time instead. This gives the same world as `GenerateWorld()`:
+
+```csharp
+WorldGeneration generation = engine.BeginWorldGeneration();   // bad settings are rejected here
+while (!generation.IsComplete)
+{
+    Console.WriteLine($"{generation.Fraction:P0} {generation.NextStep}");   // e.g. "41% Fine terrain (1 of 4)"
+    generation.RunNextStep();
+}
+// engine.World is set once the last step has run; generation.Durations says how long each step took
+```
+
+To cancel, stop calling `RunNextStep`: `engine.World` keeps the previous world. The steps run on the caller's thread, so a
+single-threaded user interface (such as the Blazor WebAssembly app) can redraw between them.
 
 `SimEngine` is the entry point. It owns the random number generator, the loaded data (`SimData`), and the generated
 `World`. A world is a tree of `WorldBlock`s (a coarse grid whose blocks can hold finer sub-grids) that carry a
@@ -114,7 +131,7 @@ The interface's documentation is the contract: what a world must contain, and th
 
 | Id | Name | |
 | --- | --- | --- |
-| `legacy` | Classic | The original algorithm, described above. The default. |
+| `legacy` | Classic | The original algorithm, described above. The library's default (the Worldbuilder app starts on `tectonic`). |
 | `noise` | Noise | Land comes from an elevation map of fractal noise. See below. |
 | `tectonic` | Tectonic | Land comes from drifting plates: continents ride on them, and mountains form where they meet. See below. |
 
@@ -131,24 +148,47 @@ The interface's documentation is the contract: what a world must contain, and th
 5. Climate is worked out for every block. Temperature is warmest at the equator (the middle of the map), falls toward
    the poles and with altitude, and varies a little at random. Moisture blends broad random patterns, nearness to
    water and a latitude pattern (wet equator, dry subtropics, wetter mid-latitudes, dry poles), is reduced where it is
-   cold, and is stretched so every world spans the full range from arid to tropical.
-6. Each continent is divided into connected regions that follow its geography. Region centres are spread apart, then each
-   region spreads outward in a race where every step has a cost: steps are expensive across slopes, onto high ground and
-   across changes of temperature or moisture, so regions fill valleys and plains first and meet at ridges and climate
-   transitions rather than along arbitrary lines. Regions left very small are merged into a neighbour. A region's biome is the existing biome that best fits its average
-   temperature, its average moisture and how rugged its terrain is, so polar land gets Polar Desert and Glacier, hot
-   wet lowlands get Jungle Bog and Rainforest, and dry mid-latitudes get Steppe and Dunes. Each region also gets a
-   language, and terrain drawn from its biome's usual mix, tilted so higher ground favours steeper terrain (Cliffs and
-   Peaks) and lower ground favours Flats and Marsh.
-7. Blocks that can contain a coastline (those with both land and water somewhere in the 3x3 blocks around them) get a
+   cold and in the rain shadow of high ground (winds blow from the east in the tropics and near the poles, from the
+   west in the mid-latitudes), and is stretched so every world spans the full range from arid to tropical.
+   Hydrology then runs the rain off the land: every land block drains to a neighbour, found by flooding the land up
+   from the sea, so water always escapes through the lowest gap in a hollow's rim. Hollows collect what runs into them:
+   well fed, they hold a lake that overflows and drains on; less well fed, a salt lake with no outflow; poorly fed,
+   nothing. Where enough water gathers, it forms a large river, which winds (fractally) through fixed points from its
+   source to the sea, the basin it ends in, or a larger river it joins.
+6. Every land block's terrain is chosen from everything known about it
+   ([`TerrainModel`](LoreGen/WorldGen/Generators/TerrainModel.cs)). Each terrain (a climate such as Grassy or
+   Sandy-Savannah, and a terrain type such as Hills or Marsh) is scored on how near the block's temperature and moisture
+   are to the climate's ideal (`ClimateTypes.csv`), and how near the terrain type's relief, wetness and tree cover
+   (`TerrainTypes.csv`) are to targets: relief from the block's height, wetness from how much water it holds (its rain,
+   plus what rivers and lakes bring) on flat ground, and trees from how wet and warm it is, thinning out above the tree
+   line. The features on it and its plate boundary push the targets (`TerrainInfluences.csv`): mountain ranges and
+   colliding plates are rugged, peaks bare rock, ergs dunes, salt flats dead level, oases and river banks wet. The block
+   takes the landscape (broad kind of climate, ruggedness and tree cover) whose terrains fit it best, evened out so a
+   lone block doesn't differ from all those around it, then one of that landscape's terrains, drawn at random from smooth
+   noise so terrain comes in patches rather than speckles.
+7. Each continent is divided into connected regions defined by its terrain and features
+   ([`RegionPartitioner`](LoreGen/WorldGen/Generators/RegionPartitioner.cs)). It is first split into zones, connected
+   stretches of one landscape under one set of features (inside a mountain range, a desert, both or neither). Each zone big
+   enough gets region centres by its size, the first at its heart, and regions spread outward in a race where every step
+   has a cost: stepping into a different landscape or across a feature's edge is expensive, as are steps across slopes,
+   onto high ground and across changes of climate. So regions fill their own zone and meet where the landscape changes,
+   at feature edges, ridges and climate transitions. Regions left very small are merged into a neighbour. A region's
+   biome is the existing biome that best fits its average temperature and moisture, how rugged it is and the terrain in
+   it, so polar land gets Polar Desert and Glacier, hot wet lowlands get Jungle Bog and Rainforest, and dry mid-latitudes
+   get Steppe and Dunes. Each region also gets a language.
+8. Blocks that can contain a coastline (those with both land and water somewhere in the 3x3 blocks around them) get a
    10x10 grid of sub-blocks. Their shape comes from the same elevation, smoothly interpolated and then given fractal
    wiggle that fades away from the coast, so coastlines wind finely and carry on unbroken across block boundaries.
    Detail only reshapes existing coasts: fine land must connect to coarse land and fine water to coarse water, specks of
    land smaller than a dozen sub-blocks are dropped, and land of different continents never touches.
    Blocks on region borders get sub-blocks too, so borders wind: each sub-block goes to the region of the nearest land
    block after its position is nudged by smooth noise, and a final pass keeps every region in one piece (apart from
-   small offshore islets). Interior land and open ocean stay as single blocks.
-8. Every block, at every level, records its `Elevation` (0 at sea level, up to 1 on the highest land, down to -1 in the
+   small offshore islets). Once the parts of features are found and every land sub-block has its own terrain (chosen as
+   in step 6), the borders through sub-blocks are drawn again by the same kind of race at fine detail, so they follow
+   the fine terrain, a desert's winding edge, the foot of a range or a river
+   ([`RegionBorderRefiner`](LoreGen/WorldGen/Generators/RegionBorderRefiner.cs)). Blocks along rivers and around lakes get sub-blocks too, and each lake is carved into the
+   fine land of its hollow, filling it from the bottom up. Interior land and open ocean stay as single blocks.
+9. Every block, at every level, records its `Elevation` (0 at sea level, up to 1 on the highest land, down to -1 in the
    deepest water), `Temperature` and `Moisture` (both 0 to 1). The map shows them under "Colour by", and a block's details
    list them.
 
@@ -176,18 +216,26 @@ features) is shared with the noise generator through
 
 Mountain ranges therefore run along plate boundaries, mostly near coasts, rather than sitting in the middle of round
 landmasses. The plates are kept on the world (`World.Plates`, each block's `Status.Plate`) and shown by the Plates map
-view. Plate settings are in `TectonicGeneratorRules.csv`; the shared settings are those of `NoiseGeneratorRules.csv`,
+view. Plate boundaries also shape the terrain on them: where plates push together it is young and rugged, and
+where they pull apart it breaks into scarps (`TerrainInfluences.csv`). Plate settings are in `TectonicGeneratorRules.csv`; the shared settings are those of `NoiseGeneratorRules.csv`,
 apart from the noise generator's own land-shaping ones, which this generator rejects.
 
 #### Geographic features
 
 Generators that model elevation and climate also find named geographic features
 ([`GeographicFeature`](LoreGen/Features/GeographicFeature.cs)): mountain ranges in high ground, deserts in dry warm
-land, and, within each range, its main crests as smaller named ranges. A feature has a type (from `FeatureTypes.csv`),
-one scope (the block depth its shape is defined at: Continental, Regional, Local or Minor), and a footprint of blocks at
-that depth, which may be in several pieces (a range broken by passes). Blocks may belong to several features. Below its
+land, and their parts, found in the fine detail. Within each range: its main crests, as subranges (long crests) and
+massifs (compact knots of peaks), and its peaks and passes (the most prominent summits, and the deepest saddles between
+them, found by topographic prominence). Within each desert: ergs (sand seas), salt flats (the floors of closed basins)
+and oases (small, deep hollows). Water: lakes and salt lakes, large rivers (drawn at the second level of blocks, and
+narrowing to their true width of a few km at finer levels), and the oceans and seas themselves, with their bays (water
+that land wraps around) and straits (narrow water joining two wider stretches). A feature's type (from `FeatureTypes.csv`) fixes its scope, the size it comes in (the block depth its shape is defined at:
+Continental, Regional, Local or Minor), so a feature of a different size is a different type; a type can be a part of a
+larger one, or of any of several (subranges, massifs, peaks and passes are parts of mountain ranges; ergs, salt flats
+and oases of deserts; bays and straits of an ocean or a sea). A feature has a footprint of blocks at its depth, which
+may be in several pieces (a range broken by passes). Blocks may belong to several features. Below its
 own depth a feature's edge is shaped by an `IFeatureRefiner` (fractal noise for deserts, the fine elevation's contours
-for ranges), which depends only on position, so the same seed gives the same shapes whatever order the world is
+for ranges, the fine coastline for oceans and seas, and a river's winding centre line for rivers), which depends only on position, so the same seed gives the same shapes whatever order the world is
 explored in. Look features up with `World.FeaturesAt(block)`. Region borders follow feature edges.
 
 **Choosing one.** Set `engine.Configuration.GeneratorId`, or `generatormode=<id>` in `loregen.config`. Ids are
@@ -236,7 +284,10 @@ engine.Configuration.GeneratorId = "mine";
 ```
 
 Optionally, implement `GetOptions` to describe settings (it defaults to none), read them from
-`engine.Configuration.GeneratorSettings`, and reject any you do not recognise. To ship a generator with LoreGen, add it to `WorldGeneratorRegistry.CreateDefault()`. That automatically puts it through
+`engine.Configuration.GeneratorSettings`, and reject any you do not recognise. To report progress in detail, also implement
+`Plan`: return a `WorldBuildPlan` of named steps (`plan.Add("Climate", () => ..., weight)`, where the weight is roughly
+how long the step takes compared with the others) and a `Result`, and make `Generate` return `Plan(engine).RunAll()`.
+Without it, a generator runs as a single step. To ship a generator with LoreGen, add it to `WorldGeneratorRegistry.CreateDefault()`. That automatically puts it through
 the contract tests in `GeneratorContractTests`. Generators keep their own settings in their own keyed rules file
 (`engine.SimData.LoadRules("MyGeneratorRules.csv")`) so they never need to change the shared ones. If a generator throws,
 `engine.World` keeps the previous world.
@@ -254,10 +305,14 @@ the contract tests in `GeneratorContractTests`. Generators keep their own settin
 | | Coast ruggedness | How rugged fine coastlines are |
 | Climate | Global temperature | Ice age to hothouse |
 | | Altitude chill, Cold dryness | How much colder high ground is, and how much drier cold places are |
-| Regions and terrain | Regions (target) | About how many regions (random by default; very small ones are merged) |
-| | Terrain-following borders | How strongly region borders stick to steep ground |
-| | Winding region borders | Sub-blocks on region borders (off for a lighter world) |
-| | Terrain follows height | How strongly high ground favours steep terrain |
+| Regions and terrain | Terrain follows height | How strongly high ground favours steep terrain |
+| | Wetlands, Forests | How much water ground must hold to turn to marsh, and for trees to grow |
+| | Terrain patch size | How wide patches of one terrain are (0 for a speckled look) |
+| | Regions (target) | About how many regions (random by default; very small ones are merged) |
+| | Terrain-defined regions | How strongly regions keep to one landscape |
+| | Slope-following borders | How strongly region borders stick to steep ground |
+| | Feature-following borders | How strongly regions keep to one set of features |
+| | Winding region borders | Sub-blocks on region borders, where borders wind and follow the fine terrain (off for a lighter world) |
 
 ## Tests
 
@@ -272,15 +327,22 @@ the contract tests in `GeneratorContractTests`. Generators keep their own settin
 - the noise generator's climate: warmer at the equator, colder at altitude by the lapse rate, wetter near water, drier
   where it is cold, biomes that fit their region's climate (polar land gets cold biomes, the tropics warm ones, deserts are
   drier than forests), and steeper terrain on higher ground
-- the noise generator's regions: borders fall on steeper ground and at climate changes more than inside regions, centres
-  are spread out, no region is tiny, each region is connected, and winding borders never cut a region into pieces
+- terrain: each factor does what it should (height, climate, wetness, trees, plate boundaries), features shape the terrain
+  on them (peaks, ergs, salt flats, oases, river banks), river and lake water wets the ground, terrain comes in patches,
+  biomes fit the terrain in their region, and bad `TerrainInfluences.csv` rows are rejected
+- the noise generator's regions: borders fall where the landscape changes, on steeper ground and at climate changes more
+  than inside regions (at fine detail too), centres are spread out, no region is tiny, the number stays near the target,
+  each region is connected, and winding borders never cut a region into pieces
 - the noise generator's fine coastlines: detail only near coasts, no stray islets or lakes, land of different continents
   never touching, exact coastline status at every resolution, and no seams at block boundaries
 - generator options: descriptors that match the rules file, settings that do what they say (land share, number of regions,
   global temperature, detail switches), rejection of unknown and out-of-range settings, settings recorded on the world,
   `setting.` lines in the config file, and every option of every generator staying safe across its whole range
 - every registered generator meets the generator contract (see World generators): well-formed worlds, the same seed
-  gives the same world, independence from other engines, and reusability
+  gives the same world, independence from other engines, and reusability, and generating step by step gives the same world
+  and leaves the old one in place until the last step
+- step-by-step generation: the stages each generator reports, timings, progress weighted by step, a single step for
+  generators without a plan, bad settings rejected before any work, and no continuing after a failed step
 - the default generator is `legacy`, unknown ids are reported, and a failed generation keeps the previous world
 
 ## Data files
@@ -296,10 +358,11 @@ copies.)
 | `WorldRules.csv` | World size, number of continents and regions, seas, erosion |
 | `LanguageRules.csv` | How languages are generated and how much regional languages drift |
 | `TerrainRules.csv` | How terrain weights combine |
-| `ClimateTypes.csv`, `Climates.csv` | Climate definitions |
-| `TerrainTypes.csv`, `Terrains.csv` | Terrain definitions |
+| `ClimateTypes.csv`, `Climates.csv` | Climate definitions, and the temperature and moisture each climate type is typical of |
+| `TerrainTypes.csv`, `Terrains.csv` | Terrain definitions, and each terrain type's relief, wetness and tree cover |
+| `TerrainInfluences.csv` | How features and plate boundaries change the terrain on them |
 | `Biomes.txt`, `BiomePatterns.csv` | Biomes and which climates and terrains they contain |
-| `NoiseGeneratorRules.csv` | Settings for the noise generator: land share, noise detail, coastline winding, island size, coastal detail, climate, biome matching, terrain relief, how regions are shaped |
+| `NoiseGeneratorRules.csv` | Settings for the noise generator: land share, noise detail, coastline winding, island size, coastal detail, climate, biome matching, terrain choice, how regions are shaped |
 | `EdgePatterns.csv` | Hand-drawn coastline and border shapes |
 | `LetterSounds.txt`, `PhoneticInventories.csv` | The sounds and spellings languages are built from |
 

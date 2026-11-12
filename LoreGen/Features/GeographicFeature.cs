@@ -12,9 +12,9 @@ namespace LoreGen.Features
     /// <summary>
     /// A named piece of geography: a mountain range, a great desert, a lake, a volcano.
     ///
-    /// A feature has a type, exactly one scope (the block depth its shape is defined at), and a footprint of blocks at
-    /// that depth. Blocks may belong to any number of features: a desert can lie on a plateau, and a range can cross
-    /// region borders. Features can nest: a range can hold peaks, a sea bays.
+    /// A feature has a type, which fixes its scope (its size: the block depth its shape is defined at), and a footprint
+    /// of blocks at that depth. Blocks may belong to any number of features: a desert can lie on a plateau, and a range
+    /// can cross region borders. Features nest by type: a mountain range holds subranges and massifs.
     ///
     /// Features are found by world generators and added with <see cref="World.AddFeature"/>; look them up by block with
     /// <see cref="World.FeaturesAt"/>.
@@ -26,8 +26,8 @@ namespace LoreGen.Features
 
         public FeatureType Type { get; }
 
-        /// <summary>How big the feature is, which is also the depth its footprint is defined at.</summary>
-        public FeatureScope Scope { get; }
+        /// <summary>How big the feature is (set by its type), which is also the depth its footprint is defined at.</summary>
+        public FeatureScope Scope { get { return Type.Scope; } }
 
         /// <summary>The block depth of the footprint.</summary>
         public int Depth { get { return Scope.Depth(); } }
@@ -64,25 +64,21 @@ namespace LoreGen.Features
         /// Creates a feature. It is not part of the world until passed to <see cref="World.AddFeature"/>.
         /// </summary>
         /// <param name="world">The world it is in</param>
-        /// <param name="type">Its type</param>
-        /// <param name="scope">Its scope: one of the type's scopes</param>
-        /// <param name="blocks">Its footprint: blocks at the scope's depth</param>
+        /// <param name="type">Its type, which sets its scope</param>
+        /// <param name="blocks">Its footprint: blocks at the depth of the type's scope</param>
         /// <param name="seed">Its seed (see <see cref="SeedFor"/>)</param>
-        /// <exception cref="ArgumentException">The type does not allow the scope, or the blocks are not a valid footprint</exception>
-        public GeographicFeature(World world, FeatureType type, FeatureScope scope, IEnumerable<WorldBlock> blocks, int seed)
+        /// <exception cref="ArgumentException">The blocks are not a valid footprint</exception>
+        public GeographicFeature(World world, FeatureType type, IEnumerable<WorldBlock> blocks, int seed)
         {
             if (world == null) throw new ArgumentNullException("world");
             if (type == null) throw new ArgumentNullException("type");
-            if (!type.Scopes.Contains(scope))
-                throw new ArgumentException(type.Name + " features cannot have " + scope + " scope.", "scope");
 
             World = world;
             WorldEntityType = WorldEntityType.GeographicFeature;
             Type = type;
-            Scope = scope;
             Seed = seed;
             Name = string.Empty;
-            Footprint = new FeatureFootprint(blocks, scope.Depth()) { Feature = this };
+            Footprint = new FeatureFootprint(blocks, type.Scope.Depth()) { Feature = this };
 
             Rnd colour = new Rnd(seed);
             DisplayInfo = new WorldEntityDisplayInfo
@@ -107,12 +103,14 @@ namespace LoreGen.Features
         /// <summary>
         /// Makes a smaller feature part of this one.
         /// </summary>
-        /// <exception cref="ArgumentException">The child is not of a finer scope, is in another world, or already has a parent</exception>
+        /// <exception cref="ArgumentException">The child's type is not a part of this feature's type, it is in another
+        /// world, or it already has a parent</exception>
         public void AddChild(GeographicFeature child)
         {
             if (child == null) throw new ArgumentNullException("child");
             if (child.World != World) throw new ArgumentException("A feature's parts must be in the same world.", "child");
-            if (child.Scope <= Scope) throw new ArgumentException("A feature's parts must be of a finer scope than it.", "child");
+            if (!child.Type.IsPartOf(Type))
+                throw new ArgumentException(child.Type.Name + " features cannot be part of " + Type.Name.ToLowerInvariant() + " features.", "child");
             if (child.Parent != null) throw new ArgumentException("That feature is already part of " + child.Parent.Name + ".", "child");
             child.Parent = this;
             children.Add(child);

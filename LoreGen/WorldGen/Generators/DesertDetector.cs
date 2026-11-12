@@ -56,7 +56,7 @@ namespace LoreGen.WorldGen.Generators
 
                 Continent continent = group[0].Status.Continent;
                 int seed = GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]);
-                GeographicFeature desert = new GeographicFeature(world, type, FeatureScope.Continental, group, seed)
+                GeographicFeature desert = new GeographicFeature(world, type, group, seed)
                 {
                     Refiner = new NoiseEdgeRefiner(seed, rules.FeatureEdgeStrength, rules.FeatureEdgeFrequency)
                 };

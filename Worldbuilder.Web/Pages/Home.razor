@@ -38,8 +38,8 @@
             </select>
         </label>
         <label>Seed <input type="number" @bind="seedInput" @bind:event="oninput" /></label>
-        <button type="submit" class="btn" disabled="@busy">Generate</button>
-        <button type="button" class="btn primary" disabled="@busy" @onclick="GenerateRandom">@(busy ? "Generating…" : "New world")</button>
+        <button type="submit" class="btn" disabled="@Busy">Generate</button>
+        <button type="button" class="btn primary" disabled="@Busy" @onclick="GenerateRandom">@(Busy ? "Generating…" : "New world")</button>
     </form>
 
     <details class="options-panel card">
@@ -59,12 +59,20 @@
         }
     </nav>
 
-    <div class="tab-body">
-        @switch (worldTab)
+    <div class="tab-body world-body">
+        @if (Session.HasWorld)
         {
-            case "map": <MapTab /> break;
-            case "info": <InfoTab /> break;
+            <div class="@(Busy ? "world-view dimmed" : "world-view")" inert="@Busy">
+                @switch (worldTab)
+                {
+                    case "map": <MapTab /> break;
+                    case "info": <InfoTab /> break;
+                }
+            </div>
         }
+        <div class="@(Session.HasWorld ? "progress-overlay" : "progress-inline")">
+            <GenerationProgress />
+        </div>
     </div>
 }
 else if (section == "languages")
@@ -103,8 +111,9 @@ else
     private string generatorInput;
     private Dictionary<string, double> settingsInput = new();
     private LanguageStyle languageStyleInput;
-    private bool busy;
     private string error;
+
+    private bool Busy => Session.IsGenerating;
 
     protected override void OnInitialized()
     {
@@ -113,7 +122,16 @@ else
         settingsInput = new Dictionary<string, double>(Session.Settings);
         languageStyleInput = Session.LanguageStyle;
         Session.Changed += OnChanged;
+        Session.Progressed += OnProgressed;
+        if (!Session.HasWorld && !Session.IsGenerating)
+        {
+            // The first world, with progress shown
+            seedInput = Random.Shared.Next(1, 1_000_000);
+            _ = GenerateFromSeed();
+        }
     }
+
+    private void OnProgressed() => InvokeAsync(StateHasChanged);
 
     // Options belong to a generator, so switching generator starts them afresh
     private void OnGeneratorChanged(ChangeEventArgs e)
@@ -131,25 +149,27 @@ else
         InvokeAsync(StateHasChanged);
     }
 
-    private Task GenerateFromSeed() => Run(() => Session.Generate(seedInput, generatorInput, settingsInput, languageStyleInput));
-    private Task GenerateRandom() => Run(() => Session.GenerateRandom(generatorInput, settingsInput, languageStyleInput));
+    private Task GenerateFromSeed() => Run(() => Session.GenerateAsync(seedInput, generatorInput, settingsInput, languageStyleInput));
+    private Task GenerateRandom() => Run(() => Session.GenerateRandomAsync(generatorInput, settingsInput, languageStyleInput));
 
-    private async Task Run(Action generate)
+    private async Task Run(Func<Task<bool>> generate)
     {
-        busy = true;
-        StateHasChanged();
-        await Task.Delay(30); // let the UI paint the busy state before the (synchronous) generation
+        if (Busy) return;
         try
         {
-            generate();
+            await generate();
             error = null;
         }
         catch (Exception ex)
         {
             error = $"World generation failed: {ex.Message} " + (settingsInput.Count > 0 ? "Try different options or another seed." : "Try another seed.");
         }
-        busy = false;
+        StateHasChanged();
     }
 
-    public void Dispose() => Session.Changed -= OnChanged;
+    public void Dispose()
+    {
+        Session.Changed -= OnChanged;
+        Session.Progressed -= OnProgressed;
+    }
 }

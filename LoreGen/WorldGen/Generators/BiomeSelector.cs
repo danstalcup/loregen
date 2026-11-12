@@ -25,10 +25,11 @@ namespace LoreGen.WorldGen.Generators
         }
 
         /// <summary>
-        /// The closest biome by weighted distance in (temperature, precipitation, contour) steps. If several are equally
-        /// close, one is picked at random.
+        /// The closest biome by weighted distance in (temperature, precipitation, contour) steps, less BiomeTerrainWeight
+        /// times how well the biome fits the terrain (0 to 1, if given). If several are equally close, one is picked at random.
         /// </summary>
-        public static Biome Choose(IList<Biome> biomes, BiomeTemperature temperature, BiomePrecipitation precipitation, BiomeContour contour, NoiseGeneratorRules rules, Rnd rnd)
+        public static Biome Choose(IList<Biome> biomes, BiomeTemperature temperature, BiomePrecipitation precipitation, BiomeContour contour, NoiseGeneratorRules rules, Rnd rnd,
+            Func<Biome, double> terrainFit = null)
         {
             if (biomes == null || biomes.Count == 0) throw new InvalidOperationException("There are no biomes to choose from.");
 
@@ -38,7 +39,8 @@ namespace LoreGen.WorldGen.Generators
             {
                 double distance = rules.BiomeTemperatureWeight * Math.Abs((int)temperature - (int)biome.Temperature)
                                 + rules.BiomePrecipitationWeight * Math.Abs((int)precipitation - (int)biome.Precipitation)
-                                + rules.BiomeContourWeight * Math.Abs((int)contour - (int)biome.Contour);
+                                + rules.BiomeContourWeight * Math.Abs((int)contour - (int)biome.Contour)
+                                - (terrainFit != null ? rules.BiomeTerrainWeight * terrainFit(biome) : 0.0);
                 if (distance < best - 1e-9)
                 {
                     best = distance;

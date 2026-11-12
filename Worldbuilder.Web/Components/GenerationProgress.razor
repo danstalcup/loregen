@@ -1,0 +1,59 @@
+@using Worldbuilder.Web.Services
+@implements IDisposable
+@inject WorldSession Session
+
+@if (Session.Run is { } run && run.IsRunning)
+{
+    <section class="progress-card card" role="status" aria-live="polite" aria-label="World generation progress">
+        <div class="progress-head">
+            <div>
+                <h3>Generating world</h3>
+                <span class="muted">Seed @run.Seed &middot; @run.GeneratorName &middot; @Seconds(run.Elapsed)</span>
+            </div>
+            <button type="button" class="btn" @onclick="Session.CancelGeneration">Cancel</button>
+        </div>
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="@run.StepCount" aria-valuenow="@run.CompletedSteps"
+             aria-valuetext="@($"Step {Math.Min(run.CompletedSteps + 1, run.StepCount)} of {run.StepCount}: {run.CurrentStep}")">
+            <div class="progress-fill" style="width: @Percent(run.Fraction)"></div>
+        </div>
+        <p class="progress-now">
+            @if (run.CurrentStep != null)
+            {
+                <span>Step @(run.CompletedSteps + 1) of @run.StepCount: <strong>@run.CurrentStep</strong>&hellip;</span>
+            }
+            else
+            {
+                <span>Finishing&hellip;</span>
+            }
+        </p>
+        <ol class="step-list">
+            @for (int i = 0; i < run.StepCount; i++)
+            {
+                var state = i < run.CompletedSteps ? "done" : i == run.CompletedSteps ? "now" : "todo";
+                <li class="@state">
+                    <span class="step-mark" aria-hidden="true">@(state == "done" ? "✓" : state == "now" ? "●" : "○")</span>
+                    <span class="step-name">@run.StepNames[i]</span>
+                    @if (state == "done")
+                    {
+                        <span class="step-time">@Millis(run.Durations[i])</span>
+                    }
+                </li>
+            }
+        </ol>
+    </section>
+}
+
+@code {
+    protected override void OnInitialized() => Session.Progressed += OnProgressed;
+
+    private void OnProgressed() => InvokeAsync(StateHasChanged);
+
+    public static string Millis(TimeSpan t) => t.TotalMilliseconds < 1 ? "<1 ms" : $"{t.TotalMilliseconds:0} ms";
+
+    private static string Seconds(TimeSpan t) => $"{t.TotalSeconds:0.0} s";
+
+    private static string Percent(double fraction) =>
+        (fraction * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%";
+
+    public void Dispose() => Session.Progressed -= OnProgressed;
+}

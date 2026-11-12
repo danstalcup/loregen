@@ -35,6 +35,27 @@
     </section>
 </div>
 
+@if (Session.LastCompletedRun is { } log)
+{
+    <details class="card generation-log">
+        <summary>Generation log <span class="muted">&mdash; @log.StepCount steps, @GenerationProgress.Millis(log.WorkTime) of work, @($"{log.Elapsed.TotalSeconds:0.0}") s in all</span></summary>
+        <table>
+            <thead><tr><th>Step</th><th class="num">Time</th><th class="num">Share</th></tr></thead>
+            <tbody>
+                @for (int i = 0; i < log.StepCount; i++)
+                {
+                    <tr>
+                        <td>@log.StepNames[i]</td>
+                        <td class="num">@GenerationProgress.Millis(log.Durations[i])</td>
+                        <td class="num">@Share(log.Durations[i], log.WorkTime)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="hint">The difference between the work and the total is time spent redrawing the page between steps.</p>
+    </details>
+}
+
 @if (world.Features.Count > 0)
 {
     <section class="card">
@@ -124,6 +145,9 @@
 
     private string GeneratorName =>
         Session.Generators.FirstOrDefault(g => g.Id == Session.Engine.World.GeneratorId)?.DisplayName ?? Session.Engine.World.GeneratorId;
+
+    private static string Share(TimeSpan part, TimeSpan whole) =>
+        whole.Ticks == 0 ? "" : $"{100.0 * part.Ticks / whole.Ticks:0}%";
 
     private static int LandBlocks(Continent c) =>
         c.ContinentArea.BlocksList.Count(b => b.Status.WaterStatus == WorldBlockWaterStatus.Land || b.Status.WaterStatus == WorldBlockWaterStatus.Coastline);

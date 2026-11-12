@@ -42,6 +42,18 @@ BiomeTemperatureWeight,3,How much matching temperature matters when choosing a r
 BiomePrecipitationWeight,1.5,How much matching moisture matters when choosing a region's biome
 BiomeContourWeight,1,How much matching terrain roughness matters when choosing a region's biome
 TerrainReliefStrength,0.6,How strongly high ground favours steep terrain such as peaks (0 is not at all)
+TerrainClimateSpread,0.12,How far a place's temperature and moisture can be from a climate's ideal (ClimateTypes.csv) and still often get it (lower keeps terrain truer to the local climate)
+TerrainPatchSize,4,About how wide patches of one terrain are (in top-level blocks): neighbouring places draw their terrain alike within a patch (0 draws each place independently)
+TerrainSmoothing,0.75,How readily a top-level block takes the landscape (broad climate, ruggedness and tree cover) of most of the blocks around it: it does if that landscape fits it at least (1 - this) as well as its own (0 never; 1 whenever most neighbours share one)
+TerrainWetStrength,4,How strongly wet ground favours wet terrain such as marshes (0 is not at all)
+TerrainTreeStrength,4,How strongly wet and warm ground favours wooded terrain (0 is not at all)
+WetlandFrom,0.7,How much water flat ground must hold (moisture plus river and lake water) before it starts to turn to marsh
+TreeMoistureFrom,0.3,How much water ground must hold for trees to start growing
+TreeMoistureFull,0.7,How much water ground must hold to be fully wooded
+TreeTemperatureFrom,0.15,Temperature below which no trees grow (they thin out over the 0.15 above it)
+TreeLineRelief,3.5,Terrain relief (0 flat to 4 peaks) above which no trees grow (they thin out over the step below it)
+RiverHydration,0.25,How much wetter ground is where a large river's worth of water flows through it
+LakeHydration,0.3,How much wetter ground is in the hollow of a lake and beside its shore
 ElevationPerRelief,0.25,How much elevation is a step up in terrain relief (lower is steeper terrain sooner)
 RegionSeedCandidates,8,How hard region centres try to be far apart (candidates tried for each; 1 is purely random)
 RegionSlopeWeight,10,How hard it is for a region to spread up or down a slope (higher keeps borders on steep ground)
@@ -52,6 +64,9 @@ RegionBorderDetail,1,Whether blocks on region borders get a finer grid of sub-bl
 RegionBorderWarp,0.2,How far region borders can wander from straight (in blocks)
 RegionBorderFrequency,1.2,How often region borders wander (higher is more wiggles)
 RegionMinBlocks,3,Smallest region kept (in blocks); smaller ones are merged into the neighbour they share the most border with (1 keeps all)
+RegionTerrainWeight,4,How hard it is for a region to spread from one kind of landscape to another (climate, ruggedness and cover of its terrain), and so how closely regions follow the terrain
+RegionZoneMinBlocks,4,Smallest stretch of one landscape and set of features (in blocks) that gets a region of its own; smaller stretches join a neighbouring region
+BiomeTerrainWeight,4,How strongly a region's biome is chosen to fit the terrain in it rather than only its average climate
 RegionFeatureWeight,3,How hard it is for a region to spread into or out of a geographic feature such as a mountain range (higher makes region borders follow feature edges)
 MountainRanges,1,Whether high ground is gathered into named mountain ranges (1 = yes and 0 = no)
 MountainElevationFrom,0.6,How high land must be to count as part of a mountain range (share of the height of the highest point)
@@ -64,10 +79,45 @@ FeatureEdgeFrequency,2,How often a feature's edge wiggles (per block; higher is 
 MountainRelief,0.3,How much ridged relief is added to the fine elevation of high ground (0 is smooth; the source of a range's crests)
 MountainReliefFrequency,1.5,How closely packed the crests of high ground are (per block; higher is more crests)
 Deserts,1,Whether dry warm land is gathered into named deserts (1 = yes and 0 = no)
-DesertMoistureTo,0.15,How dry land must be to count as desert (moisture; 0 is the driest land in the world)
+DesertMoistureTo,0.2,How dry land must be to count as desert (moisture; 0 is the driest land in the world)
 DesertTemperatureFrom,0.35,How warm land must be to count as desert (temperature; colder dry land is tundra or ice)
 DesertMinBlocks,3,Smallest desert kept (in blocks)
-SubRanges,1,Whether the main crests of each mountain range are found and named as smaller ranges within it (1 = yes and 0 = no; needs FeatureDetail)
+SubRanges,1,Whether the main crests of each mountain range are found and named as subranges and massifs within it (1 = yes and 0 = no; needs FeatureDetail)
 SubRangeShare,0.2,Share of the sub-blocks in each mountain range block (the highest there) that count as crest
-SubRangeMinBlocks,8,Smallest crest kept as a sub-range (in sub-blocks)
-SubRangesPerRange,3,Most sub-ranges named within one mountain range (the largest are kept)
+SubRangeMinBlocks,8,Smallest crest kept as a subrange or massif (in sub-blocks)
+SubRangesPerRange,3,Most subranges and massifs named within one mountain range (the largest are kept)
+SubrangeElongationFrom,3.5,How long a crest must be for its size to be a subrange rather than a massif (spine length squared over size: a compact knot is about 1 and a line of n sub-blocks is n)
+PeaksPerRange,3,Most peaks named in one mountain range (the highest summits that stand clear by PeakProminenceFrom; 0 = none; needs FeatureDetail)
+PassesPerRange,2,Most passes named in one mountain range (the deepest saddles between two summits that both stand clear by PeakProminenceFrom; 0 = none; needs FeatureDetail)
+PeakProminenceFrom,0.04,How far a summit must rise above the lowest ground joining it to any higher summit to count as a peak (elevation)
+DesertParts,1,Whether ergs (sand seas) and salt flats and oases are found within deserts (1 = yes and 0 = no; needs FeatureDetail)
+DesertRelief,0.04,Height of the gentle rises and hollows given to desert ground at fine detail (elevation; 0 is smooth)
+DesertReliefFrequency,2,How closely desert rises and hollows are spaced (per block)
+BasinDepthFrom,0.004,How deep a hollow with no outlet must be for its floor to count as a basin (elevation)
+SaltFlatMinBlocks,8,Smallest basin floor that is a salt flat (in sub-blocks; smaller deep hollows can be oases)
+SaltFlatsPerDesert,2,Most salt flats named in one desert (the largest are kept)
+OasesPerDesert,3,Most oases named in one desert (the deepest small hollows are kept)
+ErgShare,0.3,Share of a desert's ground (outside salt flats) that is sand sea
+ErgMinBlocks,12,Smallest sand sea kept as an erg (in sub-blocks)
+ErgsPerDesert,2,Most ergs named in one desert (the largest are kept)
+RainShadow,1,How much drier land in the lee of high ground is (0 = no rain shadow; 1 = a block below a barrier as high as the highest land gets none of its usual moisture)
+RainShadowReach,6,How far upwind (in blocks) high ground casts a rain shadow
+Hydrology,1,Whether water is run off the land into lakes and rivers (1 = yes and 0 = no)
+RunoffEvaporation,0.6,How much warmth cuts the water that runs off the land (0 = rain all runs off; 1 = the hottest land loses all of it)
+LakeDepthFrom,0.002,How deep a hollow in the land (with no outlet lower than its rim) must be to hold a lake (elevation)
+LakeEvaporation,0.6,How much water a lake loses to the air for each block of its basin: a basin fed less than this holds a smaller lake with no outflow (a salt lake)
+LakeAreaShare,0.2,Share of its hollow's area a lake fed to overflowing covers (less in proportion when it is fed less)
+LakeMinFill,0.15,Least share of a basin's evaporation its inflow must make up for it to hold a lake at all
+LakeMinBlocks,3,Smallest lake kept (in sub-blocks)
+RiverFlowFrom,1,How much water (the runoff of this many well-watered blocks) a river must carry to be named as a large river
+RiverMinBlocks,3,Shortest large river kept (in blocks)
+RiverMeander,0.22,How much rivers wind between the points they must pass (0 is straight)
+RiverWidth,1.5,How wide (in km) a large river is where it first carries RiverFlowFrom of water; it widens downstream
+WaterFeatures,1,Whether oceans and seas are geographic features with bays and straits found in them (1 = yes and 0 = no)
+BayEnclosure,5,How many of the eight directions from open water must meet land within BayReach for it to count as part of a bay
+BayReach,6,How far (in sub-blocks) to look for land around water when finding bays
+BayMinBlocks,8,Smallest bay kept (in sub-blocks)
+BaysPerBody,4,Most bays named in one ocean or sea (the largest are kept)
+StraitMaxWidth,3,Widest water (in sub-blocks between land on opposite sides) that counts as a strait
+StraitMinBlocks,3,Smallest strait kept (in sub-blocks)
+StraitsPerBody,3,Most straits named in one ocean or sea (the longest are kept)

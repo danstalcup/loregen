@@ -278,7 +278,12 @@ namespace LoreGen.Lang
                 case NameKind.Continent: return "LandEnding";
                 case NameKind.Region: return "RegionEnding";
                 case NameKind.Sea:
-                case NameKind.Ocean: return "WaterEnding";
+                case NameKind.Ocean:
+                case NameKind.Bay:
+                case NameKind.Strait:
+                case NameKind.Lake:
+                case NameKind.SaltLake:
+                case NameKind.River: return "WaterEnding";
             }
             return "Ending";
         }

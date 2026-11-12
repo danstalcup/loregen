@@ -9,29 +9,37 @@ using LoreGen.Simulation;
 namespace LoreGen.WorldGen.Generators
 {
     /// <summary>
-    /// Finds the regional ranges within each continental mountain range: its main crests, in the fine elevation of the
-    /// range's sub-blocks (see CoastalDetail, which gives high ground ridged relief).
+    /// Finds the parts of each continental mountain range: its main crests, in the fine elevation of the range's
+    /// sub-blocks (see CoastalDetail, which gives high ground ridged relief). Each crest is a Regional feature of one of
+    /// two types, by its shape: a Subrange if it is long for its size (a chain of peaks, with a spine), or a Massif if it
+    /// is compact (a knot of peaks).
     ///
     /// Crest is ranked locally: within each of the range's blocks, the highest <see cref="NoiseGeneratorRules.SubRangeShare"/>
     /// of its land sub-blocks (never any below the range's own height threshold). Ranking per block rather than across the
     /// whole range takes out the broad rise toward the range's summit, leaving the ridge lines of the relief, so crests come
     /// out long and narrow rather than as one blob around the highest point. Crest sub-blocks that touch form one
     /// sub-range; those smaller than <see cref="NoiseGeneratorRules.SubRangeMinBlocks"/> are left out, and only the largest
-    /// <see cref="NoiseGeneratorRules.SubRangesPerRange"/> are kept. Each becomes a Regional mountain range that is part of
-    /// (a child of) its continental range, named in the language of the region it lies in.
+    /// <see cref="NoiseGeneratorRules.SubRangesPerRange"/> are kept. A crest is a subrange when the square of its spine's
+    /// length over its size reaches <see cref="NoiseGeneratorRules.SubrangeElongationFrom"/> (a compact knot is about 1, a
+    /// line of n sub-blocks n), and a massif otherwise. Each is part of (a child of) its range, and is named in the
+    /// language of the region it lies in.
     ///
     /// Runs after the sub-blocks exist. Uses no random numbers except for naming.
     /// </summary>
     internal static class SubRangeDetector
     {
+        public const string SubrangeTypeId = "Subrange";
+        public const string MassifTypeId = "Massif";
+
         public static List<GeographicFeature> Detect(SimEngine engine, World world, NoiseGeneratorRules rules)
         {
             List<GeographicFeature> found = new List<GeographicFeature>();
             if (rules.SubRanges == 0) return found;
 
-            FeatureType type = engine.SimData.FeatureType(MountainRangeDetector.TypeId);
-            List<GeographicFeature> ranges = world.Features
-                .Where(f => f.Type == type && f.Scope == FeatureScope.Continental).ToList();
+            FeatureType rangeType = engine.SimData.FeatureType(MountainRangeDetector.TypeId);
+            FeatureType subrangeType = engine.SimData.FeatureType(SubrangeTypeId);
+            FeatureType massifType = engine.SimData.FeatureType(MassifTypeId);
+            List<GeographicFeature> ranges = world.Features.Where(f => f.Type == rangeType).ToList();
 
             foreach (GeographicFeature range in ranges)
             {
@@ -64,10 +72,13 @@ namespace LoreGen.WorldGen.Generators
 
                 foreach (List<WorldBlock> group in groups.Where(kept.Contains))
                 {
+                    List<WorldBlock> spine = FeatureGeometry.Spine(group, 1);
+                    double elongation = (double)spine.Count * spine.Count / group.Count;
+                    FeatureType type = elongation >= rules.SubrangeElongationFrom ? subrangeType : massifType;
+
                     // Blocks below the sub-blocks copy their parent's elevation, so the default refiner (no finer detail) is exact
-                    GeographicFeature sub = new GeographicFeature(world, type, FeatureScope.Regional, group,
-                        GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]));
-                    sub.SetSpine(FeatureGeometry.Spine(group, 1));
+                    GeographicFeature sub = new GeographicFeature(world, type, group, GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]));
+                    if (type.Shape == FeatureShape.Linear) sub.SetSpine(spine);
 
                     WorldBlockStatus first = group[0].Status;
                     ILanguage language = first.Region?.Language ?? first.Continent.RootLanguage;

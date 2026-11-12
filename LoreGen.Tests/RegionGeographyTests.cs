@@ -44,7 +44,7 @@ namespace LoreGen.Tests
 
         public static readonly (string, string)[] PlainSpreading =
         {
-            ("RegionSlopeWeight", "0"), ("RegionHeightWeight", "0"), ("RegionClimateWeight", "0"), ("RegionFeatureWeight", "0"), ("RegionJitter", "0")
+            ("RegionSlopeWeight", "0"), ("RegionHeightWeight", "0"), ("RegionClimateWeight", "0"), ("RegionFeatureWeight", "0"), ("RegionTerrainWeight", "0"), ("RegionJitter", "0")
         };
     }
 

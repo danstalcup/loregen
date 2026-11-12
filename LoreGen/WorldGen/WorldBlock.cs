@@ -541,6 +541,11 @@ namespace LoreGen.WorldGen
         public TectonicPlate Plate;
 
         /// <summary>
+        /// For lake water (water that belongs to no ocean or sea), the lake it is part of; otherwise null.
+        /// </summary>
+        public Features.GeographicFeature Lake;
+
+        /// <summary>
         /// Returns a copy of this status
         /// </summary>
         /// <returns>Copy of this status</returns>
@@ -558,6 +563,7 @@ namespace LoreGen.WorldGen
                 Temperature = this.Temperature,
                 Moisture = this.Moisture,
                 Plate = this.Plate,
+                Lake = this.Lake,
                 RegionBoundariesHaveBeenSmoothed = false
             };
         }        
