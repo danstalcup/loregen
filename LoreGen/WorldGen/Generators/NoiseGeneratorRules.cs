@@ -31,6 +31,7 @@ namespace LoreGen.WorldGen.Generators
         public int MinSeaBlocks;
         public int CoastDetail;
         public double DetailStrength;
+        public double CoastWarp;
         public double DetailRange;
         public double DetailFrequency;
         public int DetailOctaves;
@@ -132,6 +133,21 @@ namespace LoreGen.WorldGen.Generators
         public double RegionTerrainWeight;
         public int RegionZoneMinBlocks;
         public double BiomeTerrainWeight;
+        public double ZoomCoastWiggle;
+        public double ZoomRelief;
+        public double ZoomBorderWarp;
+        public double ZoomTerrainKeep;
+        public int SubregionBlocks;
+        public int VolcanoesPerRange;
+        public int PeninsulaMinBlocks;
+        public double GlacialFeatures;
+        public double IceSheetTemperature;
+        public int IceSheetMinBlocks;
+        public double GlacierTemperature;
+        public double FjordTemperature;
+        public double CaveChance;
+        public double CraterChance;
+        public int SubregionsMax;
 
         public const string Filename = "NoiseGeneratorRules.csv";
 
@@ -168,6 +184,7 @@ namespace LoreGen.WorldGen.Generators
             rules.MinSeaBlocks = r.I("MinSeaBlocks");
             rules.CoastDetail = r.I("CoastDetail");
             rules.DetailStrength = r.D("DetailStrength");
+            rules.CoastWarp = r.D("CoastWarp");
             rules.DetailRange = r.D("DetailRange");
             rules.DetailFrequency = r.D("DetailFrequency");
             rules.DetailOctaves = r.I("DetailOctaves");
@@ -269,6 +286,21 @@ namespace LoreGen.WorldGen.Generators
             rules.RegionTerrainWeight = r.D("RegionTerrainWeight");
             rules.RegionZoneMinBlocks = r.I("RegionZoneMinBlocks");
             rules.BiomeTerrainWeight = r.D("BiomeTerrainWeight");
+            rules.ZoomCoastWiggle = r.D("ZoomCoastWiggle");
+            rules.ZoomRelief = r.D("ZoomRelief");
+            rules.ZoomBorderWarp = r.D("ZoomBorderWarp");
+            rules.ZoomTerrainKeep = r.D("ZoomTerrainKeep");
+            rules.SubregionBlocks = r.I("SubregionBlocks");
+            rules.VolcanoesPerRange = r.I("VolcanoesPerRange");
+            rules.PeninsulaMinBlocks = r.I("PeninsulaMinBlocks");
+            rules.GlacialFeatures = r.D("GlacialFeatures");
+            rules.IceSheetTemperature = r.D("IceSheetTemperature");
+            rules.IceSheetMinBlocks = r.I("IceSheetMinBlocks");
+            rules.GlacierTemperature = r.D("GlacierTemperature");
+            rules.FjordTemperature = r.D("FjordTemperature");
+            rules.CaveChance = r.D("CaveChance");
+            rules.CraterChance = r.D("CraterChance");
+            rules.SubregionsMax = r.I("SubregionsMax");
             r.Finish();
 
             Require(rules.LandFractionMin > 0 && rules.LandFractionMin <= rules.LandFractionMax && rules.LandFractionMax < 1,
@@ -287,6 +319,7 @@ namespace LoreGen.WorldGen.Generators
             Require(rules.MinLandmassBlocks >= 1 && rules.MinSeaBlocks >= 1, "MinLandmassBlocks and MinSeaBlocks must be at least 1");
             Require(rules.CoastDetail == 0 || rules.CoastDetail == 1, "CoastDetail must be 0 or 1");
             Require(rules.DetailStrength >= 0, "DetailStrength must not be negative");
+            Require(rules.CoastWarp >= 0 && rules.CoastWarp <= 1.5, "CoastWarp must be between 0 and 1.5");
             Require(rules.DetailRange > 0 && rules.DetailRange <= 1, "DetailRange must be greater than 0 and at most 1");
             Require(rules.DetailFrequency > 0, "DetailFrequency must be greater than 0");
             Require(rules.DetailOctaves >= 1 && rules.DetailOctaves <= 16, "DetailOctaves must be between 1 and 16");
@@ -383,6 +416,21 @@ namespace LoreGen.WorldGen.Generators
             Require(rules.RegionTerrainWeight >= 0, "RegionTerrainWeight must not be negative");
             Require(rules.RegionZoneMinBlocks >= 1, "RegionZoneMinBlocks must be at least 1");
             Require(rules.BiomeTerrainWeight >= 0, "BiomeTerrainWeight must not be negative");
+            Require(rules.ZoomCoastWiggle >= 0 && rules.ZoomCoastWiggle <= 1, "ZoomCoastWiggle must be between 0 and 1");
+            Require(rules.ZoomRelief >= 0 && rules.ZoomRelief <= 0.2, "ZoomRelief must be between 0 and 0.2");
+            Require(rules.ZoomBorderWarp >= 0 && rules.ZoomBorderWarp <= 0.5, "ZoomBorderWarp must be between 0 and 0.5");
+            Require(rules.ZoomTerrainKeep >= 0 && rules.ZoomTerrainKeep <= 1, "ZoomTerrainKeep must be between 0 and 1");
+            Require(rules.SubregionBlocks >= 1, "SubregionBlocks must be at least 1");
+            Require(rules.VolcanoesPerRange >= 0, "VolcanoesPerRange must not be negative");
+            Require(rules.PeninsulaMinBlocks >= 0, "PeninsulaMinBlocks must not be negative");
+            Require(rules.GlacialFeatures == 0 || rules.GlacialFeatures == 1, "GlacialFeatures must be 0 or 1");
+            Require(rules.IceSheetTemperature >= 0 && rules.IceSheetTemperature <= 1, "IceSheetTemperature must be between 0 and 1");
+            Require(rules.IceSheetMinBlocks >= 1, "IceSheetMinBlocks must be at least 1");
+            Require(rules.GlacierTemperature >= 0 && rules.GlacierTemperature <= 1, "GlacierTemperature must be between 0 and 1");
+            Require(rules.FjordTemperature >= 0 && rules.FjordTemperature <= 1, "FjordTemperature must be between 0 and 1");
+            Require(rules.CaveChance >= 0 && rules.CaveChance <= 1, "CaveChance must be between 0 and 1");
+            Require(rules.CraterChance >= 0 && rules.CraterChance <= 1, "CraterChance must be between 0 and 1");
+            Require(rules.SubregionsMax >= 1, "SubregionsMax must be at least 1");
             return rules;
         }
 

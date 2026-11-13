@@ -30,6 +30,9 @@ namespace LoreGen.WorldGen.Generators
     /// </summary>
     internal static class DesertPartDetector
     {
+        /// <summary>Radius of an oasis below its own depth, as a share of its 100 km block (about 4 km).</summary>
+        private const double OasisRadius = 0.04;
+
         public const string ErgTypeId = "Erg";
         public const string SaltFlatTypeId = "SaltFlat";
         public const string OasisTypeId = "Oasis";
@@ -67,7 +70,7 @@ namespace LoreGen.WorldGen.Generators
 
                 List<List<WorldBlock>> saltFlats = Largest(basins.Where(b => b.Count >= rules.SaltFlatMinBlocks).ToList(), rules.SaltFlatsPerDesert);
                 foreach (List<WorldBlock> flat in saltFlats)
-                    found.Add(Add(engine, world, desert, saltFlatType, flat, cells));
+                    found.Add(Add(engine, rules, world, desert, saltFlatType, flat, cells));
 
                 List<WorldBlock> oases = basins.Where(b => b.Count < rules.SaltFlatMinBlocks)
                     .Select(b => b.OrderByDescending(c => depth[c]).First()) // ties keep scan order
@@ -76,7 +79,7 @@ namespace LoreGen.WorldGen.Generators
                     .Take(rules.OasesPerDesert).OrderBy(x => x.Index).Select(x => x.Cell).ToList();
                 foreach (WorldBlock oasis in oases)
                 {
-                    GeographicFeature feature = Add(engine, world, desert, oasisType, new List<WorldBlock> { oasis }, cells);
+                    GeographicFeature feature = Add(engine, rules, world, desert, oasisType, new List<WorldBlock> { oasis }, cells);
                     feature.SetSpine(new[] { oasis });
                     found.Add(feature);
                 }
@@ -104,7 +107,7 @@ namespace LoreGen.WorldGen.Generators
                             List<WorldBlock> sandy = open.Where(c => drift[c] >= from).ToList();
                             List<List<WorldBlock>> ergs = Largest(FeatureGeometry.TouchingGroups(sandy).Where(g => g.Count >= rules.ErgMinBlocks).ToList(), rules.ErgsPerDesert);
                             foreach (List<WorldBlock> erg in ergs)
-                                found.Add(Add(engine, world, desert, ergType, erg, cells));
+                                found.Add(Add(engine, rules, world, desert, ergType, erg, cells));
                         }
                     }
                 }
@@ -175,16 +178,22 @@ namespace LoreGen.WorldGen.Generators
             return groups.Where(kept.Contains).ToList();
         }
 
-        private static GeographicFeature Add(SimEngine engine, World world, GeographicFeature desert, FeatureType type, List<WorldBlock> group, List<WorldBlock> within)
+        private static GeographicFeature Add(SimEngine engine, NoiseGeneratorRules rules, World world, GeographicFeature desert, FeatureType type, List<WorldBlock> group, List<WorldBlock> within)
         {
-            GeographicFeature feature = new GeographicFeature(world, type, group, GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]));
+            // Below the sub-blocks (when zooming in) an erg's or salt flat's edge winds, and an oasis is a small spot
+            int seed = GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]);
+            GeographicFeature feature = new GeographicFeature(world, type, group, seed)
+            {
+                Refiner = type.Shape == FeatureShape.Point ? new PointRefiner(seed, OasisRadius)
+                    : new NoiseEdgeRefiner(seed, rules.FeatureEdgeStrength, rules.FeatureEdgeFrequency)
+            };
             WorldBlockStatus first = group[0].Status;
             ILanguage language = first.Region?.Language ?? first.Continent.RootLanguage;
             feature.Name = language.GetName(new NameContext(type.NameKind)
             {
                 ParentName = desert.Name,
                 Direction = NameHints.DirectionWithin(group, within)
-            });
+            }.WithClimate(NameHints.Climate(group)));
             desert.AddChild(feature);
             world.AddFeature(feature);
             return feature;

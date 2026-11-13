@@ -20,6 +20,7 @@ MinLandmassBlocks,8,Smallest island that is kept (in blocks)
 MinSeaBlocks,4,Smallest enclosed body of water that is kept (in blocks); smaller ones are filled in
 CoastDetail,1,Whether blocks along coasts get a finer grid of sub-blocks (1 = yes and 0 = no; 0 is lighter on memory)
 DetailStrength,0.12,How much fine wiggle is added to coastlines (0 is a smooth curve)
+CoastWarp,1,How far coastlines bend away from the smooth coarse outline into bays and headlands (about twice the typical distance in blocks; 0 keeps the smooth outline)
 DetailRange,0.3,How far from the coast the wiggle reaches (share of the elevation range)
 DetailFrequency,2.5,Size of the wiggles (larger is smaller wiggles; per block)
 DetailOctaves,3,Layers of fine wiggle
@@ -121,3 +122,18 @@ BaysPerBody,4,Most bays named in one ocean or sea (the largest are kept)
 StraitMaxWidth,3,Widest water (in sub-blocks between land on opposite sides) that counts as a strait
 StraitMinBlocks,3,Smallest strait kept (in sub-blocks)
 StraitsPerBody,3,Most straits named in one ocean or sea (the longest are kept)
+ZoomCoastWiggle,0.5,How far coasts and lake shores wander inside blocks made when zooming in below the world's own detail (about twice the typical distance as a share of a block of the level above; 0 keeps them to the coarser outline)
+ZoomRelief,0.02,How much rise and fall (elevation) zooming in adds inside a 10 km block; it halves with each finer level (100 km blocks made by zooming get none, like those made with the world)
+ZoomBorderWarp,0.4,How far region borders, and the borders of the terrain carried on from the level above, wander inside blocks made when zooming in (in blocks of the level above)
+ZoomTerrainKeep,0.5,Share of the ground inside a zoomed-in block that keeps the terrain of the block above where that terrain still fits (the rest is drawn afresh)
+SubregionBlocks,30,About how many 100 km blocks of land make up one subregion (regions are divided into subregions along their landscapes when first zoomed into)
+SubregionsMax,12,Most subregions one region is divided into
+VolcanoesPerRange,2,Most volcanoes in a mountain range where ocean floor dives under a plate (tectonic worlds only; 0 = none)
+PeninsulaMinBlocks,25,Smallest peninsula named (in 100 km blocks; 0 = none)
+GlacialFeatures,1,Whether ice sheets, glaciers and fjords are found (1 = yes and 0 = no)
+IceSheetTemperature,0.12,Land this cold or colder (temperature) lies under an ice sheet, where enough of it lies together
+IceSheetMinBlocks,3,Smallest ice sheet (in top-level blocks)
+GlacierTemperature,0.22,The snowline: high ground in a mountain range this cold or colder (temperature, cooled by its own height) holds glaciers
+FjordTemperature,0.3,Narrow sea inlets on coasts this cold or colder (temperature) between high shores are fjords
+CaveChance,0.1,Chance that a 100 km block of rugged, wet mountain ground holds a cave system (found when zooming in; 0 = none)
+CraterChance,0.01,Chance that a 100 km block of land holds an impact crater (found when zooming in; 0 = none)

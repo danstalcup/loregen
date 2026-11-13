@@ -17,6 +17,58 @@ namespace LoreGen.WorldGen
     public class WorldBlock
     {
         /// <summary>
+        /// Metres in one true unit. TrueX, TrueY, TrueWidth and TrueHeight are all counted in these 100 m units.
+        /// </summary>
+        public const int MetresPerTrueUnit = 100;
+
+        /// <summary>
+        /// The smallest block, in true units: 1, a 100 m x 100 m square. Blocks are never split finer than this.
+        /// </summary>
+        public const int FinestTrueSize = 1;
+
+        /// <summary>
+        /// The depth of the finest blocks in a world of the usual layout (top-level blocks 1000 km across, each level ten
+        /// times finer): 1000 km, 100 km, 10 km, 1 km, then 100 m at depth 5.
+        /// </summary>
+        public const int FinestDepth = 5;
+
+        /// <summary>
+        /// Width of the block in metres.
+        /// </summary>
+        public long WidthInMetres { get { return (long)TrueWidth * MetresPerTrueUnit; } }
+
+        /// <summary>
+        /// Height of the block in metres.
+        /// </summary>
+        public long HeightInMetres { get { return (long)TrueHeight * MetresPerTrueUnit; } }
+
+        /// <summary>
+        /// Whether this block is as small as blocks get (<see cref="FinestTrueSize"/>), so it can have no children.
+        /// </summary>
+        public bool IsFinest { get { return TrueWidth <= FinestTrueSize || TrueHeight <= FinestTrueSize; } }
+
+        /// <summary>
+        /// Whether this block can be split into a grid of children each at least <see cref="FinestTrueSize"/> across.
+        /// </summary>
+        public bool CanSubdivide { get { return TrueWidth >= Width * FinestTrueSize && TrueHeight >= Height * FinestTrueSize && !IsFinest; } }
+
+        /// <summary>
+        /// The block's size in words, such as "1000 km", "10 km" or "100 m" (its width; blocks are square apart from the
+        /// last row and column of an uneven grid).
+        /// </summary>
+        public string ScaleName { get { return DescribeLength(WidthInMetres); } }
+
+        /// <summary>
+        /// A length in metres in words: whole kilometres as "km", anything shorter as "m".
+        /// </summary>
+        public static string DescribeLength(long metres)
+        {
+            if (metres >= 1000 && metres % 1000 == 0) return (metres / 1000) + " km";
+            if (metres >= 1000) return (metres / 1000.0).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " km";
+            return metres + " m";
+        }
+
+        /// <summary>
         /// Global X coordinate (in 100m blocks)
         /// </summary>
         public int TrueX;
@@ -211,6 +263,18 @@ namespace LoreGen.WorldGen
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Makes the grid of children, each starting as a copy of this block's status (and nothing else: no terrain is
+        /// drawn). For detailers, which then fill in each child's status.
+        /// </summary>
+        internal void CreateChildGrid()
+        {
+            ChildBlocks = new WorldBlock[Width, Height];
+            for (int i = 0; i < Width; i++)
+                for (int j = 0; j < Height; j++)
+                    ChildBlocks[i, j] = new WorldBlock(this, i, j);
         }
 
         /// <summary>
@@ -511,8 +575,21 @@ namespace LoreGen.WorldGen
         public Ocean Ocean;
         public Sea Sea;
         public Region Region;
+
+        /// <summary>
+        /// The subregion of its region this block lies in, for blocks 100 km across or smaller (see
+        /// <see cref="World.SubregionAt"/>, which works them out when first needed). Null for water, top-level blocks, and
+        /// blocks whose region has not been divided yet.
+        /// </summary>
+        public Subregion Subregion;
         public Terrain Terrain;
         public bool RegionBoundariesHaveBeenSmoothed;
+
+        /// <summary>
+        /// How much water the ground holds, for generators that model it (null for those that don't): rain plus what rivers
+        /// and lakes bring, from 0 (the driest) to 1. It decides wetlands and tree cover.
+        /// </summary>
+        public double? Hydration;
 
         /// <summary>
         /// Height of this block relative to sea level, for generators that model elevation (null for those that don't).
@@ -557,11 +634,13 @@ namespace LoreGen.WorldGen
                 Ocean = this.Ocean,
                 Sea = this.Sea,
                 Region = this.Region,
+                Subregion = this.Subregion,
                 Terrain = this.Terrain,
                 WaterStatus = this.WaterStatus,
                 Elevation = this.Elevation,
                 Temperature = this.Temperature,
                 Moisture = this.Moisture,
+                Hydration = this.Hydration,
                 Plate = this.Plate,
                 Lake = this.Lake,
                 RegionBoundariesHaveBeenSmoothed = false

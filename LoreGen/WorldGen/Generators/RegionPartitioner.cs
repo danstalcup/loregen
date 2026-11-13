@@ -97,7 +97,7 @@ namespace LoreGen.WorldGen.Generators
         /// A centre that lands on steep or high ground can be hemmed in, leaving a region of a block or two. Merges every
         /// region smaller than the minimum into the neighbour it shares the most border with, smallest first.
         /// </summary>
-        private static void MergeSmallRegions(List<List<WorldBlock>> groups, int minimum)
+        internal static void MergeSmallRegions(List<List<WorldBlock>> groups, int minimum)
         {
             while (groups.Count > 1)
             {

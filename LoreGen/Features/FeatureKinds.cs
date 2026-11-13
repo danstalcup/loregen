@@ -37,7 +37,13 @@ namespace LoreGen.Features
     /// </summary>
     public enum FeatureCategory
     {
-        Mountain, Water, Desert, Forest, Plain, Valley, Volcanic, Ice, Wetland
+        Mountain, Water, Desert, Forest, Plain, Valley, Volcanic, Ice, Wetland,
+        /// <summary>Shapes of the shore: peninsulas, beaches, cliffs.</summary>
+        Coast,
+        /// <summary>Caves and cave systems, underground.</summary>
+        Cave,
+        /// <summary>Craters left by impacts from the sky.</summary>
+        Impact
     }
 
     /// <summary>

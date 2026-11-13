@@ -145,7 +145,8 @@ namespace LoreGen.Tests
                 File.WriteAllLines(Path.Combine(folder, "TerrainTypes.csv"), new[]
                 {
                     "Flats,1,Flat", "Hills,2,Slopes", "Cliffs,3,Jagged", "Peaks,4,High", "Marsh,5,Wet",
-                    "Pond,6,Ponds", "Thickets,7,Shrubs", "Woodland,8,Trees", "Forest,9,Dense", "Wooded Slopes,10,Trees on slopes"
+                    "Pond,6,Ponds", "Thickets,7,Shrubs", "Woodland,8,Trees", "Forest,9,Dense", "Wooded Slopes,10,Trees on slopes",
+                    "Beach,11,Sand", "Lava Field,12,Rock", "Glacier,13,Ice", "Crater Floor,14,Rubble"
                 });
                 var engine = new SimEngine(1);
                 engine.SimData.DataFolder = folder;
@@ -212,17 +213,32 @@ namespace LoreGen.Tests
         }
 
         [Fact]
-        public void SubBlocksShareTheirParentsClimate()
+        public void SubBlocksBlendTheClimateAroundThem()
         {
+            // Sub-blocks have their own climate, smoothly blended between the blocks around their parent: never outside the
+            // range of those blocks, and near the parent's on average
             var world = Generate(3).World;
+            var grid = world.WorldBlock.ChildBlocks;
             var withDetail = world.WorldBlock.ChildBlocksAsList().Where(b => b.ChildBlocks != null).ToList();
             Assert.NotEmpty(withDetail);
             foreach (var block in withDetail)
-                Assert.All(block.ChildBlocksAsList(), sub =>
+            {
+                var around = new List<WorldBlock>();
+                for (int dx = -1; dx <= 1; dx++)
+                    for (int dy = -1; dy <= 1; dy++)
+                    {
+                        int x = Math.Max(0, Math.Min(grid.GetLength(0) - 1, block.X + dx)), y = Math.Max(0, Math.Min(grid.GetLength(1) - 1, block.Y + dy));
+                        around.Add(grid[x, y]);
+                    }
+                foreach (var (value, name) in new (Func<WorldBlock, double>, string)[] { (b => b.Status.Temperature.Value, "temperature"), (b => b.Status.Moisture.Value, "moisture") })
                 {
-                    Assert.Equal(block.Status.Temperature, sub.Status.Temperature);
-                    Assert.Equal(block.Status.Moisture, sub.Status.Moisture);
-                });
+                    double low = around.Min(value) - 1e-9, high = around.Max(value) + 1e-9;
+                    Assert.All(block.ChildBlocksAsList(), sub => Assert.InRange(value(sub), low, high));
+                    // Blending pulls the average toward the neighbours by at most about half the spread around
+                    double drift = Math.Abs(block.ChildBlocksAsList().Average(value) - value(block));
+                    Assert.True(drift <= 0.5 * (high - low) + 0.01, $"{name} drifts {drift:0.000} from its parent's");
+                }
+            }
         }
 
         [Fact]

@@ -9,8 +9,20 @@
     <div class="map-main">
         <div class="map-toolbar">
             <div class="breadcrumb">
-                <button class="btn" disabled="@(!Map.CanZoomOut)" @onclick="ZoomOut">&larr; Back</button>
-                <strong>@Map.Title</strong>
+                <button class="btn" disabled="@(!Map.CanZoomOut || detailing)" @onclick="ZoomOut">&larr; Back</button>
+                <div class="crumbs">
+                    <span class="trail">@string.Join(" › ", Map.Trail)</span>
+                    <strong>@Map.Title</strong>
+                </div>
+                @if (Map.Zoom == MapZoom.Block)
+                {
+                    <div class="pan" role="group" aria-label="Move to the neighbouring block">
+                        <button class="btn" title="West" aria-label="West" disabled="@(!Map.CanPan(-1, 0) || detailing)" @onclick="() => Pan(-1, 0)">&larr;</button>
+                        <button class="btn" title="North" aria-label="North" disabled="@(!Map.CanPan(0, -1) || detailing)" @onclick="() => Pan(0, -1)">&uarr;</button>
+                        <button class="btn" title="South" aria-label="South" disabled="@(!Map.CanPan(0, 1) || detailing)" @onclick="() => Pan(0, 1)">&darr;</button>
+                        <button class="btn" title="East" aria-label="East" disabled="@(!Map.CanPan(1, 0) || detailing)" @onclick="() => Pan(1, 0)">&rarr;</button>
+                    </div>
+                }
             </div>
             <div class="map-options">
                 <label>Colour by
@@ -23,12 +35,30 @@
                 </label>
                 <label class="check" title="Draw terrain tiles from the tileset image instead of colours"><input type="checkbox" checked="@Map.UseTiles" @onchange="OnTilesChanged" /> Tileset</label>
                 <label class="check"><input type="checkbox" checked="@Map.HiDef" @onchange="OnHiDefChanged" /> High detail</label>
+                @if (Map.SquaresCanHaveDetail)
+                {
+                    var missing = Map.SquaresWithoutDetail().Count;
+                    <button class="btn" disabled="@(missing == 0 || detailing)" @onclick="GenerateDetails"
+                            title="Make the finer detail inside every square of this block at once, and show it">
+                        @(missing == 0 ? "Details generated" : "Generate details")
+                    </button>
+                }
             </div>
         </div>
         <div class="canvas-wrap">
             <canvas @ref="canvas" class="map-canvas" style="@CanvasStyle"></canvas>
         </div>
-        <p class="hint">Click a square for details. Double-click to zoom into a continent, then a region.</p>
+        <p class="hint">
+            @if (detailing)
+            {
+                <span class="detailing" role="status">Adding detail&hellip;@(detailTotal > 0 ? $" {detailDone} of {detailTotal} squares" : "")</span>
+            }
+            else
+            {
+                <span>Squares are @Map.CellSize across.</span>
+            }
+            Click a square for details. Double-click to zoom into a continent, then a region, then ever smaller blocks down to 100 m.
+        </p>
     </div>
 
     <aside class="map-side">
@@ -71,6 +101,8 @@
     private DotNetObjectReference<MapTab> self;
     private bool dirty = true;
     private bool attached;
+    private bool detailing; // making the detail of a block being zoomed into, or of every square ("Generate details")
+    private int detailDone, detailTotal;
     private List<LegendEntry> legend = new();
     private (int X, int Y, int Width, int Height) bounds;
 
@@ -130,15 +162,11 @@
     {
         var block = Map.BlockAt(fx, fy);
         if (block == null) return;
-        if (doubleClick)
+        if (doubleClick && Map.CanZoomInto(block))
         {
-            var before = Map.Zoom;
-            Map.ZoomInto(block);
-            if (Map.Zoom != before)
-            {
-                Redraw();
-                return;
-            }
+            if (detailing) return;
+            await WithDetail(Map.NeedsDetail(block), () => Map.ZoomInto(block));
+            return;
         }
         Map.Select(block);
         await module.InvokeVoidAsync("setSelection", canvas, Map.SelectedRect());
@@ -150,6 +178,54 @@
         dirty = true;
         Prepare();
         StateHasChanged();
+    }
+
+    // Makes the detail of every square in the current block view, a row at a time so the page can show progress, then
+    // shows it (High detail draws each square's detail)
+    private async Task GenerateDetails()
+    {
+        var squares = Map.SquaresWithoutDetail();
+        if (squares.Count == 0 || detailing) return;
+        detailing = true;
+        detailTotal = squares.Count;
+        detailDone = 0;
+        try
+        {
+            for (int i = 0; i < squares.Count; i++)
+            {
+                if (i % 10 == 0)
+                {
+                    StateHasChanged();
+                    await Task.Delay(1);
+                }
+                Map.MakeDetail(squares[i]);
+                detailDone = i + 1;
+            }
+        }
+        finally
+        {
+            detailing = false;
+            detailTotal = 0;
+        }
+        Map.HiDef = true;
+        Redraw();
+    }
+
+    private Task Pan(int dx, int dy) => WithDetail(Map.PanNeedsDetail(dx, dy), () => Map.Pan(dx, dy));
+
+    // Runs a change of view, first showing that detail is being made if it has to be (so the page can say so before the
+    // work starts), then redraws
+    private async Task WithDetail(bool needsDetail, Action change)
+    {
+        if (needsDetail)
+        {
+            detailing = true;
+            StateHasChanged();
+            await Task.Delay(1);
+        }
+        try { change(); }
+        finally { detailing = false; }
+        Redraw();
     }
 
     private void ZoomOut()

@@ -56,7 +56,7 @@ namespace LoreGen.WorldGen.Generators
                 {
                     ParentName = continent.Name,
                     Direction = NameHints.DirectionWithin(group, continent.ContinentArea.Blocks())
-                });
+                }.WithClimate(NameHints.Climate(group)));
                 world.AddFeature(range);
                 found.Add(range);
             }

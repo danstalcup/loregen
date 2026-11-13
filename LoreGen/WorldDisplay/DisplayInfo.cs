@@ -83,6 +83,14 @@ namespace LoreGen.WorldDisplay
             int g = (int)((double)(colorA.G) * .75 + (double)(colorB.G) * .25);
             int b = (int)((double)(colorA.B) * .75 + (double)(colorB.B) * .25);
 
+            // Terrain types with a colour of their own (a beach, lava) show mostly that, tinted by the climate
+            if (Terrain.TerrainType.Color.HasValue)
+            {
+                Color own = Terrain.TerrainType.Color.Value;
+                r = (int)(own.R * 0.75 + r * 0.25);
+                g = (int)(own.G * 0.75 + g * 0.25);
+                b = (int)(own.B * 0.75 + b * 0.25);
+            }
             this.DisplayColor = Color.FromArgb(r, g, b);
         }
 

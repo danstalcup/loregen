@@ -8,3 +8,7 @@ Thickets,7,Flat terrain populated by shrubs and ferns,1,0,0.35
 Woodland,8,Mostly flat terrain with trees,1,0,0.65
 Forest,9,Mostly flat terrain very dense with trees,1,0,1
 Wooded Slopes,10,Sloped terrain with trees,2,0,0.7
+Beach,11,Sand or shingle along a flat shore,0,0.2,0,#E6D49C,Beach
+Lava Field,12,Dark volcanic rock: old lava flows and ash,3,0,0,#3D3234,Volcano|Caldera
+Glacier,13,Flowing ice and old snow,1,0,0,#E2EEF4,IceSheet|Glacier
+Crater Floor,14,Shattered rock and rubble in the bowl of a crater,1,0,0,#8A7A68,Crater

@@ -16,6 +16,28 @@ namespace LoreGen.Lang
 
         private readonly HashSet<string> used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> tags = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private int suspended;
+
+        /// <summary>
+        /// While the returned object is not disposed, <see cref="Unique"/> neither checks nor records names. For names that
+        /// must not depend on what was named before, such as those of places found while exploring.
+        /// </summary>
+        public IDisposable Suspend()
+        {
+            suspended++;
+            return new Resume(this);
+        }
+
+        private sealed class Resume : IDisposable
+        {
+            private NameRegistry registry;
+            public Resume(NameRegistry registry) { this.registry = registry; }
+            public void Dispose()
+            {
+                if (registry != null) registry.suspended--;
+                registry = null;
+            }
+        }
 
         /// <summary>
         /// How many times a tag has been used in this world.
@@ -48,6 +70,7 @@ namespace LoreGen.Lang
         /// </summary>
         public string Unique(Func<string> make)
         {
+            if (suspended > 0) return make();
             string name = make();
             for (int i = 1; i < MaxAttempts && used.Contains(name); i++)
                 name = make();

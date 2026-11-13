@@ -102,6 +102,13 @@ namespace LoreGen.WorldGen.Generators
             }
             FractalNoise dunes = new FractalNoise(new SimplexNoise(unchecked(engine.Rnd.Seed * 92821 + 4519)),
                 3, rules.DesertReliefFrequency, 2.0, 0.5);
+            // Bends coastlines into bays and headlands at every scale (see CoastShift). Seeded from the world seed rather than
+            // drawn, so the world's other random numbers are unchanged. Its spread, measured once, scales it to typical size.
+            FractalNoise coastBend = new FractalNoise(new SimplexNoise(unchecked(engine.Rnd.Seed * 39916801 + 0x4c0a57)),
+                6, 0.5, 2.0, 0.6);
+            double bendSpread = 0;
+            for (int i = 0; i < 4096; i++) { double v = coastBend.Fbm(i * 0.6180339887 * 37.0, i * 0.4142135623 * 41.0); bendSpread += v * v; }
+            bendSpread = Math.Max(1e-6, Math.Sqrt(bendSpread / 4096));
 
             for (int fx = 0; fx < fineWidth; fx++)
             {
@@ -114,6 +121,20 @@ namespace LoreGen.WorldGen.Generators
                         // Position in coarse-block units, with block centres at whole numbers
                         double px = (fx + 0.5) / n - 0.5, py = (fy + 0.5) / n - 0.5;
                         double smooth = Interpolate(elevation, px, py, width, height);
+                        if (coastal[bx, by] && rules.CoastWarp > 0)
+                        {
+                            // Height near a coast, divided by how steeply it changes, is about the distance to the shore
+                            // (in blocks). Moving that distance by noise moves the shore by a set amount whatever the
+                            // slope: bays and headlands up to about CoastWarp blocks deep. The change fades out two blocks
+                            // from the shore, so land and sea well away from it stay as they were.
+                            double gxSlope = (Interpolate(elevation, px + 0.05, py, width, height) - Interpolate(elevation, px - 0.05, py, width, height)) / 0.1;
+                            double gySlope = (Interpolate(elevation, px, py + 0.05, width, height) - Interpolate(elevation, px, py - 0.05, width, height)) / 0.1;
+                            double slope = Math.Max(1e-4, Math.Sqrt(gxSlope * gxSlope + gySlope * gySlope));
+                            double distance = smooth / slope;
+                            double fade = Math.Max(0.0, Math.Min(1.0, 2.0 - Math.Abs(distance)));
+                            double bend = Math.Max(-2.5, Math.Min(2.5, coastBend.Fbm(px + 0.5, py + 0.5) / bendSpread));
+                            smooth += rules.CoastWarp * 0.5 * bend * slope * fade;
+                        }
                         if (coastal[bx, by])
                         {
                             double window = Math.Max(0.0, 1.0 - Math.Abs(smooth) / rules.DetailRange);

@@ -29,6 +29,12 @@ namespace LoreGen.WorldGen
 
         public Biome Biome;
 
+        /// <summary>
+        /// The region's subregions, or null if they have not been worked out yet. Use <see cref="World.SubregionsOf"/>,
+        /// which works them out when first asked.
+        /// </summary>
+        public IReadOnlyList<Subregion> Subregions { get; internal set; }
+
         public ILanguage Language; // Add multiple languages per region
 
 
@@ -47,6 +53,8 @@ namespace LoreGen.WorldGen
             {
                 Biome = this.Biome,
                 ParentName = Continent.Name,
+                Temperature = NameHints.Climate(RegionArea.BlocksList).Temperature,
+                Moisture = NameHints.Climate(RegionArea.BlocksList).Moisture,
                 Direction = NameHints.DirectionWithin(RegionArea.Blocks(), Continent.ContinentArea?.Blocks() ?? Continent.ContinentBlock?.BlocksAsGrid().Cast<WorldBlock>())
             });
             foreach (WorldBlock wb in RegionArea.Blocks())

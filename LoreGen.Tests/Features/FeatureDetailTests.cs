@@ -261,7 +261,7 @@ namespace LoreGen.Tests.Features
                 NoiseGeneratorRules rules = NoiseGeneratorRules.Load(engine.SimData);
                 foreach (GeographicFeature range in Of(engine.World, MountainRangeDetector.TypeId, FeatureScope.Continental))
                 {
-                    List<GeographicFeature> crests = range.Children.Where(c => c.Type.Shape != FeatureShape.Point).ToList();
+                    List<GeographicFeature> crests = range.Children.Where(c => c.Type.Id == SubRangeDetector.SubrangeTypeId || c.Type.Id == SubRangeDetector.MassifTypeId).ToList();
                     Assert.True(crests.Count <= rules.SubRangesPerRange);
                     foreach (GeographicFeature sub in crests)
                     {

@@ -161,6 +161,13 @@ namespace LoreGen.WorldDisplay
                     //MapContext = MapContext.General;
             }
 
+            if (MapContext == MapContext.Subregions)
+            {
+                // Only subregions already worked out: colouring a map never sets off dividing regions
+                if (null != Block.Status.Subregion) return Block.Status.Subregion.DisplayInfo.DisplayColor;
+                if (null != Block.Status.Region) return Block.Status.Region.DisplayInfo.DisplayColor;
+            }
+
             if (MapContext == MapContext.Features)
             {
                 // The finest feature covering the block, or a muted land colour where there is none
@@ -207,6 +214,11 @@ namespace LoreGen.WorldDisplay
     }
     public enum MapContext
     {
-        General, Continents, Regions, Biomes, Terrains, TerrainTiles, Elevation, Temperature, Moisture, Features, Plates
+        General, Continents, Regions, Biomes, Terrains, TerrainTiles, Elevation, Temperature, Moisture, Features, Plates,
+        /// <summary>
+        /// Subregions in shades of their region's colour, where they have been worked out (see World.SubregionsOf); the
+        /// region's colour elsewhere.
+        /// </summary>
+        Subregions
     }
 }

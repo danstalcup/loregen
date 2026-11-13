@@ -344,7 +344,7 @@ namespace LoreGen.WorldGen
             Name = World.Language.GetName(new NameContext(NameKind.Ocean)
             {
                 Direction = NameHints.DirectionWithinWorld(OceanArea.Blocks(), World)
-            });
+            }.WithClimate(NameHints.Climate(OceanArea.Blocks())));
         }                
 
         public void AddBlock(WorldBlock Block)

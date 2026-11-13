@@ -96,4 +96,77 @@ namespace LoreGen.Features
             return elevation.Value >= Threshold;
         }
     }
+
+    /// <summary>
+    /// For point features such as peaks, passes and oases: below the feature's depth, the feature is a small, roughly round
+    /// spot rather than the whole coarse block it was found in. The spot's centre is the coarse block's centre nudged by up
+    /// to Offset, and its radius (a share of the coarse block's width) wobbles with angle. The block holding the centre is
+    /// always included, so the feature never disappears however far in it is drawn.
+    ///
+    /// Pure: the answer depends only on the feature's seed and footprint and the block's position.
+    /// </summary>
+    public sealed class PointRefiner : IFeatureRefiner
+    {
+        /// <summary>How far the spot's centre can be from the coarse block's centre, as a share of its width.</summary>
+        public const double Offset = 0.15;
+
+        private readonly double radius;
+        private readonly double offsetX, offsetY;
+        private readonly FractalNoise wobble;
+
+        /// <param name="seed">The feature's seed</param>
+        /// <param name="radius">Radius of the spot, as a share of the coarse block's width (above 0, at most 0.5)</param>
+        public PointRefiner(int seed, double radius)
+        {
+            if (!(radius > 0) || radius > 0.5) throw new ArgumentOutOfRangeException("radius", "The radius must be above 0 and at most 0.5.");
+            this.radius = radius;
+            Randomizer.Rnd rnd = new Randomizer.Rnd(seed);
+            offsetX = (rnd.Unweighted(0.0, 2.0) - 1) * Offset;
+            offsetY = (rnd.Unweighted(0.0, 2.0) - 1) * Offset;
+            wobble = new FractalNoise(new SimplexNoise(unchecked(seed * 31 + 7)), 2, 1.0, 2.0, 0.5);
+        }
+
+        /// <summary>Radius of the spot, as a share of the coarse block's width.</summary>
+        public double Radius { get { return radius; } }
+
+        public bool Includes(GeographicFeature feature, WorldBlock block, bool coarseMember)
+        {
+            if (!coarseMember) return false;
+            WorldBlock coarse = block.AncestorAt(feature.Depth);
+            double size = coarse.TrueWidth;
+            double cx = coarse.TrueX + size * (0.5 + offsetX), cy = coarse.TrueY + size * (0.5 + offsetY);
+            // The block holding the centre
+            if (cx >= block.TrueX && cx < block.TrueX + block.TrueWidth && cy >= block.TrueY && cy < block.TrueY + block.TrueHeight) return true;
+            double dx = (block.TrueX + block.TrueWidth / 2.0 - cx) / size, dy = (block.TrueY + block.TrueHeight / 2.0 - cy) / size;
+            double angle = Math.Atan2(dy, dx);
+            double reach = radius * (1 + 0.35 * wobble.Fbm(Math.Cos(angle) * 1.5, Math.Sin(angle) * 1.5));
+            return dx * dx + dy * dy <= reach * reach;
+        }
+    }
+
+    /// <summary>
+    /// For round features such as craters: below the feature's depth, a block is part of it when its centre lies within
+    /// the circle (or the circle's centre lies in it). Pure: depends only on the circle and the block's position.
+    /// </summary>
+    public sealed class CircleRefiner : IFeatureRefiner
+    {
+        /// <summary>The circle's centre and radius, in true units.</summary>
+        public double CentreX { get; }
+        public double CentreY { get; }
+        public double Radius { get; }
+
+        public CircleRefiner(double centreX, double centreY, double radius)
+        {
+            CentreX = centreX;
+            CentreY = centreY;
+            Radius = radius;
+        }
+
+        public bool Includes(GeographicFeature feature, WorldBlock block, bool coarseMember)
+        {
+            if (CentreX >= block.TrueX && CentreX < block.TrueX + block.TrueWidth && CentreY >= block.TrueY && CentreY < block.TrueY + block.TrueHeight) return true;
+            double dx = block.TrueX + block.TrueWidth / 2.0 - CentreX, dy = block.TrueY + block.TrueHeight / 2.0 - CentreY;
+            return dx * dx + dy * dy <= Radius * Radius;
+        }
+    }
 }

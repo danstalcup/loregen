@@ -62,6 +62,7 @@ namespace LoreGen.WorldGen.Generators
             {
                 GeneratorOption.Toggle("CoastDetail", "Fine coastlines", "Gives coastal blocks a finer grid of sub-blocks. Switch off for a lighter world.", "Coasts", usual("CoastDetail") != 0),
                 GeneratorOption.Number("DetailStrength", "Coast ruggedness", "How rugged fine coastlines are. 0 is smooth curves.", "Coasts", 0, 0.4, 0.01, usual("DetailStrength")),
+                GeneratorOption.Number("CoastWarp", "Bays and headlands", "How far coastlines bend into bays, inlets and headlands, in blocks of 1000 km. 0 keeps the smooth outline of the land.", "Coasts", 0, 1.5, 0.05, usual("CoastWarp")),
 
                 GeneratorOption.Number("TemperatureOffset", "Global temperature", "Negative is an ice age, positive a hothouse.", "Climate", -0.3, 0.3, 0.01, usual("TemperatureOffset")),
                 GeneratorOption.Number("TemperatureLapse", "Altitude chill", "How much colder high ground is.", "Climate", 0, 1, 0.05, usual("TemperatureLapse")),
@@ -88,6 +89,10 @@ namespace LoreGen.WorldGen.Generators
                 GeneratorOption.Toggle("Deserts", "Deserts", "Gathers dry, warm land into named deserts.", "Features", usual("Deserts") != 0),
                 GeneratorOption.Number("DesertMoistureTo", "Desert dryness", "How dry land must be to count as desert. Higher gives more and bigger deserts.", "Features", 0.02, 0.5, 0.01, usual("DesertMoistureTo")),
                 GeneratorOption.Toggle("DesertParts", "Ergs, salt flats and oases", "Gives desert ground gentle rises and hollows, and finds and names its sand seas (ergs), salt-crusted basins (salt flats) and oases. Needs fine feature edges.", "Features", usual("DesertParts") != 0),
+                GeneratorOption.Toggle("GlacialFeatures", "Ice sheets, glaciers and fjords", "Finds ice sheets on very cold land, glaciers on high ground above the snowline in mountain ranges, and fjords along cold, high coasts.", "Features", usual("GlacialFeatures") != 0),
+                GeneratorOption.Number("GlacierTemperature", "Snowline", "How cold high ground in a mountain range must be to hold glaciers. Higher brings glaciers further from the poles and lower down.", "Features", 0, 0.6, 0.02, usual("GlacierTemperature")),
+                GeneratorOption.Number("CaveChance", "Cave systems", "How likely rugged, wet mountain ground is to hold a cave system (found when zooming in). 0 for none.", "Features", 0, 1, 0.05, usual("CaveChance")),
+                GeneratorOption.Number("CraterChance", "Impact craters", "How likely each 100 km stretch of land is to hold an impact crater (found when zooming in). 0 for none; a few hundredths is already a well-cratered world.", "Features", 0, 0.2, 0.005, usual("CraterChance")),
                 GeneratorOption.Toggle("Hydrology", "Lakes and rivers", "Runs the rain off the land: hollows fill into lakes (salt lakes where too little water comes in), and the biggest flows become named rivers, drawn on a finer grid. Switch off for a lighter world.", "Water", usual("Hydrology") != 0),
                 GeneratorOption.Number("RiverFlowFrom", "River size", "How much water a river must carry to be named. Lower gives more, shorter rivers.", "Water", 0.3, 4, 0.1, usual("RiverFlowFrom")),
                 GeneratorOption.Number("LakeEvaporation", "Lake evaporation", "How much water lakes lose to the air. Higher gives fewer, smaller lakes and more salt lakes.", "Water", 0.1, 3, 0.1, usual("LakeEvaporation")),
@@ -233,11 +238,12 @@ namespace LoreGen.WorldGen.Generators
                         waterDetail = hydrology.DetailBlocks[x, y];
             }, 3);
 
-            plan.Add("Mountain ranges and deserts", () =>
+            plan.Add("Mountain ranges, deserts and ice sheets", () =>
             {
                 // 7. Geographic features, found in the land's shape and climate
                 MountainRangeDetector.Detect(engine, world, rules);
                 DesertDetector.Detect(engine, world, rules);
+                GlacialDetector.DetectIceSheets(engine, world, rules, land, climate.Temperature);
             }, 1);
 
             plan.Add("Terrain", () =>
@@ -259,21 +265,26 @@ namespace LoreGen.WorldGen.Generators
                     CoastalDetail.Apply(engine, world, rules, land, elevation, hydrology);
             }, 35);
 
-            plan.Add("Peaks, passes, ergs and oases", () =>
+            plan.Add("Peaks, passes, volcanoes, glaciers, ergs and oases", () =>
             {
-                // 11. Features found in the fine detail: the crests, peaks and passes of each mountain range, and the ergs,
-                // salt flats and oases of each desert
+                // 11. Features found in the fine detail: the crests, peaks and passes of each mountain range (and volcanoes,
+                // where plates make them), and the ergs, salt flats and oases of each desert
                 SubRangeDetector.Detect(engine, world, rules);
                 PeakPassDetector.Detect(engine, world, rules);
+                VolcanoDetector.Detect(engine, world, rules);
+                GlacialDetector.DetectGlaciers(engine, world, rules, elevation, climate.Temperature);
                 DesertPartDetector.Detect(engine, world, rules);
             }, 17);
 
-            plan.Add("Lakes, rivers, bays and straits", () =>
+            plan.Add("Lakes, rivers, bays, straits, peninsulas, deltas and fjords", () =>
             {
                 // 12. Water features: lakes, large rivers, and the oceans and seas with their bays and straits
                 WaterFeatureDetector.DetectLakes(engine, world, hydrology);
                 WaterFeatureDetector.DetectRivers(engine, world, rules, hydrology);
                 WaterFeatureDetector.DetectBodies(engine, world, rules);
+                // and the shapes of the coast: peninsulas, and deltas where rivers meet the sea
+                CoastFeatureDetector.Detect(engine, world, rules);
+                GlacialDetector.DetectFjords(engine, world, rules, climate.Temperature);
             }, 31);
 
             // 13. Terrain for the fine detail, now that every feature (peaks, ergs, oases, rivers, lakes) is known
@@ -288,7 +299,13 @@ namespace LoreGen.WorldGen.Generators
             // 14. Region borders at fine detail, redrawn to follow the fine terrain and feature edges
             if (rules.RegionBorderDetail != 0) plan.Add("Fine region borders", () => RegionBorderRefiner.Apply(world, rules), 30);
 
-            plan.Result = () => world;
+            // Detail below what was made here is made when someone zooms in
+            plan.Result = () =>
+            {
+                world.Detailer = new ZoomDetail(world, rules, terrain, engine.Rnd.Seed);
+                world.SubregionPlanner = new SubregionPlanner(world, rules, engine.Rnd.Seed);
+                return world;
+            };
         }
 
         // ---- Tidying --------------------------------------------------------------------------

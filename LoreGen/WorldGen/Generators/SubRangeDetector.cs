@@ -76,8 +76,12 @@ namespace LoreGen.WorldGen.Generators
                     double elongation = (double)spine.Count * spine.Count / group.Count;
                     FeatureType type = elongation >= rules.SubrangeElongationFrom ? subrangeType : massifType;
 
-                    // Blocks below the sub-blocks copy their parent's elevation, so the default refiner (no finer detail) is exact
-                    GeographicFeature sub = new GeographicFeature(world, type, group, GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]));
+                    // Below the sub-blocks (when zooming in) the edge winds rather than following block edges
+                    int seed = GeographicFeature.SeedFor(engine.Rnd.Seed, type, group[0]);
+                    GeographicFeature sub = new GeographicFeature(world, type, group, seed)
+                    {
+                        Refiner = new NoiseEdgeRefiner(seed, rules.FeatureEdgeStrength, rules.FeatureEdgeFrequency)
+                    };
                     if (type.Shape == FeatureShape.Linear) sub.SetSpine(spine);
 
                     WorldBlockStatus first = group[0].Status;
@@ -86,7 +90,7 @@ namespace LoreGen.WorldGen.Generators
                     {
                         ParentName = range.Name,
                         Direction = NameHints.DirectionWithin(group, cells)
-                    });
+                    }.WithClimate(NameHints.Climate(group)));
 
                     range.AddChild(sub);
                     world.AddFeature(sub);

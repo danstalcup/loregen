@@ -106,7 +106,7 @@
     <section class="card">
         <h3>@c.Name <span class="muted">&mdash; @LandBlocks(c) land blocks</span></h3>
         <table>
-            <thead><tr><th>Region</th><th>Biome</th><th>Language</th><th class="num">Land blocks</th><th class="num">Areas</th></tr></thead>
+            <thead><tr><th>Region</th><th>Biome</th><th>Language</th><th>Subregions</th><th class="num">Land blocks</th><th class="num">Areas</th></tr></thead>
             <tbody>
                 @foreach (var r in c.Regions)
                 {
@@ -114,6 +114,7 @@
                         <td>@r.Name</td>
                         <td>@r.Biome?.Name</td>
                         <td>@r.Language?.LanguageName</td>
+                        <td>@(r.Subregions == null ? "not yet explored" : string.Join(", ", r.Subregions.Select(x => x.Name)))</td>
                         <td class="num">@r.RegionArea.BlocksList.Count(b => b.Status.WaterStatus != WorldBlockWaterStatus.Water)</td>
                         <td class="num">@r.RegionArea.ContiguousAreas().Count</td>
                     </tr>

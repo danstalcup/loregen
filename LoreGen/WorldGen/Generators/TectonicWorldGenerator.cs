@@ -39,7 +39,7 @@ namespace LoreGen.WorldGen.Generators
             get { return "Land is shaped by drifting plates: continents ride on them, and mountain belts, island arcs and rift seas form where plates meet."; }
         }
 
-        public string Version { get { return "3"; } }
+        public string Version { get { return "11"; } }
 
         /// <summary>
         /// Settings in NoiseGeneratorRules.csv that only shape the noise generator's land, so this generator rejects them.
@@ -63,6 +63,7 @@ namespace LoreGen.WorldGen.Generators
                 GeneratorOption.Number("SubductionUplift", "Coastal mountains", "How high mountains rise where ocean floor dives under a continent.", "Land", 0, 1.5, 0.05, plates.D("SubductionUplift")),
                 GeneratorOption.Number("IslandArcUplift", "Island arcs", "How high island arcs rise where ocean floor dives under ocean floor.", "Land", 0, 1, 0.05, plates.D("IslandArcUplift")),
                 GeneratorOption.Number("RiftDepth", "Rifts", "How deep continents sink where they pull apart. Deep rifts flood into long seas.", "Land", 0, 1, 0.05, plates.D("RiftDepth")),
+                GeneratorOption.Integer("VolcanoesPerRange", "Volcanoes per range", "How many volcanoes rise in each mountain range where ocean floor dives under a plate (continental margins and island arcs). 0 for none.", "Land", 0, 6, (int)noise.D("VolcanoesPerRange")),
                 GeneratorOption.Number("TerrainNoise", "Coast and hill noise", "How much noise is added to the plate-built land. 0 gives smooth, plate-shaped continents.", "Land", 0, 0.4, 0.01, plates.D("TerrainNoise")),
             };
             options.AddRange(ElevationWorldBuilder.SharedOptions(data));

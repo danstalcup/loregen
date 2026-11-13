@@ -20,3 +20,20 @@ Erg,,1.5,2,,0,,0,-0.08,An erg is a sea of dunes.
 SaltFlat,,,0.5,,0,,0,-0.08,A salt flat is a dead-level crust of salt.
 Oasis,,,0.5,0.9,,,,,An oasis is a wet hollow where ground water comes near the surface.
 River,,,2,0.45,,0.3,,,A large river's banks are a wet valley floor, lined with trees where anything grows.
+Hills,,2,2,,0.3,,,,Hills are rolling high ground: rugged, but less so than mountains.
+Forest,,,,,,0.6,,,A forest stays wooded throughout.
+Fen,,,1,0.8,,,,,A fen is flat, wet ground.
+Gorge,,3,,,0,,,,A gorge's walls are steep and rocky.
+Knoll,,2,,,0,,,,A knoll rises above the ground around it.
+Waterfall,,2,,,,,,,Falls drop over rugged ground.
+Grove,,,,,,0.6,,,A grove is wooded.
+Clearing,,,,,,,0.1,,A clearing is open ground.
+Pond,,,0.5,0.9,,,,,A pond is standing water on flat ground.
+Delta,,,0.5,0.75,,,0.4,,A delta is flat, marshy ground.
+Volcano,,3,,,0,,0.1,,A volcano is a steep cone of bare rock and old lava.
+Caldera,,2,3,,0,,0,,A caldera is a rugged bowl of bare rock.
+Beach,,,0.5,,0.3,,0,,A beach is flat, open sand or shingle.
+Cliffs,,3,,,0,,0.3,,Cliffs drop steeply into the sea.
+IceSheet,,,,,0.1,,0,,An ice sheet is open ice and snow.
+Glacier,,1,,,0,,0,,A glacier is ice on high ground.
+Crater,,,1,,0.3,,0.3,,A crater's floor is broken, open ground.

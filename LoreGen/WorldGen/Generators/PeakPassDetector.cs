@@ -31,6 +31,9 @@ namespace LoreGen.WorldGen.Generators
         public const string PeakTypeId = "Peak";
         public const string PassTypeId = "Pass";
 
+        /// <summary>Radius of a peak or pass below its own depth, as a share of its 100 km block (about 6 km).</summary>
+        private const double SpotRadius = 0.06;
+
         public static List<GeographicFeature> Detect(SimEngine engine, World world, NoiseGeneratorRules rules)
         {
             List<GeographicFeature> found = new List<GeographicFeature>();
@@ -70,7 +73,12 @@ namespace LoreGen.WorldGen.Generators
 
         private static GeographicFeature Add(SimEngine engine, World world, GeographicFeature parent, FeatureType type, WorldBlock cell, List<WorldBlock> within)
         {
-            GeographicFeature feature = new GeographicFeature(world, type, new[] { cell }, GeographicFeature.SeedFor(engine.Rnd.Seed, type, cell));
+            // Below the sub-block (when zooming in) a peak or pass is a small spot, not the whole 100 km block
+            int seed = GeographicFeature.SeedFor(engine.Rnd.Seed, type, cell);
+            GeographicFeature feature = new GeographicFeature(world, type, new[] { cell }, seed)
+            {
+                Refiner = new PointRefiner(seed, SpotRadius)
+            };
             feature.SetSpine(new[] { cell });
             WorldBlockStatus status = cell.Status;
             ILanguage language = status.Region?.Language ?? status.Continent.RootLanguage;
@@ -78,7 +86,7 @@ namespace LoreGen.WorldGen.Generators
             {
                 ParentName = parent.Name,
                 Direction = NameHints.DirectionWithin(new[] { cell }, within)
-            });
+            }.WithClimate(NameHints.Climate(new[] { cell })));
             parent.AddChild(feature);
             world.AddFeature(feature);
             return feature;

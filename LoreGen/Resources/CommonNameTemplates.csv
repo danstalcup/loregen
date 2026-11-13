@@ -1,5 +1,5 @@
 # Name templates for CommonLanguage: Kind,Style,Weight,Template
-# Kind: Language, World, Continent, Region, Sea, Ocean, MountainRange, Desert, Subrange, Massif, Peak, Pass, Erg, SaltFlat, Oasis, Bay, Strait, Lake, SaltLake or River. Style: Proper (built from the flavour's sounds) or
+# Kind: Language, World, Continent, Region, Sea, Ocean, MountainRange, Desert, Subrange, Massif, Peak, Pass, Erg, SaltFlat, Oasis, Bay, Strait, Lake, SaltLake, River, Hills, Forest, Fen, Gorge, Headland, Cove, Isle, Knoll, Waterfall, Grove, Clearing, Pond, Subregion, Peninsula, Delta, Volcano, Beach, Cliffs, Lagoon, Caldera, IceSheet, Glacier, Fjord, CaveSystem, Cave, Crater or CraterLake. Style: Proper (built from the flavour's sounds) or
 # Descriptive (an English description, as names are "translated" in fiction). Each language mixes the two styles in its
 # own proportion; within a style a template is chosen by weight.
 #
@@ -9,6 +9,7 @@
 #   {Feature} {FeatureC}  land features suited to the biome (falls back to the "Any" list)
 #   {Dir} {DirAdj}  "North" / "Northern"; only used when the place lies clearly to one side
 #   {Parent}  the parent's name (a region's, range's or desert's continent); only used when it is a single word
+#   {Landform}  the kind of land a subregion is ("Hills", "Fens", "Weald"...)
 # A '+' joins two pieces into one word, smoothing the seam ("Valda" + "ia" = "Valdia"). Other text is copied as is.
 
 Language,Proper,6,{Root}+{LangEnding}
@@ -181,3 +182,155 @@ River,Proper,1,The {Root}+{LangEnding}
 River,Descriptive,3,The {Adj} River
 River,Descriptive,2,The {AdjC}+water
 River,Descriptive,1,The {Adj} Flood
+
+Hills,Proper,4,The {Root}+{Ending} Hills
+Hills,Proper,2,{Root}+{Ending} Downs
+Hills,Proper,1,The {Root}+{Ending} Wolds
+Hills,Descriptive,3,The {Adj} Hills
+Hills,Descriptive,1,{AdjC}+ridge
+
+Forest,Proper,4,{Root}+{Ending} Wood
+Forest,Proper,3,The {Root}+{Ending} Forest
+Forest,Proper,1,{Root}+{Ending} Weald
+Forest,Descriptive,3,The {Adj} Wood
+Forest,Descriptive,2,{AdjC}+wood
+
+Fen,Proper,4,The {Root}+{Ending} Fen
+Fen,Proper,2,{Root}+{Ending} Marsh
+Fen,Proper,1,The {Root}+{Ending} Mire
+Fen,Descriptive,3,The {Adj} Fen
+Fen,Descriptive,1,{AdjC}+mire
+
+Gorge,Proper,4,The {Root}+{Ending} Gorge
+Gorge,Proper,2,{Root}+{Ending} Gap
+Gorge,Proper,1,The {Root}+{Ending} Narrows
+Gorge,Descriptive,3,The {Adj} Gorge
+Gorge,Descriptive,1,The {Adj} Cleft
+
+Headland,Proper,4,Cape {Root}+{Ending}
+Headland,Proper,2,{Root}+{Ending} Head
+Headland,Proper,1,{Root}+{Ending} Point
+Headland,Descriptive,3,The {Adj} Head
+Headland,Descriptive,1,{AdjC}+ness
+
+Cove,Proper,4,{Root}+{WaterEnding} Cove
+Cove,Proper,2,{Root}+{Ending} Haven
+Cove,Descriptive,3,The {Adj} Cove
+Cove,Descriptive,1,{AdjC}+haven
+
+Isle,Proper,4,The Isle of {Root}+{Ending}
+Isle,Proper,2,{Root}+{Ending} Isle
+Isle,Proper,1,{Root}+{Ending} Holm
+Isle,Descriptive,3,The {Adj} Isle
+Isle,Descriptive,1,{AdjC}+holm
+
+Knoll,Proper,4,{Root}+{Ending} Knoll
+Knoll,Proper,2,{Root}+{Ending} Hill
+Knoll,Proper,1,{Root}+{Ending} Tor
+Knoll,Descriptive,3,The {Adj} Knoll
+Knoll,Descriptive,2,{AdjC}+tor
+
+Waterfall,Proper,4,{Root}+{Ending} Falls
+Waterfall,Proper,2,The {Root}+{Ending} Rapids
+Waterfall,Proper,1,{Root}+{WaterEnding} Force
+Waterfall,Descriptive,3,The {Adj} Falls
+Waterfall,Descriptive,1,{AdjC}+force
+
+Grove,Proper,4,{Root}+{Ending} Grove
+Grove,Proper,2,{Root}+{Ending} Copse
+Grove,Descriptive,3,The {Adj} Grove
+Grove,Descriptive,1,{AdjC}+holt
+
+Clearing,Proper,4,{Root}+{Ending} Glade
+Clearing,Proper,2,{Root}+{Ending} Clearing
+Clearing,Descriptive,3,The {Adj} Glade
+Clearing,Descriptive,1,{AdjC}+lea
+
+Pond,Proper,4,{Root}+{WaterEnding} Mere
+Pond,Proper,2,{Root}+{Ending} Pond
+Pond,Proper,1,{Root}+{Ending} Tarn
+Pond,Descriptive,3,The {Adj} Mere
+Pond,Descriptive,1,{AdjC}+mere
+
+# Subregions: {Landform} is the kind of land ("Hills", "Fens", "Weald"...), chosen from the land itself
+Subregion,Proper,4,The {Root}+{Ending} {Landform}
+Subregion,Proper,2,{Root}+{Ending} {Landform}
+Subregion,Descriptive,4,The {Adj} {Landform}
+Subregion,Descriptive,1,The {Landform} of {Parent}
+
+Peninsula,Proper,4,The {Root}+{Ending} Peninsula
+Peninsula,Proper,2,{Root}+{Ending} Ness
+Peninsula,Proper,1,The {Root}+{LandEnding} Horn
+Peninsula,Descriptive,3,The {Adj} Peninsula
+Peninsula,Descriptive,1,The {Adj} Arm
+
+Delta,Proper,4,The {Root}+{WaterEnding} Delta
+Delta,Proper,2,The Mouths of the {Root}+{WaterEnding}
+Delta,Descriptive,3,The {Adj} Delta
+Delta,Descriptive,1,The {Adj} Mouths
+
+Volcano,Proper,4,Mount {Root}+{Ending}
+Volcano,Proper,2,{Root}+{Ending} Fire
+Volcano,Proper,1,The {Root}+{Ending} Cone
+Volcano,Descriptive,3,The {Adj} Mountain
+Volcano,Descriptive,2,{AdjC}+fire
+Volcano,Descriptive,1,The {Adj} Forge
+
+Beach,Proper,4,{Root}+{Ending} Strand
+Beach,Proper,2,{Root}+{Ending} Sands
+Beach,Proper,1,{Root}+{WaterEnding} Shore
+Beach,Descriptive,3,The {Adj} Strand
+Beach,Descriptive,1,{AdjC}+sand
+
+Cliffs,Proper,4,The {Root}+{Ending} Cliffs
+Cliffs,Proper,2,{Root}+{Ending} Scar
+Cliffs,Descriptive,3,The {Adj} Cliffs
+Cliffs,Descriptive,1,{AdjC}+scar
+
+Lagoon,Proper,4,The {Root}+{WaterEnding} Lagoon
+Lagoon,Proper,2,{Root}+{Ending} Lagoon
+Lagoon,Descriptive,3,The {Adj} Lagoon
+Lagoon,Descriptive,1,{AdjC}+pool
+
+Caldera,Proper,4,The {Root}+{Ending} Caldera
+Caldera,Proper,2,{Root}+{Ending} Cauldron
+Caldera,Descriptive,3,The {Adj} Caldera
+Caldera,Descriptive,1,The {Adj} Cauldron
+
+IceSheet,Proper,4,The {Root}+{LandEnding} Ice
+IceSheet,Proper,2,The {Root}+{Ending} Icefield
+IceSheet,Descriptive,3,The {Adj} Ice
+IceSheet,Descriptive,1,The {Adj} Waste
+
+Glacier,Proper,4,The {Root}+{Ending} Glacier
+Glacier,Proper,2,{Root}+{Ending} Ice
+Glacier,Descriptive,3,The {Adj} Glacier
+Glacier,Descriptive,1,{AdjC}+ice
+
+Fjord,Proper,4,{Root}+{WaterEnding} Fjord
+Fjord,Proper,2,The {Root}+{Ending} Fjord
+Fjord,Proper,1,{Root}+{Ending} Sound
+Fjord,Descriptive,3,The {Adj} Fjord
+Fjord,Descriptive,1,{AdjC}+fjord
+
+CaveSystem,Proper,4,The {Root}+{Ending} Caverns
+CaveSystem,Proper,2,{Root}+{Ending} Caves
+CaveSystem,Proper,1,The Halls of {Root}+{Ending}
+CaveSystem,Descriptive,3,The {Adj} Caverns
+CaveSystem,Descriptive,1,The {Adj} Deeps
+
+Cave,Proper,4,{Root}+{Ending} Cave
+Cave,Proper,2,The {Root}+{Ending} Hole
+Cave,Proper,1,{Root}+{Ending} Grotto
+Cave,Descriptive,3,The {Adj} Cave
+Cave,Descriptive,1,{AdjC}+hole
+
+Crater,Proper,4,The {Root}+{Ending} Crater
+Crater,Proper,2,{Root}+{Ending} Bowl
+Crater,Descriptive,3,The {Adj} Crater
+Crater,Descriptive,1,The {Adj} Scar
+
+CraterLake,Proper,4,Lake {Root}+{WaterEnding}
+CraterLake,Proper,2,The {Root}+{WaterEnding} Eye
+CraterLake,Descriptive,3,The {Adj} Eye
+CraterLake,Descriptive,1,The {Adj} Lake

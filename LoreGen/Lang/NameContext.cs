@@ -47,7 +47,61 @@ namespace LoreGen.Lang
         /// <summary>A salt lake: a lake with no outflow.</summary>
         SaltLake,
         /// <summary>A large river.</summary>
-        River
+        River,
+        /// <summary>Hills: a stretch of rolling high ground about 10 km across.</summary>
+        Hills,
+        /// <summary>A forest or wood about 10 km across.</summary>
+        Forest,
+        /// <summary>A fen: a stretch of marsh about 10 km across.</summary>
+        Fen,
+        /// <summary>A gorge: where a river cuts through rugged ground.</summary>
+        Gorge,
+        /// <summary>A headland: land jutting out into the water.</summary>
+        Headland,
+        /// <summary>A cove: a small sheltered inlet of the sea.</summary>
+        Cove,
+        /// <summary>An isle: a small island.</summary>
+        Isle,
+        /// <summary>A knoll: a small hill about 1 km across.</summary>
+        Knoll,
+        /// <summary>A waterfall or rapids on a river.</summary>
+        Waterfall,
+        /// <summary>A grove: a small wood in open country.</summary>
+        Grove,
+        /// <summary>A clearing: a small open space in a forest.</summary>
+        Clearing,
+        /// <summary>A pond or mere.</summary>
+        Pond,
+        /// <summary>A subregion: a named stretch of one kind of land within a region, such as hills or woods.</summary>
+        Subregion,
+        /// <summary>A peninsula.</summary>
+        Peninsula,
+        /// <summary>A river's delta.</summary>
+        Delta,
+        /// <summary>A volcano.</summary>
+        Volcano,
+        /// <summary>A beach.</summary>
+        Beach,
+        /// <summary>Sea cliffs.</summary>
+        Cliffs,
+        /// <summary>A lagoon.</summary>
+        Lagoon,
+        /// <summary>A volcano's caldera.</summary>
+        Caldera,
+        /// <summary>An ice sheet.</summary>
+        IceSheet,
+        /// <summary>A glacier.</summary>
+        Glacier,
+        /// <summary>A fjord.</summary>
+        Fjord,
+        /// <summary>A cave system.</summary>
+        CaveSystem,
+        /// <summary>A cave.</summary>
+        Cave,
+        /// <summary>An impact crater.</summary>
+        Crater,
+        /// <summary>A lake filling a crater.</summary>
+        CraterLake
     }
 
     /// <summary>
@@ -76,6 +130,31 @@ namespace LoreGen.Lang
         /// Name of the thing's parent (a region's continent), for names such as "North Valoria".
         /// </summary>
         public string ParentName { get; init; }
+
+        /// <summary>
+        /// The word for the kind of land being named (subregions), such as "Hills", "Fens" or "Weald", for names such as
+        /// "the Ashen Hills". Templates use it as {Landform}.
+        /// </summary>
+        public string Landform { get; init; }
+
+        /// <summary>
+        /// How warm the place being named is (0 coldest to 1 hottest), if known, so names suit it: no "Burning" glacier
+        /// or "Frozen" jungle. See CommonNameKindThemes.csv.
+        /// </summary>
+        public double? Temperature { get; init; }
+
+        /// <summary>How wet the place being named is (0 driest to 1 wettest), if known.</summary>
+        public double? Moisture { get; init; }
+
+        /// <summary>A copy of this context with the place's climate added (see <see cref="Temperature"/>).</summary>
+        public NameContext WithClimate((double? Temperature, double? Moisture) climate)
+        {
+            return new NameContext(Kind)
+            {
+                Biome = Biome, Direction = Direction, ParentName = ParentName, Landform = Landform,
+                Temperature = climate.Temperature, Moisture = climate.Moisture
+            };
+        }
 
         /// <summary>
         /// A context with no hints.

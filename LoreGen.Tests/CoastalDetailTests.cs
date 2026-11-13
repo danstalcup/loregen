@@ -478,5 +478,35 @@ namespace LoreGen.Tests
             var ex = Assert.Throws<InvalidDataException>(() => Generate(1, (key, value)));
             Assert.Contains(key, ex.Message);
         }
+
+        [Fact]
+        public void CoastlinesBendIntoBaysAndHeadlands()
+        {
+            // Bending makes the coastline (at 100 km) markedly longer than the smooth outline of the land
+            int Length(double warp)
+            {
+                var engine = new SimEngine(5);
+                engine.Configuration.GeneratorId = TectonicWorldGenerator.GeneratorId;
+                engine.Configuration.GeneratorSettings["CoastWarp"] = warp;
+                engine.GenerateWorld();
+                var top = engine.World.WorldBlock.ChildBlocks;
+                int width = top.GetLength(0) * 10, height = top.GetLength(1) * 10, length = 0;
+                bool Sea(int x, int y)
+                {
+                    var t = top[x / 10, y / 10];
+                    var b = t.ChildBlocks?[x % 10, y % 10] ?? t;
+                    return b.Status.WaterStatus == WorldBlockWaterStatus.Water && b.Status.Lake == null;
+                }
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                    {
+                        if (x + 1 < width && Sea(x, y) != Sea(x + 1, y)) length++;
+                        if (y + 1 < height && Sea(x, y) != Sea(x, y + 1)) length++;
+                    }
+                return length;
+            }
+            int smooth = Length(0), bent = Length(1);
+            Assert.True(bent > 1.2 * smooth, $"coastline {bent} long when bent, {smooth} when smooth");
+        }
     }
 }

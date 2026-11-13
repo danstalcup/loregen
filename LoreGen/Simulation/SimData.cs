@@ -253,7 +253,9 @@ namespace LoreGen.Simulation
                 ReadDataLines("CommonNameFlavors.csv"),
                 ReadDataLines("CommonNameTemplates.csv"),
                 ReadDataLines("CommonNameVocabulary.csv"),
-                LoadRules("CommonLanguageRules.csv"));
+                LoadRules("CommonLanguageRules.csv"),
+                ReadDataLines("CommonNameWordTags.csv"),
+                ReadDataLines("CommonNameKindThemes.csv"));
         }
 
         /// <summary>
@@ -486,8 +488,19 @@ namespace LoreGen.Simulation
                 TerrainType terrainType = new TerrainType(ToI(line[1]), line[0], line[2], line.Length > 3 && line[3].Trim().Length > 0 ? ToI(line[3]) : TerrainType.DefaultRelief);
                 if (line.Length > 4 && line[4].Trim().Length > 0) terrainType.Wetness = ToD(line[4]);
                 if (line.Length > 5 && line[5].Trim().Length > 0) terrainType.Trees = ToD(line[5]);
+                if (line.Length > 6 && line[6].Trim().Length > 0) terrainType.Color = ParseColor(line[6].Trim(), "TerrainTypes.csv");
+                if (line.Length > 7 && line[7].Trim().Length > 0)
+                    terrainType.RequiresFeature = line[7].Split('|').Select(id => id.Trim()).Where(id => id.Length > 0).ToList();
                 TerrainTypes.Add(terrainType);
             }
+        }
+
+        // A colour written as #RRGGBB
+        private static Drawing.Color ParseColor(string text, string file)
+        {
+            if (text.Length != 7 || text[0] != '#' || !int.TryParse(text.Substring(1), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out int rgb))
+                throw new InvalidDataException(file + ": a colour must be written #RRGGBB, not '" + text + "'");
+            return Drawing.Color.FromArgb((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255);
         }
 
         /// <summary>

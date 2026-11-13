@@ -39,7 +39,14 @@ dotnet test
 
 ## Using the Worldbuilder app
 
-- **Map**: Click a block for details. Double-click a continent to zoom in, then a region. "Colour by" switches between
+- **Map**: Click a block for details. "Colour by Subregions" shows a region's subregions in shades of its colour once
+  you're in the region (or a block within it); a block's details name its subregion. Double-click a continent to zoom in, then a region, then any block, and keep
+  double-clicking to go down through 100 km, 10 km and 1 km blocks to 100 m squares. The detail inside a block is made the
+  first time it is zoomed into (the hint under the map says "Adding detail…" meanwhile), the arrow buttons move to the
+  neighbouring block of the same size, and **Back** steps out one level. The trail above the map shows where you are, and
+  the hint the size of the squares drawn. Each view is drawn at one level of detail throughout: with "High detail" the
+  world, continent and region views show all land at 100 km, and a block view shows its squares' finer detail only once
+  all of them have it (**Generate details**). "Colour by" switches between
   general, continents, regions, biomes, terrains and geographic features (plus elevation, climate and tectonic plates,
   for generators that model them). "High detail" shows the finer coastline, border and feature-edge blocks.
 - **World info**: The seed, the oceans, the geographic features, the tectonic plates (if any), and a table of regions
@@ -90,6 +97,26 @@ single-threaded user interface (such as the Blazor WebAssembly app) can redraw b
 `World`. A world is a tree of `WorldBlock`s (a coarse grid whose blocks can hold finer sub-grids) that carry a
 `Status` saying which continent, ocean, sea, region and terrain each block belongs to.
 
+**Block sizes and zooming in.** Block positions and sizes (`TrueX`, `TrueWidth` and so on) are in 100 m units
+(`WorldBlock.MetresPerTrueUnit`). Top-level blocks are 1000 km across and each level is a 10x10 grid, so the levels are
+1000 km, 100 km, 10 km, 1 km and, at `WorldBlock.FinestDepth` (5), 100 m squares (`FinestTrueSize`), which are never split.
+`block.ScaleName` gives a block's size in words, and `CanSubdivide` and `IsFinest` say whether it can go finer. A
+generated world holds only the coarse levels; finer blocks are made on demand:
+
+```csharp
+WorldBlock block = engine.World.WorldBlock.ChildBlocks[12, 7];
+engine.World.EnsureChildren(block);        // makes its 100 km blocks, if it has none yet
+WorldBlock finer = block.ChildBlocks[3, 4];
+engine.World.EnsureChildren(finer);        // and their 10 km blocks, and so on down to 100 m
+```
+
+The world's `Detailer` (an `IBlockDetailer`, set by the noise and tectonic generators) fills them in from the blocks
+around them: coasts and lake shores that keep getting more ragged, rise and fall, blended climate and ground water,
+winding region borders and their own terrain, with rivers and other features carrying on through `World.FeaturesAt`.
+It depends only on the world and a block's position, so the same seed gives the same detail whatever order blocks are
+zoomed into, and neighbouring blocks meet without seams. It never draws from `engine.Rnd`. Worlds without a detailer
+(the classic generator) fill new blocks with copies of their parent.
+
 ### How a world is built (classic generator)
 
 1. Continents are grown from random seed blocks across the world grid.
@@ -115,6 +142,12 @@ and the parent's name. A bare `NameKind` converts to a context with no hints. Lo
   still sound different. Each language also has its own mix of proper names ("Valoria") and descriptive ones ("The
   Sea of Storms", "Greymoor"), with more descriptive names for oceans and fewer for continents. Flavours, templates and
   vocabulary are all data: see `CommonName*.csv` and `CommonLanguageRules.csv` in [`LoreGen/Resources`](LoreGen/Resources).
+  Descriptive words suit what they name: words carry themes (`CommonNameWordTags.csv`: "Burning" is hot and fire,
+  "Drowned" wet), each kind of name avoids some themes and favours others (`CommonNameKindThemes.csv`: a glacier is
+  never "Burning", a volcano leans to fire and dark words, a desert avoids wet and lush ones), and where a name is given
+  the climate of the place (`NameContext.Temperature` and `Moisture`, which the world generators fill in) words that
+  clash with it are avoided too: nothing hot in the polar north, nothing wet in a desert. If every word would be ruled
+  out, any word is used.
 - **`PhoneticLanguage`**: the original generator, which builds names sound by sound from a real phonetic inventory
   and random rules. Its names sound foreign and unfamiliar.
 
@@ -162,7 +195,9 @@ The interface's documentation is the contract: what a world must contain, and th
    (`TerrainTypes.csv`) are to targets: relief from the block's height, wetness from how much water it holds (its rain,
    plus what rivers and lakes bring) on flat ground, and trees from how wet and warm it is, thinning out above the tree
    line. The features on it and its plate boundary push the targets (`TerrainInfluences.csv`): mountain ranges and
-   colliding plates are rugged, peaks bare rock, ergs dunes, salt flats dead level, oases and river banks wet. The block
+   colliding plates are rugged, peaks bare rock, ergs dunes, salt flats dead level, oases and river banks wet. Plate
+   boundaries are recorded on 1000 km blocks, so below that their push is blended between the surrounding blocks and
+   fades out raggedly across the edge of a boundary belt instead of stopping at a block's edge. The block
    takes the landscape (broad kind of climate, ruggedness and tree cover) whose terrains fit it best, evened out so a
    lone block doesn't differ from all those around it, then one of that landscape's terrains, drawn at random from smooth
    noise so terrain comes in patches rather than speckles.
@@ -177,8 +212,10 @@ The interface's documentation is the contract: what a world must contain, and th
    it, so polar land gets Polar Desert and Glacier, hot wet lowlands get Jungle Bog and Rainforest, and dry mid-latitudes
    get Steppe and Dunes. Each region also gets a language.
 8. Blocks that can contain a coastline (those with both land and water somewhere in the 3x3 blocks around them) get a
-   10x10 grid of sub-blocks. Their shape comes from the same elevation, smoothly interpolated and then given fractal
-   wiggle that fades away from the coast, so coastlines wind finely and carry on unbroken across block boundaries.
+   10x10 grid of sub-blocks. Their shape comes from the same elevation, smoothly interpolated, then bent into bays,
+   inlets and headlands (`CoastWarp`: the height near a coast divided by its slope is about the distance to the shore,
+   and fractal noise moves that distance by up to about a block, whatever the slope), then given fine fractal wiggle
+   that fades away from the coast. So coastlines wind at every scale and carry on unbroken across block boundaries.
    Detail only reshapes existing coasts: fine land must connect to coarse land and fine water to coarse water, specks of
    land smaller than a dozen sub-blocks are dropped, and land of different continents never touches.
    Blocks on region borders get sub-blocks too, so borders wind: each sub-block goes to the region of the nearest land
@@ -189,8 +226,22 @@ The interface's documentation is the contract: what a world must contain, and th
    ([`RegionBorderRefiner`](LoreGen/WorldGen/Generators/RegionBorderRefiner.cs)). Blocks along rivers and around lakes get sub-blocks too, and each lake is carved into the
    fine land of its hollow, filling it from the bottom up. Interior land and open ocean stay as single blocks.
 9. Every block, at every level, records its `Elevation` (0 at sea level, up to 1 on the highest land, down to -1 in the
-   deepest water), `Temperature` and `Moisture` (both 0 to 1). The map shows them under "Colour by", and a block's details
-   list them.
+   deepest water), `Temperature` and `Moisture` (both 0 to 1), and `Hydration` (how much water the ground holds, rain
+   plus river and lake water). Sub-blocks blend these smoothly from the blocks around them, read at a position nudged by
+   fractal noise so that where the climate crosses a threshold (trees, marsh, a kind of climate) the border wanders
+   rather than running straight along the coarser grid. The map shows them under
+   "Colour by", and a block's details list them.
+10. Zooming in below this detail makes finer blocks on demand, down to 100 m (see "Block sizes and zooming in" above,
+   and [`ZoomDetail`](LoreGen/WorldGen/Generators/ZoomDetail.cs)). Each child takes its land or water from the blocks
+   around its parent: where those are all land or all water it is the same, and otherwise the coast is blended between
+   them with fresh wiggle at each level (`ZoomCoastWiggle`), never joining two continents. Land gets rise and fall that
+   halves with each level from 10 km down (`ZoomRelief`), region borders wander (`ZoomBorderWarp`), and terrain is chosen by the terrain
+   model from the child's own height, climate, water and features. It carries on the terrain of one of the four blocks
+   around it (among those around its parent), drawn by weight (the nearer the block's centre, the likelier) with a
+   number from patchy noise: that terrain's landscape where it still fits, and the terrain itself over part of the ground
+   (`ZoomTerrainKeep`). So between blocks of different terrain the mix changes gradually, in ragged patches, across the
+   whole gap between their centres, and nothing lines up with the coarser blocks' edges. Features found on 100 km blocks get
+   winding edges below that too, and peaks, passes and oases shrink to small spots a few kilometres across.
 
 Its settings are in `NoiseGeneratorRules.csv` and can be changed per world through its options (below); world size and the
 number of continents and regions come from `WorldRules.csv`. Set `CoastDetail` to 0 for a lighter world with no sub-blocks. The noise building blocks it uses
@@ -237,6 +288,63 @@ may be in several pieces (a range broken by passes). Blocks may belong to severa
 own depth a feature's edge is shaped by an `IFeatureRefiner` (fractal noise for deserts, the fine elevation's contours
 for ranges, the fine coastline for oceans and seas, and a river's winding centre line for rivers), which depends only on position, so the same seed gives the same shapes whatever order the world is
 explored in. Look features up with `World.FeaturesAt(block)`. Region borders follow feature edges.
+
+**Coasts and volcanoes.** When the world is made, the coast's larger shapes are found
+([`CoastFeatureDetector`](LoreGen/WorldGen/Generators/CoastFeatureDetector.cs)): peninsulas (land too narrow to have a
+core of its own, reaching out from the mainland; at least `PeninsulaMinBlocks` 100 km blocks) and deltas (the low land
+around the mouths of long rivers that reach the sea, named after the river). In worlds with tectonic plates, mountain
+ranges where ocean floor dives under a plate (continental margins and island arcs) get volcanoes at their highest
+points, as parts of the range (`VolcanoesPerRange`, "Volcanoes per range" in the options;
+[`VolcanoDetector`](LoreGen/WorldGen/Generators/VolcanoDetector.cs)). Noise worlds have no volcanoes.
+
+**Ice.** With `GlacialFeatures` on ("Ice sheets, glaciers and fjords" in the options;
+[`GlacialDetector`](LoreGen/WorldGen/Generators/GlacialDetector.cs)): ice sheets cover connected very cold land
+(`IceSheetTemperature`, at least `IceSheetMinBlocks` 1000 km blocks), and below the top level their edge follows each
+block's own temperature. Glaciers (parts of mountain ranges) lie on a range's high ground above the snowline
+(`GlacierTemperature`, "Snowline": the coarse temperature cooled by how much higher a 100 km block stands than the ground
+around it), not under an ice sheet, up to three per range and at most 25 blocks each. Fjords (parts of an ocean or sea)
+are inlets too narrow to have open water of their own, reaching in from the open sea along a cold coast
+(`FjordTemperature`) with high shores. Ice sheets are found before the terrain is chosen, glaciers and fjords before the
+fine terrain, so the land under them turns to ice.
+
+**Caves and craters.** Found while zooming in, at 10 km. Cave systems (parts of mountain ranges) lie under rugged, wet
+ground in a range, in some 100 km blocks (`CaveChance`, "Cave systems" in the options); being underground they leave the
+terrain alone. Each has a couple of ways in (caves, 1 km), in two of its blocks picked by its seed. Impact craters are
+rare and stand alone (`CraterChance`, "Impact craters": the chance each 100 km block of land holds one): a round bowl 20
+to 60 km across, not under an ice sheet, floored with Crater Floor terrain. In wet country a larger crater's middle fills
+with water, a crater lake named after its crater; it keeps clear of the 100 km block's outer row, so detail already made
+beside it never disagrees with it. Where each lies is fixed by the world seed.
+
+**Terrain that belongs to features.** A terrain type can name feature types it belongs to (`RequiresFeature` in
+`TerrainTypes.csv`): Beach on beaches, Lava Field on volcanoes and calderas, Glacier on ice sheets and glaciers (in the
+colder climates only), Crater Floor in craters. Such terrain only appears where one of its
+features covers the ground, where it is strongly favoured; everywhere else terrain is chosen exactly as if it did not
+exist. These types have their own colour (`Color`), blended with the climate's. When features are found while zooming
+in, the blocks inside them choose their terrain again, so a beach shows as beach at the level it is found.
+
+**Features found while exploring.** Smaller features are found as you zoom in, among the 10x10 blocks just made
+([`FineFeatureDetector`](LoreGen/WorldGen/Generators/FineFeatureDetector.cs)). When a 100 km block's 10 km blocks are
+made: hills (rugged ground outside the mountain ranges), forests and fens (distinct woods and marshes that don't fill the
+whole block), gorges (a river through rugged country, as part of the river), headlands, coves, isles, beaches (flat,
+low, open shore) and cliffs (rugged or high shore), lagoons (sea water almost shut in by land, with a narrow mouth),
+and calderas (the collapsed summits of most volcanoes, as parts of the volcano). When a 10 km
+block's 1 km blocks are made: knolls (the highest spot around, standing clearly above it), waterfalls (steep drops of a
+river in rugged country, as part of the river), groves in open country, clearings in woods, and ponds. Each lies within
+the block it was found in (a wood running on into the next block is found there as another wood), never reaches past its
+own blocks further in, and is named in its region's language from its own seed, so the same seed finds the same features
+with the same names whatever order the world is explored in. Found features shape the terrain of the blocks made inside
+them later (a forest stays wooded, a clearing open), through `TerrainInfluences.csv`. They are added to `World.Features`
+as they are found, so copy the list before looping over it while zooming in.
+
+**Subregions.** Each region divides into named stretches of one kind of land, such as "the Ashen Hills", "Greywater
+Fens" or "the Tabsar Wastes" ([`Subregion`](LoreGen/WorldGen/Subregion.cs)): purely geographic for now, with political
+divisions to be built on top later. `World.SubregionsOf(region)` works them out the first time they are asked for (and
+`World.SubregionAt(block)` gives a block's): the region's 100 km land blocks are split the way continents are split into
+regions, along landscapes and feature edges, about one per `SubregionBlocks` blocks and at most `SubregionsMax`, with
+slivers merged into a neighbour. Each is classed as highlands, hills, woods, wetlands, frozen, drylands or plains by
+most of its land, and named for it. Finer blocks belong to the subregion of the 100 km block they carry on from, with
+winding borders. Like everything made while exploring, subregions depend only on the seed and the region. Worlds from the
+classic generator have none (`World.HasSubregions`).
 
 **Choosing one.** Set `engine.Configuration.GeneratorId`, or `generatormode=<id>` in `loregen.config`. Ids are
 case-insensitive, and an unknown id fails with a message listing the available ones. The Worldbuilder app has a
@@ -327,7 +435,8 @@ the contract tests in `GeneratorContractTests`. Generators keep their own settin
 - the noise generator's climate: warmer at the equator, colder at altitude by the lapse rate, wetter near water, drier
   where it is cold, biomes that fit their region's climate (polar land gets cold biomes, the tropics warm ones, deserts are
   drier than forests), and steeper terrain on higher ground
-- terrain: each factor does what it should (height, climate, wetness, trees, plate boundaries), features shape the terrain
+- terrain: each factor does what it should (height, climate, wetness, trees, plate boundaries, which fade out across a
+  boundary belt's edge rather than stopping at a 1000 km block's edge), features shape the terrain
   on them (peaks, ergs, salt flats, oases, river banks), river and lake water wets the ground, terrain comes in patches,
   biomes fit the terrain in their region, and bad `TerrainInfluences.csv` rows are rejected
 - the noise generator's regions: borders fall where the landscape changes, on steeper ground and at climate changes more
@@ -341,6 +450,31 @@ the contract tests in `GeneratorContractTests`. Generators keep their own settin
 - every registered generator meets the generator contract (see World generators): well-formed worlds, the same seed
   gives the same world, independence from other engines, and reusability, and generating step by step gives the same world
   and leaves the old one in place until the last step
+- zooming in: blocks are defined down to 100 m and no further, zoomed blocks are complete (land has a continent, region
+  and terrain; water belongs to an ocean, sea or lake; coastlines are exact), the order of zooming makes no difference,
+  zooming leaves the generated world (apart from filling in subregions) and its random numbers alone, neighbouring
+  blocks meet without seams, detail
+  follows the coarser map, terrain mostly carries on from the block above in patches, terrain borders don't follow
+  the coarser blocks' edges, peaks, passes and oases become small spots and other fine features get winding edges,
+  rivers carry on, interior and
+  classic-generator blocks can be zoomed into, and out-of-range zoom settings are rejected
+- features found while zooming in: 10 km and 1 km features are found, each inside the block it was found in and never
+  past it further in, parts of rivers belong to their river, found forests stay wooded further in, the same features and
+  names whatever the order of zooming, and names made from a seed are repeatable and not recorded
+- coasts and volcanoes: peninsulas reach out into the sea, deltas lie at river mouths on low land, volcanoes are parts
+  of ranges on converging boundaries and only in tectonic worlds, zooming in finds beaches, cliffs, lagoons and
+  calderas on the right ground, terrain that belongs to features never appears off them, feature types named by terrain
+  must exist, and the new terrain has its own colour
+- ice: ice sheets cover very cold land and their edges follow the temperature when zoomed in, glaciers are parts of
+  ranges and of limited size, fjords are cold inlets of an ocean or sea, glacier ice lies only on ice, glacial features
+  can be switched off, and a warmer snowline gives more glaciers
+- caves and craters: cave systems lie under rugged mountain ground with at most two caves each, leave the terrain
+  alone, craters are rare, round and on land, crater lakes are water inside their craters with coastline around them
+  and clear of the block's edge, crater floor lies only in craters, both can be switched off, and craters don't depend
+  on the order of zooming
+- subregions: every region divides into named subregions that cover its 100 km land exactly once, they follow the
+  landscape, they don't depend on the order regions are asked for, finer blocks belong to a subregion of their own
+  region, classic worlds have none, and bad subregion settings are rejected
 - step-by-step generation: the stages each generator reports, timings, progress weighted by step, a single step for
   generators without a plan, bad settings rejected before any work, and no continuing after a failed step
 - the default generator is `legacy`, unknown ids are reported, and a failed generation keeps the previous world
@@ -359,7 +493,7 @@ copies.)
 | `LanguageRules.csv` | How languages are generated and how much regional languages drift |
 | `TerrainRules.csv` | How terrain weights combine |
 | `ClimateTypes.csv`, `Climates.csv` | Climate definitions, and the temperature and moisture each climate type is typical of |
-| `TerrainTypes.csv`, `Terrains.csv` | Terrain definitions, and each terrain type's relief, wetness and tree cover |
+| `TerrainTypes.csv`, `Terrains.csv` | Terrain definitions, and each terrain type's relief, wetness and tree cover, own colour, and the features it belongs to |
 | `TerrainInfluences.csv` | How features and plate boundaries change the terrain on them |
 | `Biomes.txt`, `BiomePatterns.csv` | Biomes and which climates and terrains they contain |
 | `NoiseGeneratorRules.csv` | Settings for the noise generator: land share, noise detail, coastline winding, island size, coastal detail, climate, biome matching, terrain choice, how regions are shaped |

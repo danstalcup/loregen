@@ -29,6 +29,18 @@ namespace LoreGen.Terrains
         /// <summary>How wooded this kind of terrain is, from 0 (open) to 1 (dense forest).</summary>
         public double Trees;
 
+        /// <summary>
+        /// The colour this kind of terrain shows on maps, blended with its climate's, or null to show its climate's colour
+        /// alone (as most do).
+        /// </summary>
+        public Drawing.Color? Color;
+
+        /// <summary>
+        /// Feature type Ids this kind of terrain belongs to: if any are given, generators that model terrain only put it on
+        /// places one of those features covers (a beach on a Beach, lava on a Volcano). Empty for terrain found anywhere.
+        /// </summary>
+        public IReadOnlyList<string> RequiresFeature = System.Array.Empty<string>();
+
         public TerrainType(int ID, string Name, string Description, int Relief = DefaultRelief)
         {
             this.ID = ID;

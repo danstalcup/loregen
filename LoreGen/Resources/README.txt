@@ -52,11 +52,11 @@ CommonNameTemplates.csv
 
 This file contains the templates CommonLanguage builds names from, such as "The Sea of {SeaNoun}".
 Format for each row:
-Kind: Language, World, Continent, Region, Sea or Ocean [,]
+Kind: any NameKind (Language, World, Continent, Region, Sea, Ocean, the feature kinds such as MountainRange, Lake or Knoll, and Subregion; the comments at the top of the file list them all) [,]
 Style: Proper or Descriptive [,]
 Weight (how often it is chosen relative to others of the same kind and style) [,]
 Template
-The comments at the top of the file list the tokens. Every kind needs a Proper template that uses no {Dir}, {DirAdj}
+The comments at the top of the file list the tokens ({Landform} is the kind of land a subregion is). Every kind needs a Proper template that uses no {Dir}, {DirAdj}
 or {Parent}, so that a name can always be made.
 
 
@@ -68,6 +68,23 @@ List (Adj, AdjC, LandAdj, SeaAdj, SeaNoun, Feature, FeatureC or BiomeKeyword) [,
 Key: Any, or a biome category such as Wetland [,]
 Words [separated by ,s]
 A BiomeKeyword row lists words that put a biome in that category when found in its name; the first matching row wins.
+
+CommonNameWordTags.csv
+
+The themes of the vocabulary's words, so names can suit what they name. Format for each row:
+Word [,] (a word in CommonNameVocabulary.csv, in any list)
+Tags (separated by |), such as hot|fire for "Burning"
+Words without a row have no theme and suit anything.
+
+CommonNameKindThemes.csv
+
+Which word themes suit each kind of name. Format for each row:
+Kind (a NameKind, such as Glacier) [,]
+Avoid (tags separated by |): words with these are not used for the kind, unless no other word is left [,]
+Prefer (tags separated by |): words with these are chosen PreferredWordWeight times as often
+Where a name is given the climate of its place, words clashing with it are avoided too: hot and fire words in places at
+ColdBelow or colder, cold and ice words at HotAbove or hotter, wet and lush words at DryBelow or drier, and dry words at
+WetAbove or wetter (all in CommonLanguageRules.csv); a kind's preferred themes are always allowed.
 
 
 CommonLanguageRules.csv
@@ -132,7 +149,13 @@ ID Number [,]
 Description [,]
 Relief [,] (optional, 0-4; default 1). How high and steep this terrain is: 0 = flat lowland, 2 = hills, 3 = cliffs, 4 = peaks.
 Wetness [,] (optional, 0-1; default 0). How much standing water it has: 1 = marsh.
-Trees (optional, 0-1; default 0). How wooded it is: 1 = dense forest.
+Trees [,] (optional, 0-1; default 0). How wooded it is: 1 = dense forest.
+Color [,] (optional, #RRGGBB). Its own map colour, blended with its climate's (most types show their climate's alone).
+RequiresFeature (optional). Feature type Ids separated by '|': if given, the terrain is only put on places one of those
+features covers, where it is favoured (Beach on beaches; Lava Field on volcanoes and calderas; Glacier on ice sheets and
+glaciers; Crater Floor in craters). Every Id must be a type in
+FeatureTypes.csv. Terrain away from those features is chosen exactly as if these types did not exist.
+The tileset image (tiles1.png) has tiles for types 1-10; the map shows newer types in their colour.
 Generators that model elevation and climate (such as "noise" and "tectonic") put higher relief on higher ground, wetter
 terrain where water gathers on flat ground, and more trees where it is wet and warm. The "legacy" generator ignores them.
 
@@ -257,8 +280,35 @@ RegionJitter - random unevenness in how far regions spread (higher gives more ra
 RegionMinBlocks - smallest region kept; smaller ones are merged into the neighbour they share the most border with (1 keeps all)
 RegionBorderDetail - 1 gives blocks on region borders a 10x10 grid of sub-blocks with winding borders, 0 leaves borders along block edges
 RegionBorderWarp, RegionBorderFrequency - how far (in blocks) and how often region borders wander
+CoastWarp - how far coastlines bend into bays, inlets and headlands (in top-level blocks; 0 keeps the smooth outline)
 DetailMinIsletCells - smallest fine-grained islet kept (in sub-blocks); smaller specks of land are dropped (1 keeps all)
 CoastDetail and RegionBorderDetail are independent: either, both or neither can be on.
+
+Zoom detail settings (also in NoiseGeneratorRules.csv)
+Blocks finer than those made with the world (down to 100 m) are made when someone zooms in, from the blocks around them.
+ZoomCoastWiggle - how far coasts and lake shores wander inside zoomed-in blocks, as a share of a block of the level above (0 keeps them to the coarser outline)
+ZoomRelief - how much rise and fall zooming in adds inside a 10 km block; it halves with each finer level
+ZoomBorderWarp - how far region borders, and the borders of the terrain carried on from the level above, wander inside zoomed-in blocks (in blocks of the level above)
+ZoomTerrainKeep - share of a zoomed-in block's ground that keeps the terrain of the block above where that terrain still fits
+
+Ice settings (also in NoiseGeneratorRules.csv)
+GlacialFeatures - 1 finds ice sheets, glaciers and fjords, 0 doesn't
+IceSheetTemperature, IceSheetMinBlocks - land this cold or colder lies under an ice sheet, where at least this many top-level blocks of it lie together
+GlacierTemperature - the snowline: high ground in a mountain range this cold or colder (cooled by its own height) holds glaciers
+FjordTemperature - narrow sea inlets on coasts this cold or colder, between high shores, are fjords
+
+Cave and crater settings (also in NoiseGeneratorRules.csv)
+CaveChance - chance that a 100 km block of rugged, wet mountain ground holds a cave system (found when zooming in; 0 for none)
+CraterChance - chance that a 100 km block of land holds an impact crater (found when zooming in; 0 for none)
+
+Coast and volcano settings (also in NoiseGeneratorRules.csv)
+PeninsulaMinBlocks - smallest peninsula named, in 100 km blocks (0 for none)
+VolcanoesPerRange - most volcanoes in a mountain range where ocean floor dives under a plate (tectonic worlds only; 0 for none)
+
+Subregion settings (also in NoiseGeneratorRules.csv)
+Regions divide into named subregions along their landscapes when first zoomed into (or asked for).
+SubregionBlocks - about how many 100 km blocks of land make up one subregion
+SubregionsMax - most subregions one region is divided into
 
 Settings that choose for you when left at 0 (also in NoiseGeneratorRules.csv)
 LandFraction - exact share of the map that is land; 0 chooses at random from LandFractionMean, StdDev, Min and Max
@@ -293,6 +343,11 @@ This file contains the kinds of geographic feature (mountain ranges, deserts, la
 Format for each row (the comment lines at the top of the file explain each column):
 Id,Name,Category,Shape,Scope,Parent,NameKind,Description
 Parent may list several types separated by '|' (a bay can be part of an ocean or a sea).
+Hills, Forest, Fen, Gorge, Headland, Cove, Isle (Local) and Knoll, Waterfall, Grove, Clearing, Pond (Minor) are found while
+zooming in, by code that looks for them by Id; removing a row stops that kind being found. So are Beach, Cliffs, Lagoon
+and Caldera (Local). Peninsula, Delta and Volcano (Regional) are found when the world is made; volcanoes only in worlds
+with tectonic plates. So are IceSheet (Continental), Glacier and Fjord (Regional). Crater,
+CraterLake and CaveSystem (Local) and Cave (Minor) are found while zooming in.
 
 
 TectonicGeneratorRules.csv

@@ -86,7 +86,7 @@ namespace LoreGen.Tests
         }
 
         [Theory]
-        [InlineData("Volcano,,,,,,,,,")]                      // not a feature type
+        [InlineData("Kraken,,,,,,,,,")]                       // not a feature type
         [InlineData("Plate:Sideways,,,,,,,,,")]               // not a kind of boundary
         [InlineData("Peak,,high,,,,,,,")]                     // not a number
         [InlineData("Peak,,4")]                               // too few columns
@@ -375,6 +375,84 @@ namespace LoreGen.Tests
         {
             var ex = Assert.Throws<InvalidDataException>(() => NoiseTestWorlds.Generate(1, (key, value)));
             Assert.Contains(NoiseGeneratorRules.Filename, ex.Message);
+        }
+
+        [Fact]
+        public void PlateBoundariesFadeOutRatherThanStoppingAtBlockEdges()
+        {
+            // Boundaries are recorded on 1000 km blocks; at 100 km, ruggedness should not change much more often across the
+            // edge of a boundary block than anywhere else (it was about three times as often before boundaries were blended)
+            int lineChanges = 0, linePairs = 0, insideChanges = 0, insidePairs = 0;
+            foreach (int seed in new[] { 5, 8, 11 })
+            {
+                var engine = new SimEngine(seed);
+                engine.Configuration.GeneratorId = TectonicWorldGenerator.GeneratorId;
+                engine.GenerateWorld();
+                var top = engine.World.WorldBlock.ChildBlocks;
+                PlateBoundaryKind Kind(WorldBlock t) => t.Status.Plate?.BoundaryAt(t) ?? PlateBoundaryKind.None;
+                int width = top.GetLength(0) * 10, height = top.GetLength(1) * 10;
+                WorldBlock At(int x, int y) => top[x / 10, y / 10].ChildBlocks?[x % 10, y % 10];
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                        foreach (var (dx, dy) in new[] { (1, 0), (0, 1) })
+                        {
+                            int a = x + dx, b = y + dy;
+                            if (a >= width || b >= height) continue;
+                            var p = At(x, y);
+                            var q = At(a, b);
+                            if (p?.Status.Terrain == null || q?.Status.Terrain == null) continue;
+                            bool change = Math.Abs(p.Status.Terrain.TerrainType.Relief - q.Status.Terrain.TerrainType.Relief) >= 1;
+                            bool line = (dx == 1 && a % 10 == 0) || (dy == 1 && b % 10 == 0);
+                            if (line && Kind(p.ParentBlock) != Kind(q.ParentBlock)) { linePairs++; if (change) lineChanges++; }
+                            else if (!line) { insidePairs++; if (change) insideChanges++; }
+                        }
+            }
+            double ratio = ((double)lineChanges / linePairs) / ((double)insideChanges / insidePairs);
+            Assert.True(ratio < 2.4, $"ruggedness changes {ratio:0.00} times as often where a plate boundary starts or stops");
+        }
+
+        [Fact]
+        public void TerrainBordersAtFineDetailDoNotRunAlongTheTopLevelGrid()
+        {
+            // Climate is read at nudged positions, so where it crosses a threshold (trees, marsh, a kind of climate) the
+            // border wanders instead of running straight along the 1000 km grid. Measured as the share of landscape-border
+            // length in straight runs of six or more 100 km blocks (it was about 12% before the nudge, about 7% after)
+            int total = 0, straight = 0;
+            foreach (int seed in new[] { 5, 8 })
+            {
+                var engine = new SimEngine(seed);
+                engine.Configuration.GeneratorId = TectonicWorldGenerator.GeneratorId;
+                engine.GenerateWorld();
+                var top = engine.World.WorldBlock.ChildBlocks;
+                int width = top.GetLength(0) * 10, height = top.GetLength(1) * 10;
+                WorldBlock At(int x, int y) => top[x / 10, y / 10].ChildBlocks?[x % 10, y % 10];
+                bool Differ(int x, int y, int a, int b)
+                {
+                    var p = At(x, y)?.Status.Terrain;
+                    var q = At(a, b)?.Status.Terrain;
+                    return p != null && q != null && RegionPartitioner.Landscape(p) != RegionPartitioner.Landscape(q);
+                }
+                for (int x = 0; x < width - 1; x++)
+                {
+                    int run = 0;
+                    for (int y = 0; y <= height; y++)
+                    {
+                        if (y < height && Differ(x, y, x + 1, y)) { run++; total++; }
+                        else { if (run >= 6) straight += run; run = 0; }
+                    }
+                }
+                for (int y = 0; y < height - 1; y++)
+                {
+                    int run = 0;
+                    for (int x = 0; x <= width; x++)
+                    {
+                        if (x < width && Differ(x, y, x, y + 1)) { run++; total++; }
+                        else { if (run >= 6) straight += run; run = 0; }
+                    }
+                }
+            }
+            double share = (double)straight / total;
+            Assert.True(share < 0.1, $"{share:P1} of landscape borders run straight for 6 or more blocks");
         }
     }
 }

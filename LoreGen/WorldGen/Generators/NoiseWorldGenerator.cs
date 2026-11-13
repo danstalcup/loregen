@@ -40,7 +40,7 @@ namespace LoreGen.WorldGen.Generators
             get { return "Land is shaped by an elevation map of fractal noise, so continents have natural coastlines, peninsulas, islands and inland seas."; }
         }
 
-        public string Version { get { return "9"; } }
+        public string Version { get { return "16"; } }
 
         public IReadOnlyList<GeneratorOption> GetOptions(SimData data)
         {

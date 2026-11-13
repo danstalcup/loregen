@@ -42,4 +42,27 @@ namespace LoreGen.Features
             return coarseMember;
         }
     }
+
+    /// <summary>
+    /// Wraps another refiner so the feature never reaches beyond its own coarse blocks: a finer block is part of it only
+    /// if its coarse ancestor is in the footprint and the inner refiner agrees. For features found while exploring, whose
+    /// edges must not spill into blocks whose detail may already have been made.
+    /// </summary>
+    public sealed class InsideRefiner : IFeatureRefiner
+    {
+        private readonly IFeatureRefiner inner;
+
+        public InsideRefiner(IFeatureRefiner inner)
+        {
+            this.inner = inner ?? throw new System.ArgumentNullException("inner");
+        }
+
+        /// <summary>The refiner it wraps.</summary>
+        public IFeatureRefiner Inner { get { return inner; } }
+
+        public bool Includes(GeographicFeature feature, WorldBlock block, bool coarseMember)
+        {
+            return coarseMember && inner.Includes(feature, block, true);
+        }
+    }
 }

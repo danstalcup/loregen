@@ -1,6 +1,6 @@
 # Kinds of geographic feature: Id,Name,Category,Shape,Scope,Parent,NameKind,Description
 # Id: used by the code that finds features (must not change once used). Name: shown to people.
-# Category: Mountain, Water, Desert, Forest, Plain, Valley, Volcanic, Ice or Wetland.
+# Category: Mountain, Water, Desert, Forest, Plain, Valley, Volcanic, Ice, Wetland, Coast, Cave or Impact.
 # Shape: Point (a single spot), Linear (a long chain with a spine, such as a range or river) or Blob (a rounded area).
 # Scope: the size of every feature of this type, as the block depth its shape is defined at: Continental (top-level
 #   blocks, ~1000 km), Regional (~100 km), Local (~10 km) or Minor (~1 km). A feature of a different size is a
@@ -27,3 +27,29 @@ Strait,Strait,Water,Linear,Regional,Ocean|Sea,Strait,A narrow passage of water b
 Lake,Lake,Water,Blob,Regional,,Lake,A body of fresh water filling a hollow in the land, with a river running out of it.
 SaltLake,Salt lake,Water,Blob,Regional,,SaltLake,A lake with no outflow, where the water that runs in is lost to the air and leaves its salt behind.
 River,River,Water,Linear,Regional,,River,A large river, from its source to the sea, a lake, or a larger river it joins.
+Hills,Hills,Plain,Blob,Local,,Hills,Rolling high ground about 10 km across, outside the mountain ranges. Found when zooming in.
+Forest,Forest,Forest,Blob,Local,,Forest,A wood or forest about 10 km across or more. Found when zooming in.
+Fen,Fen,Wetland,Blob,Local,,Fen,A stretch of marsh and standing water. Found when zooming in.
+Gorge,Gorge,Valley,Linear,Local,River,Gorge,Where a river cuts through rugged ground. Found when zooming in.
+Headland,Headland,Plain,Point,Local,,Headland,Land jutting out into the sea. Found when zooming in.
+Cove,Cove,Water,Blob,Local,,Cove,A small inlet of the sea with land on most sides. Found when zooming in.
+Isle,Isle,Plain,Blob,Local,,Isle,A small island. Found when zooming in.
+Knoll,Knoll,Plain,Point,Minor,,Knoll,A small hill standing above the ground around it. Found when zooming in.
+Waterfall,Waterfall,Water,Point,Minor,River,Waterfall,Falls or rapids where a river drops steeply. Found when zooming in.
+Grove,Grove,Forest,Blob,Minor,,Grove,A small wood in open country. Found when zooming in.
+Clearing,Clearing,Plain,Blob,Minor,,Clearing,A small open space in a forest. Found when zooming in.
+Pond,Pond,Wetland,Blob,Minor,,Pond,A pond or mere. Found when zooming in.
+Peninsula,Peninsula,Coast,Blob,Regional,,Peninsula,Land reaching far out into the sea, joined to the mainland by a narrower neck.
+Delta,Delta,Wetland,Blob,Regional,,Delta,Flat, marshy land where a large river spreads out into the sea (named after its river).
+Volcano,Volcano,Volcanic,Point,Regional,MountainRange,Volcano,A volcano in a mountain range where ocean floor dives under a plate. Tectonic worlds only.
+Beach,Beach,Coast,Linear,Local,,Beach,A stretch of sand or shingle along a flat shore. Found when zooming in.
+Cliffs,Cliffs,Coast,Linear,Local,,Cliffs,A rugged shore where the land drops steeply into the sea. Found when zooming in.
+Lagoon,Lagoon,Water,Blob,Local,,Lagoon,Shallow sea water almost cut off by land, joined to the sea by a narrow mouth. Found when zooming in.
+Caldera,Caldera,Volcanic,Blob,Local,Volcano,Caldera,The great collapsed crater at a volcano's summit. Found when zooming in.
+IceSheet,Ice sheet,Ice,Blob,Continental,,IceSheet,A great sheet of ice over very cold land.
+Glacier,Glacier,Ice,Blob,Regional,MountainRange,Glacier,A river of ice on high ground in a mountain range, above the snowline.
+Fjord,Fjord,Water,Blob,Regional,Ocean|Sea,Fjord,A long, narrow inlet of the sea between steep shores on a cold coast.
+CaveSystem,Cave system,Cave,Blob,Local,MountainRange,CaveSystem,Caves running under rugged, wet ground in a mountain range. Underground, so it leaves the terrain above alone. Found when zooming in.
+Cave,Cave,Cave,Point,Minor,CaveSystem,Cave,A way into a cave system, on a slope. Found when zooming in.
+Crater,Crater,Impact,Blob,Local,,Crater,A great round bowl left by something falling from the sky. Rare. Found when zooming in.
+CraterLake,Crater lake,Water,Blob,Local,,CraterLake,The water filling an old crater in wet country (named after its crater). Found when zooming in.

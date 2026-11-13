@@ -57,7 +57,7 @@ namespace LoreGen.WorldGen
             if (feature.World != this) throw new ArgumentException("That feature belongs to another world.", "feature");
             if (features.Contains(feature)) throw new ArgumentException("That feature was already added.", "feature");
             features.Add(feature);
-            featureIndex = null;
+            featureIndex?.Add(feature);
         }
 
         /// <summary>
@@ -69,6 +69,83 @@ namespace LoreGen.WorldGen
             if (block == null || features.Count == 0) return Array.Empty<Features.GeographicFeature>();
             if (featureIndex == null) featureIndex = new Features.FeatureIndex(features);
             return featureIndex.At(block);
+        }
+
+        /// <summary>
+        /// Makes the finer detail inside blocks when someone zooms in (see <see cref="EnsureChildren"/>). Set by generators
+        /// that can work it out from the world they made; null for those that can't, which then fill new children with
+        /// copies of their parent.
+        /// </summary>
+        public IBlockDetailer Detailer { get; set; }
+
+        /// <summary>
+        /// Makes sure a block has its grid of children, making them if need be. Use this rather than
+        /// <see cref="WorldBlock.InitializeChildBlocks"/> so the world's <see cref="Detailer"/> fills them in. Children are
+        /// made only once; with a detailer they are the same whatever order blocks are zoomed into.
+        /// </summary>
+        /// <returns>True if the block has children, false if it is too small to have any</returns>
+        public bool EnsureChildren(WorldBlock block)
+        {
+            if (block == null) throw new ArgumentNullException("block");
+            if (block.ChildBlocks != null) return true;
+            if (!block.CanSubdivide) return false;
+            if (Detailer != null) Detailer.CreateChildren(block);
+            else block.InitializeChildBlocks();
+            return block.ChildBlocks != null;
+        }
+
+        /// <summary>
+        /// Divides regions into subregions when they are first asked for. Set by generators that support subregions; null
+        /// for those that don't.
+        /// </summary>
+        internal Generators.SubregionPlanner SubregionPlanner { get; set; }
+
+        /// <summary>Whether this world's regions can be divided into subregions.</summary>
+        public bool HasSubregions { get { return SubregionPlanner != null; } }
+
+        /// <summary>
+        /// A region's subregions, working them out (and making the 100 km blocks they are made of) if this is the first time
+        /// they are asked for. Empty for worlds without subregions. The same seed always gives the same subregions.
+        /// </summary>
+        public IReadOnlyList<Subregion> SubregionsOf(Region region)
+        {
+            if (region == null) throw new ArgumentNullException("region");
+            if (region.Subregions == null && SubregionPlanner != null) SubregionPlanner.Divide(region);
+            return region.Subregions ?? (IReadOnlyList<Subregion>)Array.Empty<Subregion>();
+        }
+
+        /// <summary>
+        /// The subregion a block lies in: for land blocks 100 km across or smaller, working out its region's subregions if
+        /// need be. Null for water, top-level blocks and worlds without subregions.
+        /// </summary>
+        public Subregion SubregionAt(WorldBlock block)
+        {
+            if (block == null) throw new ArgumentNullException("block");
+            WorldBlockStatus status = block.Status;
+            if (status.Subregion != null || SubregionPlanner == null) return status.Subregion;
+            if (block.Depth < 2 || status.Region == null || status.WaterStatus == WorldBlockWaterStatus.Water) return null;
+            SubregionsOf(status.Region);
+            return status.Subregion;
+        }
+
+        /// <summary>
+        /// The features covering each of a block's children (as <see cref="FeaturesAt"/> gives them), worked out together,
+        /// which is much quicker than one by one. The block must have children.
+        /// </summary>
+        public IReadOnlyList<Features.GeographicFeature>[,] FeaturesAtChildren(WorldBlock block)
+        {
+            if (block?.ChildBlocks == null) throw new ArgumentException("The block has no children.", "block");
+            int width = block.ChildBlocks.GetLength(0), height = block.ChildBlocks.GetLength(1);
+            var result = new IReadOnlyList<Features.GeographicFeature>[width, height];
+            if (features.Count == 0)
+            {
+                for (int i = 0; i < width; i++) for (int j = 0; j < height; j++) result[i, j] = Array.Empty<Features.GeographicFeature>();
+                return result;
+            }
+            if (featureIndex == null) featureIndex = new Features.FeatureIndex(features);
+            var lists = featureIndex.AtChildren(block);
+            for (int i = 0; i < width; i++) for (int j = 0; j < height; j++) result[i, j] = lists[i, j];
+            return result;
         }
 
         /// <summary>

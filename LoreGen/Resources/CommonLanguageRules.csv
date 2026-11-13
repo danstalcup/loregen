@@ -20,6 +20,33 @@ DescriptiveScaleStrait,1.2,Multiplier on the descriptive share when naming strai
 DescriptiveScaleLake,1,Multiplier on the descriptive share when naming lakes
 DescriptiveScaleSaltLake,1.2,Multiplier on the descriptive share when naming salt lakes
 DescriptiveScaleRiver,0.6,Multiplier on the descriptive share when naming rivers
+DescriptiveScaleHills,1,Multiplier on the descriptive share when naming hills
+DescriptiveScaleForest,1,Multiplier on the descriptive share when naming forests
+DescriptiveScaleFen,1,Multiplier on the descriptive share when naming fens
+DescriptiveScaleGorge,1,Multiplier on the descriptive share when naming gorges
+DescriptiveScaleHeadland,1,Multiplier on the descriptive share when naming headlands
+DescriptiveScaleCove,1.2,Multiplier on the descriptive share when naming coves
+DescriptiveScaleIsle,0.8,Multiplier on the descriptive share when naming isles
+DescriptiveScaleKnoll,1,Multiplier on the descriptive share when naming knolls
+DescriptiveScaleWaterfall,1,Multiplier on the descriptive share when naming waterfalls
+DescriptiveScaleGrove,1.2,Multiplier on the descriptive share when naming groves
+DescriptiveScaleClearing,1.2,Multiplier on the descriptive share when naming clearings
+DescriptiveScalePond,1,Multiplier on the descriptive share when naming ponds
+DescriptiveScaleSubregion,1,Multiplier on the descriptive share when naming subregions
+DescriptiveScalePeninsula,1,Multiplier on the descriptive share when naming peninsulas
+DescriptiveScaleDelta,1,Multiplier on the descriptive share when naming deltas
+DescriptiveScaleVolcano,0.8,Multiplier on the descriptive share when naming volcanoes
+DescriptiveScaleBeach,1.2,Multiplier on the descriptive share when naming beaches
+DescriptiveScaleCliffs,1.2,Multiplier on the descriptive share when naming cliffs
+DescriptiveScaleLagoon,1,Multiplier on the descriptive share when naming lagoons
+DescriptiveScaleCaldera,1,Multiplier on the descriptive share when naming calderas
+DescriptiveScaleIceSheet,1.2,Multiplier on the descriptive share when naming ice sheets
+DescriptiveScaleGlacier,1,Multiplier on the descriptive share when naming glaciers
+DescriptiveScaleFjord,0.8,Multiplier on the descriptive share when naming fjords
+DescriptiveScaleCaveSystem,1,Multiplier on the descriptive share when naming cave systems
+DescriptiveScaleCave,1,Multiplier on the descriptive share when naming caves
+DescriptiveScaleCrater,1,Multiplier on the descriptive share when naming craters
+DescriptiveScaleCraterLake,1,Multiplier on the descriptive share when naming crater lakes
 SecondaryFlavorProbability,0.75,Probability a language blends in a second flavour
 SecondaryWeightMin,0.15,Lowest share of pieces taken from the second flavour
 SecondaryWeightMax,0.45,Highest share of pieces taken from the second flavour
@@ -33,3 +60,8 @@ DialectReplaceShare,0.25,Share of a language's pieces a dialect swaps for others
 DialectDescriptiveSkew,0.1,Most a dialect's descriptive share differs from its parent's
 MinWordLength,3,Shortest proper word allowed
 MaxWordLength,12,Longest proper word allowed
+PreferredWordWeight,3,How many times as often words with a theme a kind prefers are chosen (CommonNameKindThemes.csv)
+ColdBelow,0.25,Places this cold or colder (temperature) avoid hot and fire words
+HotAbove,0.75,Places this hot or hotter avoid cold and ice words
+DryBelow,0.2,Places this dry or drier (moisture) avoid wet and lush words
+WetAbove,0.8,Places this wet or wetter avoid dry words

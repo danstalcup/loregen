@@ -1,0 +1,38 @@
+# Which word themes (CommonNameWordTags.csv) suit each kind of name: Kind,Avoid,Prefer
+# Avoid: tags (separated by '|') whose words are never used for the kind, unless nothing else is left.
+# Prefer: tags whose words are chosen more often (PreferredWordWeight times as often; see CommonLanguageRules.csv).
+# A kind with no row avoids nothing and prefers nothing. Where a name is given the climate of the place it names, words
+# that clash with that climate are avoided too (hot words in the cold, wet words in the dry...), unless the kind prefers them.
+
+IceSheet,hot|fire|lush|dry,cold|ice
+Glacier,hot|fire|lush|dry,cold|ice
+Fjord,hot|fire|dry,cold|ice
+Volcano,cold|ice|wet|lush,fire|hot|dark
+Caldera,cold|ice|wet|lush,fire|dark|stone
+Desert,cold|ice|wet|lush,dry|hot|bright
+Erg,cold|ice|wet|lush,dry|hot|bright
+SaltFlat,cold|ice|wet|lush,dry|bright|salt
+Oasis,cold|ice|dry|dead,lush|wet
+Lake,fire|dry,
+SaltLake,fire,dry|salt
+River,fire|dry,
+Delta,fire|dry,wet|lush
+Fen,fire|dry,wet|dark
+Pond,fire|dry,wet
+CraterLake,dry,wet|dark
+Lagoon,fire|dry|cold|ice,
+Waterfall,fire|dry,wet
+Cove,fire|dry,
+Bay,dry,
+Strait,dry,storm
+Sea,dry,
+Ocean,dry,
+Forest,fire|dry|ice,lush|dark
+Grove,fire|dry|ice,lush
+Clearing,fire|ice,bright
+Beach,ice,bright
+Cliffs,,stone|storm
+Crater,lush|wet,fire|dead|stone
+CaveSystem,bright|lush,dark|stone
+Cave,bright|lush,dark|stone
+Peak,lush,cold|stone

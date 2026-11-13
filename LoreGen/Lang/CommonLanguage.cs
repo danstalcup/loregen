@@ -243,16 +243,42 @@ namespace LoreGen.Lang
                     return rnd.R01() < Rules.MiddleProbability ? Pick("Middle") : "";
                 case "Feature":
                 case "FeatureC":
-                    return ListR<string>.RandomFromList(Data.Words(token, Data.BiomeCategory(context.Biome)), rnd);
+                    return PickWord(Data.Words(token, Data.BiomeCategory(context.Biome)), context, rnd);
                 case "Dir":
                     return context.Direction.Value.ToString();
                 case "DirAdj":
                     return context.Direction.Value + "ern";
                 case "Parent":
                     return context.ParentName.Trim();
+                case "Landform":
+                    return string.IsNullOrWhiteSpace(context.Landform) ? "Lands" : context.Landform.Trim();
             }
             if (NameFlavor.Slots.Contains(token)) return Pick(token);
-            return ListR<string>.RandomFromList(Data.Words(VocabularyListFor(token)), rnd);
+            return PickWord(Data.Words(VocabularyListFor(token)), context, rnd);
+        }
+
+        /// <summary>
+        /// A vocabulary word that suits what is being named: words with themes its kind avoids (CommonNameKindThemes.csv),
+        /// or that clash with the place's climate, are left out (unless that leaves nothing), and words with themes the kind
+        /// prefers are chosen PreferredWordWeight times as often.
+        /// </summary>
+        private string PickWord(IReadOnlyList<string> words, NameContext context, Rnd rnd)
+        {
+            var themes = Data.Themes(context.Kind);
+            var avoid = new HashSet<string>(themes.Avoid, StringComparer.OrdinalIgnoreCase);
+            CommonLanguageRules rules = Rules;
+            if (context.Temperature <= rules.ColdBelow) { avoid.Add("hot"); avoid.Add("fire"); }
+            if (context.Temperature >= rules.HotAbove) { avoid.Add("cold"); avoid.Add("ice"); }
+            if (context.Moisture <= rules.DryBelow) { avoid.Add("wet"); avoid.Add("lush"); }
+            if (context.Moisture >= rules.WetAbove) avoid.Add("dry");
+            foreach (string tag in themes.Prefer) avoid.Remove(tag); // what a kind is about always fits it
+            if (avoid.Count == 0 && themes.Prefer.Count == 0) return ListR<string>.RandomFromList(words, rnd);
+
+            var suitable = words.Where(w => !Data.Tags(w).Any(avoid.Contains)).ToList();
+            if (suitable.Count == 0) suitable = words.ToList();
+            // Where theming changes nothing, the plain draw, so such names stay as they always were
+            if (suitable.Count == words.Count && !words.Any(w => Data.Tags(w).Any(themes.Prefer.Contains))) return ListR<string>.RandomFromList(words, rnd);
+            return WeightedPick(suitable, w => Data.Tags(w).Any(themes.Prefer.Contains) ? rules.PreferredWordWeight : 1.0, rnd);
         }
 
         private string ProperWord(string endingSlot)
@@ -283,7 +309,14 @@ namespace LoreGen.Lang
                 case NameKind.Strait:
                 case NameKind.Lake:
                 case NameKind.SaltLake:
-                case NameKind.River: return "WaterEnding";
+                case NameKind.River:
+                case NameKind.Cove:
+                case NameKind.Pond:
+                case NameKind.Waterfall:
+                case NameKind.Lagoon:
+                case NameKind.Delta:
+                case NameKind.Fjord:
+                case NameKind.CraterLake: return "WaterEnding";
             }
             return "Ending";
         }

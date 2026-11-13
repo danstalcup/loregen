@@ -57,7 +57,7 @@ namespace LoreGen.WorldGen.Generators
 
                 WorldBlockStatus shore = Shore(grid, basin.Cells);
                 ILanguage language = shore?.Region?.Language ?? shore?.Continent?.RootLanguage ?? world.Language;
-                lake.Name = language.GetName(new NameContext(type.NameKind) { ParentName = shore?.Region?.Name });
+                lake.Name = language.GetName(new NameContext(type.NameKind) { ParentName = shore?.Region?.Name }.WithClimate(NameHints.Climate(cells)));
                 foreach (WorldBlock cell in cells) cell.Status.Lake = lake;
                 world.AddFeature(lake);
                 found.Add(lake);
@@ -134,7 +134,7 @@ namespace LoreGen.WorldGen.Generators
                 {
                     ParentName = continent?.Name,
                     Direction = continent != null ? NameHints.DirectionWithin(cells.Select(c => c.ParentBlock).Distinct(), continent.ContinentArea.Blocks()) : null
-                });
+                }.WithClimate(NameHints.Climate(cells)));
                 world.AddFeature(river);
                 found.Add(river);
             }
@@ -251,7 +251,7 @@ namespace LoreGen.WorldGen.Generators
             {
                 ParentName = body.Name,
                 Direction = NameHints.DirectionWithin(group, within)
-            });
+            }.WithClimate(NameHints.Climate(group)));
             body.AddChild(part);
             world.AddFeature(part);
             return part;

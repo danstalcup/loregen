@@ -181,6 +181,27 @@ namespace LoreGen.Simulation
         public NameRegistry Names { get; } = new NameRegistry();
 
         /// <summary>
+        /// A name from a language that depends only on the seed (and the language and context), not on anything named
+        /// before: the engine's naming random numbers are swapped for ones from the seed, and the registry of names given
+        /// out is neither checked nor added to. For places made while exploring, whose names must not depend on the order
+        /// they are found in. The name may repeat one given out before.
+        /// </summary>
+        public string NameFromSeed(ILanguage language, NameContext context, int seed)
+        {
+            if (language == null) throw new ArgumentNullException("language");
+            Randomizer.Rnd saved = SimEngine.NameRnd;
+            SimEngine.NameRnd = new Randomizer.Rnd(seed);
+            try
+            {
+                using (Names.Suspend()) return language.GetName(context);
+            }
+            finally
+            {
+                SimEngine.NameRnd = saved;
+            }
+        }
+
+        /// <summary>
         /// Returns a random language in the style set by <see cref="SimEngineConfiguration.LanguageStyle"/>.
         /// </summary>
         /// <returns>A randomly generated language</returns>

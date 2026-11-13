@@ -1,0 +1,48 @@
+# Themes of the words in CommonNameVocabulary.csv: Word,Tag|Tag|...
+# A word with no row has no theme and suits any name. Tags are free words; the ones the kind themes and the climate use
+# are: hot, cold, fire, ice, wet, dry, lush, dead, dark, bright, stone, storm, salt.
+# Applies to the word in every list it appears in (ignoring case).
+
+Ash,fire|dead
+Ashen,fire|dead
+Barren,dry|dead
+Bleak,cold|dead
+Black,dark
+Bright,bright
+Burning,hot|fire
+Churning,storm|wet
+Cold,cold
+Dark,dark
+Drowned,wet
+Ember,fire|hot
+Embers,fire|hot
+Emerald,lush
+Frost,cold|ice
+Frozen,cold|ice
+Gilded,bright
+Gold,bright
+Golden,bright
+Green,lush
+Haunted,dark
+Jade,lush
+Mist,wet
+Mists,wet
+Oak,lush
+Raven,dark
+Restless,storm
+Salt,salt
+Shadow,dark
+Shivering,cold
+Shrouded,dark
+Stone,stone
+Storm,storm|wet
+Storms,storm|wet
+Sun,hot|bright
+Sunlit,hot|bright
+Thorn,lush
+Thorned,lush
+Twilight,dark
+Verdant,lush
+Weeping,wet
+White,bright
+Withered,dry|dead

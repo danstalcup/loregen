@@ -16,6 +16,18 @@ namespace LoreGen.WorldGen
         public const double SideThreshold = 0.2;
 
         /// <summary>
+        /// The average temperature and moisture of some blocks (those that have them), for names that suit the place (see
+        /// <see cref="Lang.NameContext.WithClimate"/>). Null where none of the blocks has a value.
+        /// </summary>
+        public static (double? Temperature, double? Moisture) Climate(IEnumerable<WorldBlock> blocks)
+        {
+            var list = (blocks ?? Enumerable.Empty<WorldBlock>()).Where(b => b != null).ToList();
+            var temperatures = list.Where(b => b.Status.Temperature.HasValue).Select(b => b.Status.Temperature.Value).ToList();
+            var moistures = list.Where(b => b.Status.Moisture.HasValue).Select(b => b.Status.Moisture.Value).ToList();
+            return (temperatures.Count > 0 ? temperatures.Average() : (double?)null, moistures.Count > 0 ? moistures.Average() : (double?)null);
+        }
+
+        /// <summary>
         /// The side of <paramref name="whole"/> that <paramref name="part"/> lies on, or null if it lies near the middle
         /// or either collection is empty.
         /// </summary>

@@ -29,6 +29,11 @@ namespace LoreGen.WorldGen.Generators
         public IReadOnlyList<GeographicFeature> Features;
         /// <summary>The kind of plate boundary the place is on, if any.</summary>
         public PlateBoundaryKind Boundary;
+        /// <summary>
+        /// How strongly the plate boundary acts here, from 0 to 1, or null for fully (see
+        /// <see cref="TerrainModel.BoundaryBlend"/>, which fades it out across the edge of a boundary belt).
+        /// </summary>
+        public double? BoundaryStrength;
     }
 
     /// <summary>
@@ -128,6 +133,20 @@ namespace LoreGen.WorldGen.Generators
         private readonly int landscapeSlots;
         private readonly FractalNoise patches;
         private readonly double patchSpread;
+        // Patch noise for zoomed-in blocks, measured in blocks of their own size: one sample for which terrain, another for
+        // whether the block keeps its parent's
+        private readonly FractalNoise zoomPatches;
+        // Looked up once: the influence of each kind of plate boundary, and each terrain's place in the draw order
+        private readonly Dictionary<PlateBoundaryKind, TerrainInfluence> plateInfluence = new Dictionary<PlateBoundaryKind, TerrainInfluence>();
+        private Dictionary<Terrain, int> drawIndex;
+        // Raggedness of the edges of plate boundary belts below the top level
+        private readonly FractalNoise boundaryNoise;
+        // Nudges where the top-level climate is read for sub-blocks (see ClimateAt)
+        private readonly FractalNoise climateWarp;
+
+        /// <summary>How far (in top-level blocks) a sub-block's climate may be read from its own position.</summary>
+        private const double ClimateWarp = 0.45;
+        private readonly double zoomSpread;
         private double blockSize = 1; // true units per top-level block
 
         public TerrainModel(SimEngine engine, NoiseGeneratorRules rules)
@@ -138,6 +157,10 @@ namespace LoreGen.WorldGen.Generators
 
             climates = engine.SimData.Climates.ToList();
             types = engine.SimData.TerrainTypes.ToList();
+            foreach (TerrainType type in types)
+                foreach (string id in type.RequiresFeature)
+                    if (!engine.SimData.FeatureTypes.Any(f => f.Id == id))
+                        throw new InvalidDataException("TerrainTypes.csv: " + type.Name + " belongs to an unknown feature type '" + id + "'");
             climatePoint = climates.Select(ClimatePoint).ToArray();
             if (rules.TerrainPatchSize > 0)
             {
@@ -146,6 +169,14 @@ namespace LoreGen.WorldGen.Generators
                 double sum = 0;
                 for (int i = 0; i < 4096; i++) { double v = patches.Fbm(i * 0.6180339887 * 37.0, i * 0.4142135623 * 41.0); sum += v * v; }
                 patchSpread = Math.Max(1e-6, Math.Sqrt(sum / 4096));
+            }
+            zoomPatches = new FractalNoise(new SimplexNoise(unchecked(worldSeed * 6271 + 0x200a)), 2, 1.0 / ZoomPatchBlocks, 2.0, 0.5);
+            boundaryNoise = new FractalNoise(new SimplexNoise(unchecked(worldSeed * 92821 + 0x200b)), 4, 1.0, 2.0, 0.55);
+            climateWarp = new FractalNoise(new SimplexNoise(unchecked(worldSeed * 15485863 + 0x200c)), 5, 1.2, 2.0, 0.55);
+            {
+                double sum = 0;
+                for (int i = 0; i < 4096; i++) { double v = zoomPatches.Fbm(i * 0.6180339887 * 37.0, i * 0.4142135623 * 41.0); sum += v * v; }
+                zoomSpread = Math.Max(1e-6, Math.Sqrt(sum / 4096));
             }
             terrainOf = new Terrain[climates.Count, types.Count];
             foreach (Terrain terrain in engine.SimData.Terrains)
@@ -197,10 +228,23 @@ namespace LoreGen.WorldGen.Generators
             double relief = Clamp(site.Elevation / rules.ElevationPerRelief, 0, 4);
             double moisture = site.Moisture;
             List<TerrainInfluence> applied = new List<TerrainInfluence>(4);
-            if (site.Boundary != PlateBoundaryKind.None)
+            double strength = Clamp(site.BoundaryStrength ?? 1, 0, 1);
+            if (site.Boundary != PlateBoundaryKind.None && strength > 0)
             {
-                TerrainInfluence plate = InfluenceOf(TerrainInfluence.PlatePrefix + site.Boundary);
-                if (plate != null) applied.Add(plate);
+                // A plate boundary pushes in proportion to its strength, and only sets limits where it is the stronger
+                TerrainInfluence plate;
+                if (!plateInfluence.TryGetValue(site.Boundary, out plate))
+                    plateInfluence[site.Boundary] = plate = InfluenceOf(TerrainInfluence.PlatePrefix + site.Boundary);
+                if (plate != null)
+                {
+                    relief = Clamp(relief + plate.ReliefAdd * strength, 0, 4);
+                    moisture += plate.Moisture * strength;
+                    if (strength >= 0.5) applied.Add(new TerrainInfluence
+                    {
+                        Id = plate.Id, ReliefMin = plate.ReliefMin, ReliefMax = plate.ReliefMax, WetMin = plate.WetMin,
+                        WetMax = plate.WetMax, TreesMin = plate.TreesMin, TreesMax = plate.TreesMax
+                    });
+                }
             }
             if (site.Features != null)
                 for (int scope = (int)FeatureScope.Continental; scope <= (int)FeatureScope.Minor; scope++)
@@ -253,21 +297,46 @@ namespace LoreGen.WorldGen.Generators
             var targets = Targets(site);
             double spread = Math.Max(1e-6, rules.TerrainClimateSpread);
             double[] climateFit = new double[climates.Count];
+            double reach = 2 * spread * spread;
             for (int c = 0; c < climates.Count; c++)
             {
                 double dt = site.Temperature - climatePoint[c].T, dm = targets.Moisture - climatePoint[c].M;
-                climateFit[c] = Math.Exp(-(dt * dt + dm * dm) / (2 * spread * spread));
+                double d = (dt * dt + dm * dm) / reach;
+                climateFit[c] = d > 40 ? 0 : Math.Exp(-d); // too far to matter (below e^-40)
             }
             double[] typeFit = new double[types.Count];
             for (int k = 0; k < types.Count; k++)
             {
+                // Terrain that belongs to features (a beach, lava) only goes on them, where it is favoured
+                double boost = 1;
+                if (types[k].RequiresFeature.Count > 0)
+                {
+                    if (!Covers(site.Features, types[k].RequiresFeature)) { typeFit[k] = 0; continue; }
+                    boost = FeatureTerrainBoost;
+                }
                 double relief = types[k].Relief - targets.Relief, wet = types[k].Wetness - targets.Wet, trees = types[k].Trees - targets.Trees;
-                typeFit[k] = Math.Exp(-rules.TerrainReliefStrength * relief * relief - rules.TerrainWetStrength * wet * wet - rules.TerrainTreeStrength * trees * trees);
+                typeFit[k] = boost * Math.Exp(-rules.TerrainReliefStrength * relief * relief - rules.TerrainWetStrength * wet * wet - rules.TerrainTreeStrength * trees * trees);
             }
 
             double[] scores = new double[drawTerrain.Length];
-            for (int i = 0; i < scores.Length; i++) scores[i] = climateFit[drawClimate[i]] * typeFit[drawType[i]];
+            for (int i = 0; i < scores.Length; i++)
+            {
+                double fit = climateFit[drawClimate[i]];
+                scores[i] = fit == 0 ? 0 : fit * typeFit[drawType[i]];
+            }
             return scores;
+        }
+
+        /// <summary>How much more likely terrain that belongs to a feature is on that feature than other terrain that fits as well.</summary>
+        private const double FeatureTerrainBoost = 6;
+
+        private static bool Covers(IReadOnlyList<GeographicFeature> features, IReadOnlyList<string> typeIds)
+        {
+            if (features == null) return false;
+            foreach (GeographicFeature feature in features)
+                foreach (string id in typeIds)
+                    if (feature.Type.Id == id) return true;
+            return false;
         }
 
         /// <summary>
@@ -327,6 +396,77 @@ namespace LoreGen.WorldGen.Generators
                 if (roll < 0) return drawTerrain[i];
             }
             return drawTerrain[last];
+        }
+
+        /// <summary>
+        /// The scale of the patch noise for zoomed-in blocks, in blocks of their own size. Several terrains usually share a
+        /// landscape, so a draw crosses from one to the next well within this distance: patches come out a few blocks across.
+        /// </summary>
+        private const double ZoomPatchBlocks = 16;
+
+        /// <summary>Terrains fitting less than this share as well as the best of their landscape are not drawn when zooming in.</summary>
+        private const double ZoomMinShare = 0.1;
+
+        /// <summary>
+        /// The terrain for a land block made when zooming in (below the detail made with the world). The block keeps the
+        /// landscape of the block it lies in wherever that fits at least (1 - TerrainSmoothing) as well as the best one.
+        /// Where the parent's terrain belongs to the landscape chosen, patches covering about keepShare of the
+        /// ground keep that terrain, so zooming in mostly shows more of what was there; elsewhere a terrain of that
+        /// landscape is drawn from patch noise measured in blocks of its own size, so each level has patches of its own.
+        /// </summary>
+        public Terrain PickZoomed(TerrainSite site, WorldBlock block, Terrain parentTerrain, double keepShare)
+        {
+            double[] scores = Scores(site);
+            double[] fits = LandscapeFits(scores);
+            int landscape = BestLandscape(fits);
+            if (landscape < 0) return drawTerrain[0];
+            if (drawIndex == null)
+            {
+                drawIndex = new Dictionary<Terrain, int>();
+                for (int i = 0; i < drawTerrain.Length; i++) drawIndex[drawTerrain[i]] = i;
+            }
+            int parentIndex = parentTerrain != null && drawIndex.TryGetValue(parentTerrain, out int found) ? found : -1;
+            if (parentIndex >= 0)
+            {
+                // The parent's landscape carries on wherever it still fits nearly as well (as the top level evens out)
+                int parentLandscape = drawLandscape[parentIndex];
+                if (fits[parentLandscape] > 0 && fits[parentLandscape] >= (1 - rules.TerrainSmoothing) * fits[landscape]) landscape = parentLandscape;
+            }
+            double x = (block.TrueX + block.TrueWidth / 2.0) / block.TrueWidth, y = (block.TrueY + block.TrueHeight / 2.0) / block.TrueHeight;
+            // Different levels sample different stretches of the noise, so their patches are unrelated
+            double shift = 1000.0 * block.Depth;
+            if (parentIndex >= 0 && keepShare > 0)
+            {
+                int index = parentIndex;
+                if (drawLandscape[index] == landscape && scores[index] > 0
+                    && ZoomUnit(x + shift + 517.3, y - shift + 291.1) < keepShare)
+                    return parentTerrain;
+            }
+            // Terrains that hardly fit are left out: their thin slices of the draw would only show as stray specks and
+            // lines between the patches of the others
+            double top = 0;
+            for (int i = 0; i < scores.Length; i++)
+                if (drawLandscape[i] == landscape) top = Math.Max(top, scores[i]);
+            double floor = Math.Max(1e-300, top * ZoomMinShare);
+            double total = 0;
+            int last = -1;
+            for (int i = 0; i < scores.Length; i++)
+                if (drawLandscape[i] == landscape && scores[i] >= floor) { total += scores[i]; last = i; }
+            if (last < 0) return drawTerrain[0];
+            double roll = ZoomUnit(x + shift, y + shift) * total;
+            for (int i = 0; i < scores.Length; i++)
+            {
+                if (drawLandscape[i] != landscape || scores[i] < floor) continue;
+                roll -= scores[i];
+                if (roll < 0) return drawTerrain[i];
+            }
+            return drawTerrain[last];
+        }
+
+        // A number in [0, 1) from the zoom patch noise at a position in blocks
+        private double ZoomUnit(double x, double y)
+        {
+            return Math.Max(0, Math.Min(1 - 1e-12, NormalCdf(zoomPatches.Fbm(x, y) / zoomSpread)));
         }
 
         // A number in [0, 1) fixed by the world seed and the block's position: from the smooth patch noise, or (without
@@ -417,6 +557,7 @@ namespace LoreGen.WorldGen.Generators
             for (int x = 0; x < width; x++)
                 for (int y = 0; y < height; y++)
                 {
+                    grid[x, y].Status.Hydration = hydration[x, y];
                     if (!land[x, y]) continue;
                     WorldBlock block = grid[x, y];
                     WorldBlockStatus status = block.Status;
@@ -496,29 +637,74 @@ namespace LoreGen.WorldGen.Generators
                     WorldBlock parent = grid[bx, by];
                     if (parent.ChildBlocks == null) continue;
                     int n = parent.ChildBlocks.GetLength(0);
-                    PlateBoundaryKind boundary = BoundaryAt(parent);
                     for (int i = 0; i < n; i++)
                         for (int j = 0; j < parent.ChildBlocks.GetLength(1); j++)
                         {
                             WorldBlock child = parent.ChildBlocks[i, j];
                             WorldBlockStatus status = child.Status;
-                            if (status.WaterStatus == WorldBlockWaterStatus.Water || status.Region == null) continue;
+                            // Every sub-block records its own climate and water, smoothly blended from the top level, so
+                            // finer detail made later can carry on from them
+                            // Read at a nudged position, so the lines where the blended climate crosses a threshold
+                            // (trees, marsh, a kind of climate) wander instead of running straight along the top-level grid
                             double gx = bx + (i + 0.5) / n, gy = by + (j + 0.5) / n;
+                            (gx, gy) = (gx + ClimateWarp * climateWarp.Fbm(gx, gy), gy + ClimateWarp * climateWarp.Fbm(gx + 41.7, gy - 23.3));
+                            status.Temperature = Clamp(Interpolate(temperature, gx, gy), 0, 1);
+                            status.Moisture = Clamp(Interpolate(moisture, gx, gy), 0, 1);
+                            status.Hydration = Clamp(Interpolate(hydration, gx, gy), 0, 1);
+                            if (status.WaterStatus == WorldBlockWaterStatus.Water || status.Region == null) continue;
                             double shore = BesideLake(grid, bx * n + i, by * n + j) ? rules.LakeHydration : 0;
+                            status.Hydration = Clamp(status.Hydration.Value + shore, 0, 1);
+                            var boundary = BoundaryBlend(child);
                             status.Terrain = Pick(new TerrainSite
                             {
                                 Elevation = status.Elevation.Value,
-                                Temperature = Interpolate(temperature, gx, gy),
-                                Moisture = Interpolate(moisture, gx, gy),
-                                Hydration = Clamp(Interpolate(hydration, gx, gy) + shore, 0, 1),
+                                Temperature = status.Temperature.Value,
+                                Moisture = status.Moisture.Value,
+                                Hydration = status.Hydration.Value,
                                 Features = world.FeaturesAt(child),
-                                Boundary = boundary
+                                Boundary = boundary.Kind,
+                                BoundaryStrength = boundary.Strength
                             }, child);
                         }
                 }
         }
 
-        private static PlateBoundaryKind BoundaryAt(WorldBlock block)
+        /// <summary>
+        /// The plate boundary at a block and how strongly it acts there. Boundaries are recorded on top-level blocks, so
+        /// for anything finer they would change all at once along a top-level block's edge. Instead the four top-level
+        /// blocks whose centres surround the block are blended by distance: the strongest kind among them, by its share,
+        /// nudged by noise and eased so it stays full inside a boundary belt and fades out raggedly across its edge (over
+        /// about a top-level block). Depends only on position. Top-level blocks get their own boundary at full strength.
+        /// </summary>
+        internal (PlateBoundaryKind Kind, double Strength) BoundaryBlend(WorldBlock block)
+        {
+            if (block.Depth <= 1) return (BoundaryAt(block), 1.0);
+            WorldBlock[,] top = block.World?.WorldBlock?.ChildBlocks;
+            if (top == null) return (BoundaryAt(block), 1.0);
+            int width = top.GetLength(0), height = top.GetLength(1);
+            double size = top[0, 0].TrueWidth;
+            double gx = (block.TrueX + block.TrueWidth / 2.0) / size - 0.5, gy = (block.TrueY + block.TrueHeight / 2.0) / size - 0.5;
+            int x0 = (int)Math.Floor(gx), y0 = (int)Math.Floor(gy);
+            double tx = gx - x0, ty = gy - y0;
+            PlateBoundaryKind best = PlateBoundaryKind.None;
+            double bestShare = 0;
+            var shares = new Dictionary<PlateBoundaryKind, double>();
+            for (int k = 0; k < 4; k++)
+            {
+                int cx = Math.Max(0, Math.Min(width - 1, x0 + (k & 1))), cy = Math.Max(0, Math.Min(height - 1, y0 + (k >> 1)));
+                PlateBoundaryKind kind = BoundaryAt(top[cx, cy]);
+                if (kind == PlateBoundaryKind.None) continue;
+                double share = ((k & 1) == 1 ? tx : 1 - tx) * ((k >> 1) == 1 ? ty : 1 - ty);
+                shares[kind] = (shares.TryGetValue(kind, out double sum) ? sum : 0) + share;
+                if (shares[kind] > bestShare) { bestShare = shares[kind]; best = kind; }
+            }
+            if (best == PlateBoundaryKind.None) return (best, 0);
+            double nudged = bestShare + 0.3 * boundaryNoise.Fbm(gx * 2.5 + 57.3, gy * 2.5 - 21.9);
+            double t = Clamp((nudged - 0.25) / 0.5, 0, 1);
+            return (best, t * t * (3 - 2 * t));
+        }
+
+        internal static PlateBoundaryKind BoundaryAt(WorldBlock block)
         {
             for (WorldBlock b = block; b != null; b = b.ParentBlock)
                 if (b.Status.Plate != null) return b.Status.Plate.BoundaryAt(b);

@@ -205,3 +205,10 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
     .progress-fill, .world-view.dimmed { transition: none; }
 }
 .generation-log summary .muted { font-weight: normal; }
+
+/* Map breadcrumb and block panning */
+.crumbs { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.crumbs .trail { color: var(--muted); font-size: 0.8rem; overflow-wrap: anywhere; }
+.pan { display: flex; gap: 2px; }
+.pan .btn { padding: 4px 9px; }
+.detailing { color: var(--accent); font-weight: 600; }

@@ -114,6 +114,11 @@ namespace LoreGen.Lang
         public double DialectDescriptiveSkew;
         public int MinWordLength;
         public int MaxWordLength;
+        public double PreferredWordWeight;
+        public double ColdBelow;
+        public double HotAbove;
+        public double DryBelow;
+        public double WetAbove;
 
         internal static CommonLanguageRules Read(RulesFile r)
         {
@@ -136,6 +141,11 @@ namespace LoreGen.Lang
             rules.DialectDescriptiveSkew = r.D("DialectDescriptiveSkew");
             rules.MinWordLength = r.I("MinWordLength");
             rules.MaxWordLength = r.I("MaxWordLength");
+            rules.PreferredWordWeight = r.D("PreferredWordWeight");
+            rules.ColdBelow = r.D("ColdBelow");
+            rules.HotAbove = r.D("HotAbove");
+            rules.DryBelow = r.D("DryBelow");
+            rules.WetAbove = r.D("WetAbove");
             r.Finish();
             if (rules.MinWordLength > rules.MaxWordLength)
                 throw new InvalidDataException("CommonLanguageRules.csv: MinWordLength is greater than MaxWordLength");
@@ -162,17 +172,71 @@ namespace LoreGen.Lang
 
         private readonly Dictionary<string, Dictionary<string, IReadOnlyList<string>>> vocabulary;
         private readonly List<KeyValuePair<string, string[]>> biomeKeywords;
+        private readonly Dictionary<string, IReadOnlyCollection<string>> wordTags = new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<NameKind, (IReadOnlyCollection<string> Avoid, IReadOnlyCollection<string> Prefer)> kindThemes =
+            new Dictionary<NameKind, (IReadOnlyCollection<string>, IReadOnlyCollection<string>)>();
+        private static readonly IReadOnlyCollection<string> NoTags = Array.Empty<string>();
 
         /// <summary>
         /// Parses the data files' lines.
         /// </summary>
-        public CommonNameData(IEnumerable<string> flavorLines, IEnumerable<string> templateLines, IEnumerable<string> vocabularyLines, RulesFile rules)
+        /// <param name="wordTagLines">Optional: the lines of CommonNameWordTags.csv (word themes)</param>
+        /// <param name="kindThemeLines">Optional: the lines of CommonNameKindThemes.csv (which themes suit each kind)</param>
+        public CommonNameData(IEnumerable<string> flavorLines, IEnumerable<string> templateLines, IEnumerable<string> vocabularyLines, RulesFile rules,
+            IEnumerable<string> wordTagLines = null, IEnumerable<string> kindThemeLines = null)
         {
             Flavors = ReadFlavors(flavorLines);
             Templates = ReadTemplates(templateLines);
             vocabulary = ReadVocabulary(vocabularyLines, out biomeKeywords);
             Rules = CommonLanguageRules.Read(rules);
             CheckTemplates();
+            if (wordTagLines != null) ReadWordTags(wordTagLines);
+            if (kindThemeLines != null) ReadKindThemes(kindThemeLines);
+        }
+
+        /// <summary>The themes a vocabulary word has (CommonNameWordTags.csv); none for most.</summary>
+        public IReadOnlyCollection<string> Tags(string word)
+        {
+            IReadOnlyCollection<string> tags;
+            return word != null && wordTags.TryGetValue(word, out tags) ? tags : NoTags;
+        }
+
+        /// <summary>The themes a kind of name avoids and prefers (CommonNameKindThemes.csv); none for most.</summary>
+        public (IReadOnlyCollection<string> Avoid, IReadOnlyCollection<string> Prefer) Themes(NameKind kind)
+        {
+            (IReadOnlyCollection<string>, IReadOnlyCollection<string>) themes;
+            return kindThemes.TryGetValue(kind, out themes) ? themes : (NoTags, NoTags);
+        }
+
+        private void ReadWordTags(IEnumerable<string> lines)
+        {
+            const string file = "CommonNameWordTags.csv";
+            var known = new HashSet<string>(vocabulary.Values.SelectMany(byKey => byKey.Values).SelectMany(w => w), StringComparer.OrdinalIgnoreCase);
+            foreach (string[] row in Rows(lines))
+            {
+                if (row.Length != 2) throw new InvalidDataException(file + ": expected 'Word,Tag|Tag|...' but found: " + string.Join(",", row));
+                if (!known.Contains(row[0])) throw new InvalidDataException(file + ": '" + row[0] + "' is not a word in CommonNameVocabulary.csv");
+                if (wordTags.ContainsKey(row[0])) throw new InvalidDataException(file + ": two rows for '" + row[0] + "'");
+                wordTags[row[0]] = SplitTags(row[1]);
+            }
+        }
+
+        private void ReadKindThemes(IEnumerable<string> lines)
+        {
+            const string file = "CommonNameKindThemes.csv";
+            foreach (string[] row in Rows(lines))
+            {
+                if (row.Length < 2 || row.Length > 3) throw new InvalidDataException(file + ": expected 'Kind,Avoid,Prefer' but found: " + string.Join(",", row));
+                NameKind kind;
+                if (!Enum.TryParse(row[0], true, out kind)) throw new InvalidDataException(file + ": unknown kind '" + row[0] + "'");
+                if (kindThemes.ContainsKey(kind)) throw new InvalidDataException(file + ": two rows for " + kind);
+                kindThemes[kind] = (SplitTags(row[1]), row.Length > 2 ? SplitTags(row[2]) : NoTags);
+            }
+        }
+
+        private static IReadOnlyCollection<string> SplitTags(string text)
+        {
+            return new HashSet<string>(text.Split('|').Select(t => t.Trim()).Where(t => t.Length > 0), StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -284,7 +348,7 @@ namespace LoreGen.Lang
                 foreach (string part in t.Parts.Where(p => p.StartsWith("{")))
                 {
                     string token = part.Substring(1, part.Length - 2);
-                    if (NameFlavor.Slots.Contains(token) || token == "Dir" || token == "DirAdj" || token == "Parent") continue;
+                    if (NameFlavor.Slots.Contains(token) || token == "Dir" || token == "DirAdj" || token == "Parent" || token == "Landform") continue;
                     string list = CommonLanguage.VocabularyListFor(token);
                     if (list == null) throw new InvalidDataException(file + ": unknown token " + part + " in '" + t.Text + "'");
                     Words(list);

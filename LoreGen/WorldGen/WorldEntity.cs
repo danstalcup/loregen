@@ -67,6 +67,11 @@ namespace LoreGen.WorldGen
         /// <summary>
         /// A tectonic plate
         /// </summary>
-        TectonicPlate
+        TectonicPlate,
+
+        /// <summary>
+        /// A subregion: a named stretch of one kind of land within a region
+        /// </summary>
+        Subregion
     }
 }
